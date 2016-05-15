@@ -1,41 +1,18 @@
-from flexmock import flexmock  # type: ignore
+from trypnv.test.spec import MockNvimSpec
 
-import tek  # type: ignore
-
-import tryp
-from tryp import may, Maybe
-from tryp.logging import tryp_stdout_logging
-
-from myo.nvim import NvimFacade
+import myo.test
 
 
-class MockNvimFacade(NvimFacade):
+class UnitSpec(MockNvimSpec, myo.test.Spec):
 
     def __init__(self):
-        self.vars = {}
-        super(MockNvimFacade, self).__init__(None)
+        super().__init__('myo')
 
-    @may
-    def var(self, name: str) -> Maybe[str]:  # type: ignore
-        v = self.vars.get(name)
-        if v is None:
-            self.log.error('variable not found: {}'.format(name))
-        return v
+    def setup(self):
+        super().setup()
 
 
-class Spec(tek.Spec):
-
-    def setup(self, *a, **kw):
-        tryp.development = True
-        tryp_stdout_logging()
-        super(Spec, self).setup(*a, **kw)
 
 
-class MockNvimSpec(Spec):
-
-    def setup(self, *a, **kw):
-        super(MockNvimSpec, self).setup(*a, **kw)
-        self.vim = MockNvimFacade()
-        self.vim_mock = flexmock(self.vim)
 
 __all__ = ['Spec']

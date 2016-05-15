@@ -1,12 +1,12 @@
 from pathlib import Path
 
-import neovim  # type: ignore
+import neovim
 
 from tryp import List
 
 from trypnv import command, NvimStatePlugin, msg_command, json_msg_command
 
-from myo.plugins.core import Init
+from myo.plugins.core.main import StageI
 from myo.main import Myo
 from myo.nvim import NvimFacade
 from myo.logging import Logging
@@ -18,6 +18,7 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
     def __init__(self, vim: neovim.Nvim) -> None:
         super(MyoNvimPlugin, self).__init__(NvimFacade(vim))
         self.myo = None  # type: Myo
+        self._post_initialized = False
 
     def state(self):
         return self.myo
@@ -33,14 +34,23 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
             self.vim.clean()
             self.myo = None
 
-    @command()
+    @command(sync=True)
     def myo_start(self):
         config_path = self.vim.ppath('config_path')\
             .get_or_else(Path('/dev/null'))
         plugins = self.vim.pl('plugins') | List()
         self.myo = Myo(self.vim.proxy, Path(config_path), plugins)
         self.myo.start()
-        self.myo.send(Init())
+        self.myo.wait_for_running()
+        self.myo.send(StageI())
+
+    @command()
+    def myo_post_startup(self):
+        self._post_initialized = True
+        if self.myo is not None:
+            pass
+        else:
+            self.log.error('myo startup failed')
 
     @command()
     def myo_plug(self, plug_name, cmd_name, *args):

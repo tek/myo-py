@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import neovim  # type: ignore
+import neovim
 
 import trypnv
 
@@ -12,4 +12,4 @@ class NvimFacade(Logging, trypnv.nvim.NvimFacade):
     def __init__(self, nvim: neovim.Nvim) -> None:
         trypnv.nvim.NvimFacade.__init__(self, nvim, 'myo')
 
-__all__ = ['NvimFacade']
+__all__ = ('NvimFacade',)

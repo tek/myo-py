@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages  # type: ignore
+from setuptools import setup, find_packages
 
 setup(
     name='myo',
@@ -11,6 +11,5 @@ setup(
     packages=find_packages(exclude=['unit', 'unit.*']),
     install_requires=[
         'tryp-nvim',
-        'pyrsistent',
     ]
 )

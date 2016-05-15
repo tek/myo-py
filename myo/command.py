@@ -1,11 +1,14 @@
-from tryp import List
+from fn import _
+
+import pyrsistent
+
+from trypnv.data import field
+from trypnv.record import Record, list_field
 
 
-class Command(object):
-
-    def __init__(self, name: str, line: str):
-        self.name = name
-        self.line = line
+class Command(pyrsistent.PRecord):
+    name = field(str)
+    line = field(str)
 
 
 class VimCommand(Command):
@@ -16,12 +19,19 @@ class ShellCommand(Command):
     pass
 
 
-class Commands(object):
-
-    def __init__(self, commands: List[Command]=List()) -> None:
-        self.commands = commands
+class Commands(Record):
+    commands = list_field()
 
     def __add__(self, command: Command):
-        return Commands(self.commands + [command])
+        return self.append('commands', [command])
 
-__all__ = ['Commands', 'Command']
+    def __getitem__(self, name):
+        return self.commands.find(_.name == name)
+
+    def __str__(self):
+        return '{}({})'.format(
+            self.__class__.__name__,
+            ','.join(map(repr, self.commands))
+        )
+
+__all__ = ('Commands', 'Command')

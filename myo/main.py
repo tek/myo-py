@@ -1,4 +1,4 @@
-from pathlib import Path  # type: ignore
+from pathlib import Path
 
 from toolz.itertoolz import cons
 
@@ -14,8 +14,8 @@ class Myo(MyoState):
     def __init__(
             self,
             vim: NvimFacade,
-            config_path: Path,
-            plugins: List[str],
+            config_path: Path=Path('/dev/null'),
+            plugins: List[str]=List(),
     ) -> None:
         self._config_path = config_path
         core = 'myo.plugins.core'
@@ -26,4 +26,4 @@ class Myo(MyoState):
             config_path=self._config_path,
         )
 
-__all__ = ['Myo']
+__all__ = ('Myo',)

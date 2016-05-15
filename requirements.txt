@@ -1,4 +1,3 @@
 tryp-nvim
-pyrsistent
 git+git://github.com/ingolemo/python-lenses.git
 tmuxp

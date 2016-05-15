@@ -1,41 +1,35 @@
-from typing import Union  # type: ignore
+from typing import Union
 from pathlib import Path
 
-import pyrsistent  # type: ignore
+from fn import _
 
-from fn import _  # type: ignore
-
-from lenses import lens
-
-from trypnv.machine import Data
+from trypnv.data import field, Data
 
 from myo.command import Commands, Command
 from myo.view import Views, View
+from myo.dispatch import Dispatchers, Dispatcher
 
 
-def field(tpe, **kw):
-    return pyrsistent.field(type=tpe, mandatory=True, **kw)
-
-
-class Env(pyrsistent.PRecord, Data):
+class Env(Data):
     config_path = field(Path)
     initialized = field(bool, initial=False)
     commands = field(Commands, initial=Commands())
     views = field(Views, initial=Views())
+    dispatchers = field(Dispatchers, initial=Dispatchers())
 
-    @property
-    def _cmdlens(self):
-        return lens(self).commands
-
-    @property
-    def _viewlens(self):
-        return lens(self).views
-
-    def __add__(self, item: Union[Command, View]):
-        lens = (
-            self._cmdlens if isinstance(item, Command) else
-            self._viewlens if isinstance(item, View) else None
+    def __add__(self, item: Union[Command, View, Dispatcher]):
+        name = (
+            'commands' if isinstance(item, Command) else
+            'views' if isinstance(item, View) else
+            'dispatchers' if isinstance(item, Dispatcher) else
+            None
         )
-        return lens.modify(_ + item)
+        return self.mod(name, _ + item)
 
-__all__ = ['Env']
+    def command(self, name: str):
+        return self.commands[name]
+
+    def dispatch_message(self, cmd: Command):
+        return self.dispatchers.message(cmd)
+
+__all__ = ('Env')
