@@ -1,22 +1,25 @@
-from pathlib import Path
-
-import sure  # NOQA
-from flexmock import flexmock  # NOQA
-
 from myo.main import Myo
 
-from tryp import List, Just, _, Map
+from tryp import List
 
-from myo.test.spec import MockNvimSpec
-from myo.plugins.command import AddVimCommand
+from lenses import lens
 
-class Myo_(MockNvimSpec):
+from trypnv.record import Record, field
+
+from myo.plugins.command import AddShellCommand, Run
+from myo.plugins.core.main import StageI
+
+from unit._support.spec import UnitSpec
+
+
+class Myo_(UnitSpec):
 
     def cmd(self):
-        plugs = List('myo.plugins.command')
-        prot = Myo(self.vim, Path('/dev/null'), plugs)
-        prot.start()
-        prot.send_wait(AddVimCommand('ls', {'name': 'ls', 'vcmd': 'ls'}))
-        prot.stop()
+        plugs = List('myo.plugins.command', 'myo.plugins.tmux')
+        myo = Myo(self.vim, plugins=plugs)
+        with myo.transient():
+            myo.send_sync(StageI())
+            myo.send_sync(AddShellCommand({'name': 'ls', 'line': 'ls'}))
+            myo.send_sync(Run('ls', {}))
 
-__all__ = ['Myo_']
+__all__ = ('Myo_',)
