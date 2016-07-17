@@ -9,6 +9,7 @@ from lenses import lens
 
 from tryp import _, __, List, Either, Left, F, Just, Empty
 from tryp.task import Task, task
+from tryp.anon import L
 
 from trypnv.record import dfield, maybe_field, list_field, field, Record
 
@@ -118,7 +119,7 @@ class LayoutHandler(Logging):
             return (self._opened_panes(l.panes).head
                     .or_else(l.layouts.find_map(go)))
         return (Task.call(go, layout) //
-                F(Task.from_maybe, error="no ref pane for {}".format(layout)))
+                L(Task.from_maybe)(_, "no ref pane for {}".format(layout)))
 
     def _open_in_layout(self, pane, layout) -> Task[Tuple[Layout, Pane]]:
         @task

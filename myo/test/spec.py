@@ -43,4 +43,8 @@ class TmuxSpec(Spec):
         self.term.kill()
         self.server.kill()
 
+    @property
+    def sessions(self):
+        return self.server.sessions
+
 __all__ = ('Spec', 'TmuxSpec')
