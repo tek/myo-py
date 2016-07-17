@@ -1,6 +1,6 @@
-from trypnv.machine import may_handle, message, io
+from trypnv.machine import may_handle, message, io, Error
 
-from tryp import __
+from tryp import __, F
 
 from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.core.dispatch import VimDispatcher
@@ -23,5 +23,12 @@ class Plugin(MyoComponent):
             started = io(__.set_pvar('started', True))
             return (self.data.set(initialized=True) + VimDispatcher(self.vim),
                     started)
+
+        @may_handle(Error)
+        def error(self):
+            m = self.msg.message
+            handler = (F(self.log.caught_exception, 'transition') if
+                       isinstance(m, Exception) else self.log.error)
+            handler(m)
 
 __all__ = ('Plugin', 'StageI', 'StageII', 'Initialized')

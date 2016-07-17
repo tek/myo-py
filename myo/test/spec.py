@@ -1,9 +1,11 @@
 import subprocess
 
-import tmuxp
-from tmuxp.exc import TmuxpException
+import libtmux
+from libtmux.exc import LibTmuxException
 
 import tryp.test
+
+from myo.ui.tmux.server import Server
 
 
 class Spec(tryp.test.Spec):
@@ -15,8 +17,8 @@ class TmuxSpec(Spec):
     def _find_server(self):
         if self.server is None:
             try:
-                self.server = tmuxp.Server(socket_name=self.socket)
-            except TmuxpException:
+                self.server = Server(libtmux.Server(socket_name=self.socket))
+            except LibTmuxException:
                 pass
         return self.server is not None
 
@@ -24,7 +26,7 @@ class TmuxSpec(Spec):
         if self.session is None:
             try:
                 self.session = self.server.sessions[0]
-            except TmuxpException:
+            except LibTmuxException:
                 pass
         return self.session is not None
 
@@ -39,6 +41,6 @@ class TmuxSpec(Spec):
 
     def _teardown_server(self):
         self.term.kill()
-        self.server.kill_server()
+        self.server.kill()
 
 __all__ = ('Spec', 'TmuxSpec')

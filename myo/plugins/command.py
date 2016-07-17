@@ -15,18 +15,14 @@ class Plugin(MyoComponent):
 
         @may_handle(AddCommand)
         def add_command(self):
-            self.log.verbose(self.msg.params)
             return self.data + Command(**self.msg.params)
 
         @may_handle(AddVimCommand)
         def add_vim_command(self):
-            self.log.verbose(self.msg.params)
             return self.data + VimCommand(**self.msg.params)
 
         @may_handle(AddShellCommand)
         def add_shell_command(self):
-            self.log.verbose(self.msg.params)
-            self.log.verbose(self.data + ShellCommand(**self.msg.params))
             return self.data + ShellCommand(**self.msg.params)
 
         @handle(Run)

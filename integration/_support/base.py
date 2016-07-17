@@ -101,6 +101,12 @@ class VimIntegrationSpec(TrypnvVimIntegrationSpec, Spec, Logging):
                 'type': 'command',
                 'opts': {'nargs': '+'}
             },
+            {
+                'sync': 0,
+                'name': 'MyoTmuxTest',
+                'type': 'command',
+                'opts': {'nargs': 0}
+            },
         ]
 
     @property
@@ -124,7 +130,7 @@ class TmuxIntegrationSpec(VimIntegrationSpec, TmuxSpec):
     def _post_start_neovim(self):
         super()._post_start_neovim()
         self.vim.set_pvar('tmux_socket', self.socket)
-        id = self.session.windows[0].panes[0]._pane_id[1:]
+        id = self.session.windows[0].panes[0].id_i | -1
         self.vim.set_pvar('tmux_force_vim_pane_id', id)
 
     def teardown(self):

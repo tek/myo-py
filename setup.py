@@ -11,7 +11,6 @@ setup(
     packages=find_packages(exclude=['unit', 'unit.*']),
     install_requires=[
         'tryp-nvim',
-        'git+git://github.com/ingolemo/python-lenses.git',
-        'tmuxp',
+        'libtmux',
     ]
 )

@@ -7,6 +7,7 @@ TmuxCreateLayout = message('TmuxCreateLayout', 'options')
 TmuxCreatePane = message('TmuxCreatePane', 'options')
 TmuxOpenPane = message('TmuxOpenPane', 'name', 'options')
 TmuxFindVim = message('TmuxFindVim')
+TmuxTest = message('TmuxTest')
 
 __all__ = ('TmuxRun', 'TmuxOpenPane', 'TmuxCreatePane', 'TmuxCreateSession',
            'TmuxCreateLayout')
