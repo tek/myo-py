@@ -101,8 +101,10 @@ class LayoutHandler(Logging):
                 self._open_pane(path))
 
     def _open_pane(self, path) -> Task[PanePath]:
-        return (self._open_in_layouts(path.pane, path.layout, path.outer)
-                .map3(PanePath.create))
+        return (
+            self._open_in_layouts(path.pane, path.layout, path.outer)
+            .map3(PanePath.create)
+        )
 
     def _open_in_layouts(self, pane, layout, outer):
         if self.layout_open(layout):

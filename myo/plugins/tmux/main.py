@@ -6,8 +6,9 @@ from lenses import lens, Lens
 
 from tryp import List, F, _, Just, __, Maybe, curried
 from tryp.lazy import lazy
-from tryp.lens.tree import path_lens
+from tryp.lens.tree import path_lens, path_lens_unbound
 from tryp.task import Task
+from tryp.anon import L
 
 from trypnv.machine import may_handle, handle, IO, DataTask
 from trypnv.record import field, list_field
@@ -126,24 +127,31 @@ class Transitions(MyoTransitions):
     @may_handle(TmuxOpenPane)
     def open(self):
         return self._pane_path_mod(_.name == self.msg.name,
-                                   self.layout_handler.open_pane)
+                                   List(self.layout_handler.open_pane))
 
-    def _pane_path_mod(self, pred, callback: Callable[[Lens], Task]):
-        ''' find the pane satisfying **pred** and call **callback** with
-        an argument containing a lens over the layouts leading to the
-        pane and the pane itself
+    Callback = Callable[[PanePath], Task]
+
+    def _pane_path_mod(self, pred, callbacks: List[Callback]):
+        ''' find the pane satisfying **pred** and successively call
+        the functions in **callbacks** with a PanePath argument
         '''
-        def process(lens: Lens) -> Task:
-            path = PanePath.try_create(List.wrap(lens.get()))
-            return Task.from_either(path) // callback / _.to_list / lens.set
-        def process_maybe(lens: Maybe[Lens]) -> Task:
-            return ((lens / Task.now | Task.failed('lens path failed')) //
-                    process)
+        def dispatch(state, l, f):
+            bound = l.bind(state)
+            path = PanePath.try_create(List.wrap(bound.get()))
+            return Task.from_either(path) // f / _.to_list / bound.set
+        def iterate(state, l: Lens) -> Task:
+            return callbacks.fold_left(Task.now(state))(
+                lambda a, b: a // L(dispatch)(_, l, b))
+        def go(state):
+            l = self._pane_path(pred)(state)
+            return (
+                Task.from_maybe(l, 'lens path failed') //
+                L(iterate)(state, _)
+            )
         return DataTask(
             _ /
-            self._state /
-            self._pane_path(pred) //
-            process_maybe /
+            self._state //
+            go /
             self.with_sub
         )
 
@@ -151,7 +159,7 @@ class Transitions(MyoTransitions):
     def _pane_path(self, pred, state):
         f = __.panes.find_lens_pred(pred).map(lens().panes.add_lens)
         sub = _.layouts
-        return path_lens(state, sub, f)
+        return path_lens_unbound(state, sub, f)
 
     def _open_pane(self, pane):
         return pane.set(open=True)
