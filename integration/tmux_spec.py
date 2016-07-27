@@ -15,7 +15,8 @@ class TmuxSpec(TmuxIntegrationSpec):
             panes = self.sessions.head // _.windows.head / _.panes | List()
             panes.should.have.length_of(2)
         self._debug = True
-        self.json_cmd('MyoTmuxCreatePane', name='pan', layout='vim')
+        self.json_cmd('MyoTmuxCreatePane', name='pan', layout='vim',
+                      min_size=0.5)
         self.json_cmd('MyoTmuxOpenPane pan', layout='vim')
         later(check)
 

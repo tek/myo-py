@@ -1,5 +1,6 @@
-from myo.ui.tmux.layout import Layout, LayoutHandler
+from myo.ui.tmux.layout import Layout
 from myo.ui.tmux.pane import Pane
+from myo.ui.tmux.layout_handler import LayoutHandler
 
 from unit._support.spec import TmuxUnitSpec
 

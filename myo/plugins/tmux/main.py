@@ -4,14 +4,14 @@ import libtmux
 
 from lenses import lens, Lens
 
-from tryp import List, F, _, Just, __, Maybe, curried
+from tryp import List, F, _, __, curried, Just
 from tryp.lazy import lazy
-from tryp.lens.tree import path_lens, path_lens_unbound
+from tryp.lens.tree import path_lens_unbound, path_lens_pred
 from tryp.task import Task
 from tryp.anon import L
 
 from trypnv.machine import may_handle, handle, IO, DataTask
-from trypnv.record import field, list_field
+from trypnv.record import field, list_field, Record
 
 from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.tmux.messages import (TmuxOpenPane, TmuxRun, TmuxCreatePane,
@@ -19,23 +19,42 @@ from myo.plugins.tmux.messages import (TmuxOpenPane, TmuxRun, TmuxCreatePane,
                                        TmuxSpawnSession, TmuxFindVim, TmuxTest)
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
-from myo.ui.tmux.layout import (LayoutDirection, Layout, LayoutHandler,
-                                PanePath, VimLayout)
+from myo.ui.tmux.layout import LayoutDirection, Layout, VimLayout
 from myo.ui.tmux.session import Session
 from myo.ui.tmux.server import Server
-from myo.util import parse_int
+from myo.util import parse_int, optional_params
+from myo.ui.tmux.window import VimWindow
+from myo.ui.tmux.layout_handler import LayoutHandler, PanePath
+
+_is_vim_window = lambda a: isinstance(a, VimWindow)
+_is_vim_layout = lambda a: isinstance(a, VimLayout)
 
 
-class TmuxState(Layout):
+class TmuxState(Record):
     server = field(Server)
     sessions = list_field()
+    windows = list_field()
 
-    def session(self, id: str):
-        return self.sessions.find(_.id == id)
+    @property
+    def vim_window(self):
+        return self.windows.find(_is_vim_window)
+
+    @property
+    def vim_window_lens(self):
+        return (self.windows.find_lens_pred(_is_vim_window) /
+                lens(self).windows.add_lens)
 
     @property
     def vim_layout(self):
-        return self.layouts.find(lambda a: isinstance(a, VimLayout))
+        return self.vim_window // __.layouts.find(_is_vim_layout)
+
+    @property
+    def vim_layout_lens(self):
+        return (
+            self.vim_layout //
+            __.layouts.find_lens_pred(_is_vim_layout) /
+            lens(self).windows.add_lens
+        )
 
     @property
     def vim_pane(self):
@@ -56,6 +75,16 @@ class Transitions(MyoTransitions):
 
     def with_sub(self, state):
         return self._with_sub(self.data, state)
+
+    def _with_root(self, data, state, root):
+        l = state.vim_window_lens / _.root
+        self.log.verbose(root)
+        new_state = l / __.set(root) | state
+        return self._with_sub(data, new_state)
+
+    def _with_vim_window(self, data, state, win):
+        new_state = state.vim_window_lens / __.set(win) | state
+        return self._with_sub(data, new_state)
 
     def with_sub_and_msgs(self, state, msgs):
         return (self.with_sub(state),) + msgs
@@ -81,16 +110,22 @@ class Transitions(MyoTransitions):
 
     @may_handle(TmuxFindVim)
     def find_vim(self):
-        id = self.vim.pvar('tmux_force_vim_pane_id') | self._find_vim_id
-        pane = VimPane(id=parse_int(id).to_maybe, name='vim', open=True)
+        id = self.vim.pvar('tmux_force_vim_pane_id') | self._find_vim_pane_id
+        wid = self.vim.pvar('tmux_force_vim_win_id') | self._find_vim_win_id
+        pane = VimPane(id=parse_int(id).to_maybe, name='vim')
         layout = VimLayout(name='vim',
                            direction=LayoutDirection.horizontal,
                            panes=List(pane))
-        new_state = self.state.append1.layouts(layout)
+        win = VimWindow(id=wid, root=layout)
+        new_state = self.state.append1.windows(win)
         return self.with_sub(new_state)
 
     @property
-    def _find_vim_id(self):
+    def _find_vim_pane_id(self):
+        return -1
+
+    @property
+    def _find_vim_win_id(self):
         return -1
 
     @handle(TmuxCreateSession)
@@ -116,18 +151,23 @@ class Transitions(MyoTransitions):
 
     @handle(TmuxCreatePane)
     def create_pane(self):
+        opts = self.msg.options
         layout_lens = (
-            self.msg.options.get('layout') //
-            self._layout_lens /
+            opts.get('layout') //
+            self._layout_lens_bound /
             _.panes
         )
-        pn = self.msg.options.get('name') / (lambda n: List(Pane(name=n)))
+        optional = optional_params(opts, 'min_size', 'max_size', 'fixed_size')
+        pn = opts.get('name') / (lambda n: List(Pane(name=n, **optional)))
         return layout_lens.product(pn).map2(_ + _) / self.with_sub
 
     @may_handle(TmuxOpenPane)
     def open(self):
-        return self._pane_path_mod(_.name == self.msg.name,
-                                   List(self.layout_handler.open_pane))
+        callbacks = List(
+            self.layout_handler.open_pane,
+            self.layout_handler.pack_path,
+        )
+        return self._pane_path_mod(_.name == self.msg.name, callbacks)
 
     Callback = Callable[[PanePath], Task]
 
@@ -135,42 +175,54 @@ class Transitions(MyoTransitions):
         ''' find the pane satisfying **pred** and successively call
         the functions in **callbacks** with a PanePath argument
         '''
-        def dispatch(state, l, f):
-            bound = l.bind(state)
-            path = PanePath.try_create(List.wrap(bound.get()))
-            return Task.from_either(path) // f / _.to_list / bound.set
-        def iterate(state, l: Lens) -> Task:
-            return callbacks.fold_left(Task.now(state))(
+        def dispatch(win, unbound_lens, f):
+            bound = unbound_lens.bind(win.root)
+            path = PanePath.try_create(win, List.wrap(bound.get()))
+            return (Task.from_either(path) // f / _.to_list / bound.set /
+                    win.setter.root)
+        def iterate(win, l: Lens) -> Task:
+            return callbacks.fold_left(Task.now(win))(
                 lambda a, b: a // L(dispatch)(_, l, b))
-        def go(state):
-            l = self._pane_path(pred)(state)
+        def go(win):
+            l = self._pane_path(pred)(win.root)
             return (
                 Task.from_maybe(l, 'lens path failed') //
-                L(iterate)(state, _)
+                L(iterate)(win, _)
             )
-        return DataTask(
-            _ /
-            self._state //
-            go /
-            self.with_sub
-        )
+        def wrap_window(data):
+            state = self._state(data)
+            win = Task.from_maybe(state.vim_window, 'no vim window')
+            return win // go / L(self._with_vim_window)(data, state, _)
+        return DataTask(_ // wrap_window)
 
     @curried
-    def _pane_path(self, pred, state):
+    def _pane_path(self, pred, root):
         f = __.panes.find_lens_pred(pred).map(lens().panes.add_lens)
         sub = _.layouts
-        return path_lens_unbound(state, sub, f)
+        return path_lens_unbound(root, sub, f)
 
-    def _open_pane(self, pane):
-        return pane.set(open=True)
+    @curried
+    def _pane_path_bound(self, pred, root):
+        return self._pane_path(pred)(root) / __.bind(root)
+
+    @curried
+    def _layout_path_bound(self, pred, root):
+        return path_lens_pred(root, _.layouts, pred)
 
     @may_handle(TmuxRun)
     def dispatch(self):
         pass
 
-    def _layout_lens(self, name):
-        return (self.state.layouts.index_where(_.name == name) /
-                (lambda i: lens(self.state).layouts[i]))
+    def _layout_lens_bound(self, name):
+        def sub(a):
+            return a.layouts.find_lens(ll) / lens().layouts.add_lens
+        def ll(l):
+            return Just(lens()) if l.name == name else sub(l)
+        return (
+            self.state.windows
+            .find_lens(lambda a: ll(a.root) / lens().root.add_lens) /
+            lens(self.state).windows.add_lens
+        )
 
     def _pane_lens(self, f: Callable):
         return Layout.pane_lens(self.state, f)
@@ -199,6 +251,6 @@ class Plugin(MyoComponent):
         return LayoutHandler(self.server)
 
     def new_state(self):
-        return TmuxState(name='state', server=self.server)
+        return TmuxState(server=self.server)
 
 __all__ = ('Plugin', 'Transitions')

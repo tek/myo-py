@@ -131,7 +131,9 @@ class TmuxIntegrationSpec(VimIntegrationSpec, TmuxSpec):
         super()._post_start_neovim()
         self.vim.set_pvar('tmux_socket', self.socket)
         id = self.session.windows[0].panes[0].id_i | -1
+        wid = self.session.windows[0].id_i | -1
         self.vim.set_pvar('tmux_force_vim_pane_id', id)
+        self.vim.set_pvar('tmux_force_vim_win_id', wid)
 
     def teardown(self):
         super().teardown()
