@@ -1,5 +1,6 @@
 from trypnv.machine import may_handle, message, io, Error
 
+import tryp
 from tryp import __, F
 
 from myo.state import MyoComponent, MyoTransitions
@@ -28,7 +29,8 @@ class Plugin(MyoComponent):
         def error(self):
             m = self.msg.message
             handler = (F(self.log.caught_exception, 'transition') if
-                       isinstance(m, Exception) else self.log.error)
+                       tryp.development and isinstance(m, Exception) else
+                       self.log.error)
             handler(m)
 
 __all__ = ('Plugin', 'StageI', 'StageII', 'Initialized')

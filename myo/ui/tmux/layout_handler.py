@@ -8,7 +8,7 @@ from trypnv.record import list_field, field, Record
 
 from myo.logging import Logging
 from myo.ui.tmux.server import Server
-from myo.ui.tmux.window import Window
+from myo.ui.tmux.window import Window, WindowAdapter
 from myo.ui.tmux.layout import Layout
 from myo.ui.tmux.pane import Pane, parse_pane_id
 from myo.ui.tmux.view import View
@@ -106,19 +106,42 @@ class LayoutHandler(Logging):
         return panes.filter(self.pane_open)
 
     def pack_path(self, path: PanePath):
-        self._measure_layout(None)
-        return Task.call(self._measure_layout, path.layout) / (lambda a: path)
+        return self.pack_window(path.window) / (lambda a: path)
 
-    def _pack_layout(self, l):
-        return l
+    def pack_window(self, window: Window):
+        def go(wa: WindowAdapter):
+            w, h = wa.size
+            self.log.verbose((w, h))
+            self._pack_layout(window.root, w, h)
+            return True
+        return (
+            Task.call(self.server.window, window.id) //
+            L(Task.from_maybe)(_, 'window not found: {}'.format(window)) /
+            go
+        )
 
-    def _measure_layout(self, l):
-        ''' analyze max/min sizes etc. and create List[Measure] of
-        actual sizes
-        must be executed top-down, as sizes of layouts are transient due
-        to the possibility of manual changes
-        '''
-        pass
+    def _pack_layout(self, l, w, h):
+        total = w if l.horizontal else h
+        m = self._measure_layout(l, total)
 
+    def _measure_layout(self, l, total):
+        calc = lambda s: s if s > 1 else s * total
+        min_s = l.actual_min_sizes / calc
+        max_s = l.actual_max_sizes / calc
+        return (self._cut_sizes(min_s, l.weights, total) if sum(min_s) > total
+                else self._distribute_sizes(min_s, max_s, l.weights, total))
+
+    def _cut_sizes(self, min_s, weights, total):
+        surplus = sum(min_s) - total
+        if weights.flatten.empty:
+            equi = surplus / min_s.length
+            return min_s / (_ - equi)
+        else:
+            dist = weights / (_ / (lambda a: surplus * (1 - a)) | 0)
+            return min_s.zip(dist).map2(_ - _)
+
+    def _distribute_sizes(self, min_s, max_s, weights, total):
+        self.log.verbose('dist')
+        return min_s
 
 __all__ = ('PanePath', 'LayoutHandler')

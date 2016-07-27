@@ -112,7 +112,8 @@ class Transitions(MyoTransitions):
     def find_vim(self):
         id = self.vim.pvar('tmux_force_vim_pane_id') | self._find_vim_pane_id
         wid = self.vim.pvar('tmux_force_vim_win_id') | self._find_vim_win_id
-        pane = VimPane(id=parse_int(id).to_maybe, name='vim')
+        pane = VimPane(id=parse_int(id).to_maybe, name='vim',
+                       fixed_size=Just(60), weight=Just(0.8))
         layout = VimLayout(name='vim',
                            direction=LayoutDirection.horizontal,
                            panes=List(pane))
@@ -157,7 +158,8 @@ class Transitions(MyoTransitions):
             self._layout_lens_bound /
             _.panes
         )
-        optional = optional_params(opts, 'min_size', 'max_size', 'fixed_size')
+        optional = optional_params(opts, 'min_size', 'max_size', 'fixed_size',
+                                   'position', 'weight')
         pn = opts.get('name') / (lambda n: List(Pane(name=n, **optional)))
         return layout_lens.product(pn).map2(_ + _) / self.with_sub
 
@@ -176,6 +178,8 @@ class Transitions(MyoTransitions):
         the functions in **callbacks** with a PanePath argument
         '''
         def dispatch(win, unbound_lens, f):
+            # FIXME win is passed to f but changes to win are discarded because
+            # it is not part of the lens
             bound = unbound_lens.bind(win.root)
             path = PanePath.try_create(win, List.wrap(bound.get()))
             return (Task.from_either(path) // f / _.to_list / bound.set /

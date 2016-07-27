@@ -41,4 +41,8 @@ class WindowAdapter(Adapter):
     def id_i(self):
         return parse_window_id(self.id)
 
+    @property
+    def size(self):
+        return int(self.native.width), int(self.native.height)
+
 __all__ = ('WindowAdapter', 'Window')

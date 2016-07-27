@@ -14,16 +14,9 @@ def parse_pane_id(value):
     return parse_id(value, _id_re, 'pane')
 
 
-class Measure(Record):
-    min_size = maybe_field(int)
-    max_size = maybe_field(int)
-    fixed_size = maybe_field(int)
-
-
 class Pane(View):
     id = maybe_field(int)
     name = field(str)
-    fixed_size = maybe_field(Number)
 
     @property
     def id_s(self):

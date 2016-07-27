@@ -6,8 +6,14 @@ from myo.ui.tmux.pane import Pane
 from lenses import lens
 
 from tryp import _, __
+from tryp.lazy import lazy
 
 from trypnv.record import dfield, list_field, field
+
+
+class LayoutDirection():
+    vertical = 0
+    horizontal = 1
 
 
 class Layout(View):
@@ -15,6 +21,7 @@ class Layout(View):
     flex = dfield(False)
     panes = list_field()
     layouts = list_field()
+    direction = dfield(LayoutDirection.vertical)
 
     def pane_index(self, f: Callable[[Pane], bool]):
         self.panes.index_where(f)
@@ -38,14 +45,29 @@ class Layout(View):
             return l.layouts.deep_lens(g) / lens().layouts.add_lens
         return h(root) / lens(root).add_lens
 
+    @lazy
+    def views(self):
+        return self.panes + self.layouts
 
-class LayoutDirection():
-    vertical = 0
-    horizontal = 1
+    @lazy
+    def horizontal(self):
+        return self.direction == LayoutDirection.horizontal
 
+    @lazy
+    def weights(self):
+        w = self.views / _.weight
+        total = sum(w.flatten)
+        return w / (lambda a: a / (_ / total))
 
-class LinearLayout(Layout):
-    direction = dfield(LayoutDirection.vertical)
+    @lazy
+    def actual_min_sizes(self):
+        return self.views / (lambda a: a.fixed_size.or_else(a.min_size) | 0)
+
+    @lazy
+    def actual_max_sizes(self):
+        return self.views / (lambda a: a.fixed_size.or_else(a.max_size) | 0)
+
+LinearLayout = Layout
 
 
 class VimLayout(LinearLayout):
