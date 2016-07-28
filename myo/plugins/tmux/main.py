@@ -14,9 +14,10 @@ from trypnv.machine import may_handle, handle, IO, DataTask
 from trypnv.record import field, list_field, Record
 
 from myo.state import MyoComponent, MyoTransitions
-from myo.plugins.tmux.messages import (TmuxOpenPane, TmuxRun, TmuxCreatePane,
-                                       TmuxCreateLayout, TmuxCreateSession,
-                                       TmuxSpawnSession, TmuxFindVim, TmuxTest)
+from myo.plugins.tmux.messages import (TmuxOpenPane, TmuxRunCommand,
+                                       TmuxCreatePane, TmuxCreateLayout,
+                                       TmuxCreateSession, TmuxSpawnSession,
+                                       TmuxFindVim, TmuxTest, TmuxLoadDefaults)
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
 from myo.ui.tmux.layout import LayoutDirection, Layout, VimLayout

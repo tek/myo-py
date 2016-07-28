@@ -1,4 +1,4 @@
 from myo.plugins.tmux.main import Plugin
-from myo.plugins.tmux.messages import TmuxOpenPane, TmuxRun
+from myo.plugins.tmux.messages import TmuxOpenPane, TmuxRunCommand
 
-__all__ = ('Plugin', 'TmuxOpenPane', 'TmuxRun')
+__all__ = ('Plugin', 'TmuxOpenPane', 'TmuxRunCommand')
