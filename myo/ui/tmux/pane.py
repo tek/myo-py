@@ -1,7 +1,9 @@
 import re
-from numbers import Number
 
-from trypnv.record import maybe_field, field, Record
+from tryp.task import task
+from tryp import __
+
+from trypnv.record import maybe_field, field
 
 from myo.ui.tmux.view import View
 from myo.ui.tmux.adapter import Adapter
@@ -36,5 +38,13 @@ class PaneAdapter(Adapter):
     @property
     def id_i(self):
         return parse_pane_id(self.id)
+
+    @task
+    def resize(self, size, horizontal):
+        f = __.set_width if horizontal else __.set_height
+        return f(size)(self.native)
+
+    def split(self, horizontal):
+        return self.native.split_window(vertical=not horizontal)
 
 __all__ = ('Pane', 'VimPane', 'PaneAdapter')

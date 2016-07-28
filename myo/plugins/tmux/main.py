@@ -78,7 +78,6 @@ class Transitions(MyoTransitions):
 
     def _with_root(self, data, state, root):
         l = state.vim_window_lens / _.root
-        self.log.verbose(root)
         new_state = l / __.set(root) | state
         return self._with_sub(data, new_state)
 

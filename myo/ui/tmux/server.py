@@ -29,6 +29,9 @@ class Server(Logging):
     def panes(self):
         return self.windows // _.panes
 
+    def pane(self, id):
+        return self.panes.find(__.id_i.contains(id))
+
     @property
     def pane_ids(self):
         return self.panes / _.id

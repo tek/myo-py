@@ -1,4 +1,5 @@
 from typing import Callable, Tuple
+from functools import singledispatch  # type: ignore
 
 from tryp.task import Task, task
 from tryp.anon import L
@@ -8,7 +9,7 @@ from trypnv.record import list_field, field, Record
 
 from myo.logging import Logging
 from myo.ui.tmux.server import Server
-from myo.ui.tmux.window import Window, WindowAdapter
+from myo.ui.tmux.window import Window
 from myo.ui.tmux.layout import Layout
 from myo.ui.tmux.pane import Pane, parse_pane_id
 from myo.ui.tmux.view import View
@@ -94,7 +95,7 @@ class LayoutHandler(Logging):
             new = (
                 ref.id //
                 self.server.find_pane_by_id /
-                __.native.split_window() /
+                __.split(layout.horizontal) /
                 _._pane_id /
                 parse_pane_id |
                 Empty()
@@ -109,20 +110,28 @@ class LayoutHandler(Logging):
         return self.pack_window(path.window) / (lambda a: path)
 
     def pack_window(self, window: Window):
-        def go(wa: WindowAdapter):
-            w, h = wa.size
-            self.log.verbose((w, h))
-            self._pack_layout(window.root, w, h)
-            return True
-        return (
+        t = (
             Task.call(self.server.window, window.id) //
             L(Task.from_maybe)(_, 'window not found: {}'.format(window)) /
-            go
+            _.size
         )
+        return t.flat_map2(L(self._pack_layout)(window.root, _, _))
 
     def _pack_layout(self, l, w, h):
-        total = w if l.horizontal else h
+        horizontal = l.horizontal
+        total = w if horizontal else h
+        @singledispatch
+        def recurse(v, size):
+            pass
+        @recurse.register(Pane)
+        def rec_pane(v, size):
+            return self._apply_size(v, size, horizontal)
+        @recurse.register(Layout)
+        def rec_layout(v, size):
+            sub_size = (size, h) if horizontal else (w, size)
+            return self._pack_layout(v, *sub_size)
         m = self._measure_layout(l, total)
+        return l.views.zip(m).map2(recurse).sequence(Task)
 
     def _measure_layout(self, l, total):
         calc = lambda s: s if s > 1 else s * total
@@ -141,7 +150,13 @@ class LayoutHandler(Logging):
             return min_s.zip(dist).map2(_ - _)
 
     def _distribute_sizes(self, min_s, max_s, weights, total):
-        self.log.verbose('dist')
         return min_s
+
+    def _apply_size(self, pane, size, horizontal):
+        return (
+            Task.call(pane.id.flat_map, self.server.pane) //
+            L(Task.from_maybe)(_, 'pane not found: {}'.format(pane)) //
+            __.resize(size, horizontal)
+        )
 
 __all__ = ('PanePath', 'LayoutHandler')
