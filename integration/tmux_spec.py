@@ -10,15 +10,24 @@ class TmuxSpec(TmuxIntegrationSpec):
     def _plugins(self):
         return List('myo.plugins.tmux')
 
+    def _set_vars(self):
+        super()._set_vars()
+        self.vim.set_pvar('tmux_use_defaults', True)
+
     def open_pane(self):
         def check():
             panes = self.sessions.head // _.windows.head / _.panes | List()
             panes.should.have.length_of(2)
-        self._debug = True
-        self.json_cmd('MyoTmuxCreatePane', name='pan', layout='vim',
+        self.json_cmd('MyoTmuxCreatePane', name='pan', layout='parent',
                       min_size=0.5, weight=0.1)
-        self.json_cmd('MyoTmuxOpenPane pan', layout='vim')
+        self.json_cmd('MyoTmuxOpenPane pan')
         later(check)
+
+    def default_layout(self):
+        self._debug = True
+        def check():
+            panes = self.sessions.head // _.windows.head / _.panes | List()
+            panes.should.have.length_of(2)
         self.vim.cmd('MyoTmuxTest')
         self._wait(1)
 

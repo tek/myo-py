@@ -4,7 +4,7 @@ import libtmux
 
 from lenses import lens, Lens
 
-from tryp import List, F, _, __, curried, Just
+from tryp import List, F, _, __, curried, Just, Maybe, Map
 from tryp.lazy import lazy
 from tryp.lens.tree import path_lens_unbound, path_lens_pred
 from tryp.task import Task
@@ -20,12 +20,14 @@ from myo.plugins.tmux.messages import (TmuxOpenPane, TmuxRunCommand,
                                        TmuxFindVim, TmuxTest, TmuxLoadDefaults)
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
-from myo.ui.tmux.layout import LayoutDirection, Layout, VimLayout
+from myo.ui.tmux.layout import (LayoutDirections, Layout, VimLayout,
+                                LinearLayout)
 from myo.ui.tmux.session import Session
 from myo.ui.tmux.server import Server
-from myo.util import parse_int, optional_params
+from myo.util import parse_int, optional_params, view_params
 from myo.ui.tmux.window import VimWindow
 from myo.ui.tmux.layout_handler import LayoutHandler, PanePath
+from myo.ui.tmux.view import View
 
 _is_vim_window = lambda a: isinstance(a, VimWindow)
 _is_vim_layout = lambda a: isinstance(a, VimLayout)
@@ -102,32 +104,33 @@ class Transitions(MyoTransitions):
 
     @may_handle(StageI)
     def stage_1(self):
-        ''' Initialize the state. If it doesn't exist, Env will
-        create it using the constructor function supplied in
-        *Plugin.state*
+        ''' Initialize the state. If it doesn't exist, Env will create
+        it using the constructor function supplied in *Plugin.state*
         '''
-        return self.with_sub(self.state), TmuxFindVim()
+        default = self.pflags.tmux_use_defaults.maybe(TmuxLoadDefaults())
+        return List(self.with_sub(self.state), TmuxFindVim()) + default.to_list
 
     @may_handle(TmuxFindVim)
     def find_vim(self):
         id = self.vim.pvar('tmux_force_vim_pane_id') | self._find_vim_pane_id
         wid = self.vim.pvar('tmux_force_vim_win_id') | self._find_vim_win_id
-        pane = VimPane(id=parse_int(id).to_maybe, name='vim',
-                       fixed_size=Just(60), weight=Just(0.8))
-        layout = VimLayout(name='vim',
-                           direction=LayoutDirection.horizontal,
-                           panes=List(pane))
-        win = VimWindow(id=wid, root=layout)
+        pane = VimPane(id=parse_int(id).to_maybe, name='vim')
+        vim_layout = VimLayout(name='vim',
+                               direction=LayoutDirections.vertical,
+                               panes=List(pane), fixed_size=Just(60),
+                               weight=Just(0.8))
+        root = LinearLayout(name='root',
+                            direction=LayoutDirections.horizontal,
+                            layouts=List(vim_layout))
+        win = VimWindow(id=wid, root=root)
         new_state = self.state.append1.windows(win)
         return self.with_sub(new_state)
 
-    @property
-    def _find_vim_pane_id(self):
-        return -1
-
-    @property
-    def _find_vim_win_id(self):
-        return -1
+    @may_handle(TmuxLoadDefaults)
+    def load_defaults(self):
+        main = TmuxCreateLayout('main', options=Map(parent='root'))
+        make = TmuxCreatePane('make', options=Map(parent='main'))
+        return main, make
 
     @handle(TmuxCreateSession)
     def create_session(self):
@@ -144,24 +147,20 @@ class Transitions(MyoTransitions):
         s = self.state.session(self.msg.id)
         self.server.new_session(session_name=s.x)
 
-    @may_handle(TmuxCreateLayout)
+    @handle(TmuxCreateLayout)
     def create_layout(self):
-        layout = Layout(self.server)
-        f = F(self.state.append.layouts) >> self.with_sub
-        return f(layout)
+        opts = self.msg.options
+        dir_s = opts.get('direction') | 'vertical'
+        direction = LayoutDirections.parse(dir_s)
+        layout = LinearLayout(name=self.msg.name, direction=direction,
+                              **view_params(opts))
+        return self._add_to_layout(opts.get('parent'), _.layouts, layout)
 
     @handle(TmuxCreatePane)
     def create_pane(self):
         opts = self.msg.options
-        layout_lens = (
-            opts.get('layout') //
-            self._layout_lens_bound /
-            _.panes
-        )
-        optional = optional_params(opts, 'min_size', 'max_size', 'fixed_size',
-                                   'position', 'weight')
-        pn = opts.get('name') / (lambda n: List(Pane(name=n, **optional)))
-        return layout_lens.product(pn).map2(_ + _) / self.with_sub
+        pane = Pane(name=self.msg.name, **view_params(opts))
+        return self._add_to_layout(opts.get('parent'), _.panes, pane)
 
     @may_handle(TmuxOpenPane)
     def open(self):
@@ -170,6 +169,18 @@ class Transitions(MyoTransitions):
             self.layout_handler.pack_path,
         )
         return self._pane_path_mod(_.name == self.msg.name, callbacks)
+
+    @may_handle(TmuxRunCommand)
+    def dispatch(self):
+        opt = self.msg.options
+        pane_name = opt.get('pane') | self._default_pane_name
+        pane = self._pane(pane_name)
+        self.log.verbose(pane)
+
+    @may_handle(TmuxTest)
+    def test(self):
+        self.log.verbose('--------- test')
+        self.log.verbose(self.state)
 
     Callback = Callable[[PanePath], Task]
 
@@ -213,10 +224,6 @@ class Transitions(MyoTransitions):
     def _layout_path_bound(self, pred, root):
         return path_lens_pred(root, _.layouts, pred)
 
-    @may_handle(TmuxRun)
-    def dispatch(self):
-        pass
-
     def _layout_lens_bound(self, name):
         def sub(a):
             return a.layouts.find_lens(ll) / lens().layouts.add_lens
@@ -228,13 +235,31 @@ class Transitions(MyoTransitions):
             lens(self.state).windows.add_lens
         )
 
+    def _add_to_layout(self, parent: Maybe[str], target: Callable, view: View):
+        name = parent | 'root'
+        return (
+            self._layout_lens_bound(name) /
+            target /
+            __.modify(__.cat(view)) /
+            self.with_sub
+        )
+
     def _pane_lens(self, f: Callable):
         return Layout.pane_lens(self.state, f)
 
-    @may_handle(TmuxTest)
-    def test(self):
-        self.log.verbose('--------- test')
-        self.log.verbose(self.state)
+    def _pane(self, name):
+        return Layout.find_pane_deep(name)
+
+    def _default_pane_name(self):
+        return 'make'
+
+    @property
+    def _find_vim_pane_id(self):
+        return -1
+
+    @property
+    def _find_vim_win_id(self):
+        return -1
 
 
 class Plugin(MyoComponent):

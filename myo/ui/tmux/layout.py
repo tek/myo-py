@@ -5,15 +5,26 @@ from myo.ui.tmux.pane import Pane
 
 from lenses import lens
 
-from tryp import _, __
+from tryp import _, __, List
 from tryp.lazy import lazy
 
-from trypnv.record import dfield, list_field, field
+from trypnv.record import dfield, list_field, field, Record
 
 
-class LayoutDirection():
-    vertical = 0
-    horizontal = 1
+class LayoutDirection(Record):
+    id = field(str)
+
+
+class LayoutDirections:
+    vertical = LayoutDirection(id='vertical')
+    horizontal = LayoutDirection(id='horizontal')
+    all = List(vertical, horizontal)
+    all_ids = all / _.id  # type: List[str]
+
+    @staticmethod
+    def parse(s: str):
+        return (LayoutDirections.horizontal if s == 'horizontal' else
+                LayoutDirections.vertical)
 
 
 class Layout(View):
@@ -21,7 +32,7 @@ class Layout(View):
     flex = dfield(False)
     panes = list_field()
     layouts = list_field()
-    direction = dfield(LayoutDirection.vertical)
+    direction = dfield(LayoutDirections.vertical)
 
     def pane_index(self, f: Callable[[Pane], bool]):
         self.panes.index_where(f)
@@ -51,7 +62,7 @@ class Layout(View):
 
     @lazy
     def horizontal(self):
-        return self.direction == LayoutDirection.horizontal
+        return self.direction == LayoutDirections.horizontal
 
     @lazy
     def weights(self):

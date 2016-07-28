@@ -20,4 +20,9 @@ def parse_id(value, rex, desc):
 def optional_params(m: Map, *keys: str):
     return Map(List.wrap(keys) / (lambda a: (a, m.get(a))))
 
-__all__ = ('parse_int', 'optional_params')
+
+def view_params(m: Map):
+    return optional_params(m, 'min_size', 'max_size', 'fixed_size', 'position',
+                           'weight')
+
+__all__ = ('parse_int', 'optional_params', 'view_params')
