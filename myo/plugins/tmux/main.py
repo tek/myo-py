@@ -114,10 +114,11 @@ class Transitions(MyoTransitions):
     def find_vim(self):
         id = self.vim.pvar('tmux_force_vim_pane_id') | self._find_vim_pane_id
         wid = self.vim.pvar('tmux_force_vim_win_id') | self._find_vim_win_id
+        vim_w = self.vim.pvar('tmux_vim_width') | 80
         pane = VimPane(id=parse_int(id).to_maybe, name='vim')
         vim_layout = VimLayout(name='vim',
                                direction=LayoutDirections.vertical,
-                               panes=List(pane), fixed_size=Just(60),
+                               panes=List(pane), fixed_size=Just(vim_w),
                                weight=Just(0.8))
         root = LinearLayout(name='root',
                             direction=LayoutDirections.horizontal,
@@ -175,7 +176,6 @@ class Transitions(MyoTransitions):
         opt = self.msg.options
         pane_name = opt.get('pane') | self._default_pane_name
         pane = self._pane(pane_name)
-        self.log.verbose(pane)
 
     @may_handle(TmuxTest)
     def test(self):
