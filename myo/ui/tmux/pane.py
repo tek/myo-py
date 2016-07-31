@@ -47,4 +47,8 @@ class PaneAdapter(Adapter):
     def split(self, horizontal):
         return self.native.split_window(vertical=not horizontal)
 
+    @property
+    def size(self):
+        return int(self.native.width), int(self.native.height)
+
 __all__ = ('Pane', 'VimPane', 'PaneAdapter')

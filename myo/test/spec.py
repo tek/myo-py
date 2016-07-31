@@ -14,6 +14,11 @@ class Spec(tryp.test.Spec):
 
 class TmuxSpec(Spec):
 
+    def setup(self):
+        self.win_width = 100
+        self.win_height = 40
+        super().setup()
+
     def _find_server(self):
         if self.server is None:
             try:
@@ -32,7 +37,9 @@ class TmuxSpec(Spec):
 
     def _setup_server(self):
         self.socket = 'myo_spec'
-        args = ['urxvt', '-e', 'tmux', '-L', self.socket, '-f', '/dev/null']
+        geom = '{}x{}'.format(self.win_width + 1, self.win_height + 1)
+        args = ['urxvt', '-geometry', geom, '-e', 'tmux', '-L',
+                self.socket, '-f', '/dev/null']
         self.term = subprocess.Popen(args)
         self.server = None
         self.session = None
