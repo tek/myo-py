@@ -61,6 +61,18 @@ class VimIntegrationSpec(TrypnvVimIntegrationSpec, Spec, Logging):
             },
             {
                 'sync': 0,
+                'name': 'MyoShellCommand',
+                'type': 'command',
+                'opts': {'nargs': '+'}
+            },
+            {
+                'sync': 0,
+                'name': 'MyoRun',
+                'type': 'command',
+                'opts': {'nargs': '+'}
+            },
+            {
+                'sync': 0,
                 'name': 'BufEnter',
                 'type': 'autocmd',
                 'opts': {'pattern': '*'}

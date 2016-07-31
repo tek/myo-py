@@ -14,6 +14,7 @@ from myo.ui.tmux.window import Window
 from myo.ui.tmux.layout import Layout
 from myo.ui.tmux.pane import Pane, parse_pane_id
 from myo.ui.tmux.view import View
+from myo.command import ShellCommand
 
 
 class PanePath(Record):
@@ -51,27 +52,26 @@ class PanePath(Record):
             self.window, fp(self.pane), fl(self.layout), self.outer / fl)
 
 
-class LayoutHandler(Logging):
+class LayoutFacade(Logging):
 
     def __init__(self, server: Server) -> None:
         self.server = server
-
-    def pane_open(self, pane):
-        return pane.id_s.exists(self.server.pane_ids.contains)
+        self.panes = PaneFacade(server)
 
     def layout_open(self, layout):
         return (layout.layouts.exists(self.layout_open) or
-                layout.panes.exists(self.pane_open))
+                layout.panes.exists(self.panes.is_open))
 
     def view_open(self, view):
-        f = self.layout_open if isinstance(view, Layout) else self.pane_open
+        f = (self.layout_open if isinstance(view, Layout) else
+             self.panes.is_open)
         return f(view)
 
     def open_views(self, layout):
         return layout.views.filter(self.view_open)
 
     def open_pane(self, path: PanePath) -> Task[PanePath]:
-        return (Task.now(path) if self.pane_open(path.pane) else
+        return (Task.now(path) if self.panes.is_open(path.pane) else
                 self._open_pane(path))
 
     def _open_pane(self, path) -> Task[PanePath]:
@@ -112,7 +112,7 @@ class LayoutHandler(Logging):
         return self._ref_pane(layout) // go
 
     def _opened_panes(self, panes):
-        return panes.filter(self.pane_open)
+        return panes.filter(self.panes.is_open)
 
     def pack_path(self, path: PanePath):
         return self.pack_window(path.window) / (lambda a: path)
@@ -202,4 +202,32 @@ class LayoutHandler(Logging):
         total = sum(weights.flatten)
         return weights / (lambda a: a / (_ / total))
 
-__all__ = ('PanePath', 'LayoutHandler')
+
+class PaneFacade(Logging):
+
+    def __init__(self, server: Server) -> None:
+        self.server = server
+
+    @property
+    def panes(self):
+        return self.server.panes
+
+    @property
+    def pane_ids(self):
+        return self.server.pane_ids
+
+    def is_open(self, pane):
+        return pane.id.exists(self.pane_ids.contains)
+
+    def find(self, pane):
+        return pane.id // self.server.pane
+
+    def run_command(self, pane, command: ShellCommand):
+        line = command.line
+        return (
+            Task.call(self.find, pane) //
+            L(Task.from_maybe)(_, 'pane not found') /
+            __.send_keys(line)
+        )
+
+__all__ = ('PanePath', 'LayoutFacade')

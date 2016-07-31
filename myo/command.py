@@ -23,7 +23,7 @@ class Commands(Record):
     commands = list_field()
 
     def __add__(self, command: Command):
-        return self.append('commands', [command])
+        return self.append1.commands(command)
 
     def __getitem__(self, name):
         return self.commands.find(_.name == name)

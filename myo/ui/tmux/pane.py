@@ -51,4 +51,8 @@ class PaneAdapter(Adapter):
     def size(self):
         return int(self.native.width), int(self.native.height)
 
+    def send_keys(self, cmd, enter=True, suppress_history=True):
+        return self.native.send_keys(cmd, enter=enter,
+                                     suppress_history=suppress_history)
+
 __all__ = ('Pane', 'VimPane', 'PaneAdapter')

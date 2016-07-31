@@ -3,6 +3,8 @@ from pathlib import Path
 
 from fn import _
 
+from tryp import Map
+
 from trypnv.data import field, Data
 
 from myo.command import Commands, Command
@@ -29,7 +31,7 @@ class Env(Data):
     def command(self, name: str):
         return self.commands[name]
 
-    def dispatch_message(self, cmd: Command):
-        return self.dispatchers.message(cmd)
+    def dispatch_message(self, cmd: Command, options: Map):
+        return self.dispatchers.message(cmd, options)
 
 __all__ = ('Env')

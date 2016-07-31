@@ -4,13 +4,13 @@ import libtmux
 
 from lenses import lens, Lens
 
-from tryp import List, F, _, __, curried, Just, Maybe, Map
+from tryp import List, _, __, curried, Just, Maybe, Map
 from tryp.lazy import lazy
 from tryp.lens.tree import path_lens_unbound, path_lens_pred
 from tryp.task import Task
 from tryp.anon import L
 
-from trypnv.machine import may_handle, handle, IO, DataTask
+from trypnv.machine import may_handle, handle, IO, DataTask, RunTask
 from trypnv.record import field, list_field, Record
 
 from myo.state import MyoComponent, MyoTransitions
@@ -24,10 +24,12 @@ from myo.ui.tmux.layout import (LayoutDirections, Layout, VimLayout,
                                 LinearLayout)
 from myo.ui.tmux.session import Session
 from myo.ui.tmux.server import Server
-from myo.util import parse_int, optional_params, view_params
+from myo.util import parse_int, view_params
 from myo.ui.tmux.window import VimWindow
-from myo.ui.tmux.layout_handler import LayoutHandler, PanePath
+from myo.ui.tmux.facade import LayoutFacade, PanePath
 from myo.ui.tmux.view import View
+from myo.plugins.core.message import AddDispatcher
+from myo.plugins.tmux.dispatch import TmuxDispatcher
 
 _is_vim_window = lambda a: isinstance(a, VimWindow)
 _is_vim_layout = lambda a: isinstance(a, VimLayout)
@@ -99,8 +101,12 @@ class Transitions(MyoTransitions):
         return self.state.server
 
     @property
-    def layout_handler(self):
-        return self.machine.layout_handler
+    def layouts(self):
+        return self.machine.layouts
+
+    @property
+    def panes(self):
+        return self.machine.panes
 
     @may_handle(StageI)
     def stage_1(self):
@@ -108,7 +114,12 @@ class Transitions(MyoTransitions):
         it using the constructor function supplied in *Plugin.state*
         '''
         default = self.pflags.tmux_use_defaults.maybe(TmuxLoadDefaults())
-        return List(self.with_sub(self.state), TmuxFindVim()) + default.to_list
+        msgs = List(AddDispatcher(), self.with_sub(self.state), TmuxFindVim())
+        return msgs + default.to_list
+
+    @may_handle(AddDispatcher)
+    def add_dispatcher(self):
+        return self.data + TmuxDispatcher()
 
     @may_handle(TmuxFindVim)
     def find_vim(self):
@@ -166,16 +177,19 @@ class Transitions(MyoTransitions):
     @may_handle(TmuxOpenPane)
     def open(self):
         callbacks = List(
-            self.layout_handler.open_pane,
-            self.layout_handler.pack_path,
+            self.layouts.open_pane,
+            self.layouts.pack_path,
         )
         return self._pane_path_mod(_.name == self.msg.name, callbacks)
 
-    @may_handle(TmuxRunCommand)
+    @handle(TmuxRunCommand)
     def dispatch(self):
         opt = self.msg.options
+        self.log.verbose(opt)
         pane_name = opt.get('pane') | self._default_pane_name
         pane = self._pane(pane_name)
+        self.log.verbose(pane)
+        return pane / L(self._run_command)(self.msg.command, _, opt) / RunTask
 
     @may_handle(TmuxTest)
     def test(self):
@@ -248,7 +262,7 @@ class Transitions(MyoTransitions):
         return Layout.pane_lens(self.state, f)
 
     def _pane(self, name):
-        return Layout.find_pane_deep(name)
+        return self.state.vim_window // __.root.find_pane_deep(name)
 
     def _default_pane_name(self):
         return 'make'
@@ -260,6 +274,9 @@ class Transitions(MyoTransitions):
     @property
     def _find_vim_win_id(self):
         return -1
+
+    def _run_command(self, command, pane, options):
+        return self.panes.run_command(pane, command)
 
 
 class Plugin(MyoComponent):
@@ -276,8 +293,12 @@ class Plugin(MyoComponent):
         return Server(self.native_server)
 
     @lazy
-    def layout_handler(self):
-        return LayoutHandler(self.server)
+    def layouts(self):
+        return LayoutFacade(self.server)
+
+    @property
+    def panes(self):
+        return self.layouts.panes
 
     def new_state(self):
         return TmuxState(server=self.server)

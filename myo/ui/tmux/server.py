@@ -34,7 +34,7 @@ class Server(Logging):
 
     @property
     def pane_ids(self):
-        return self.panes / _.id
+        return self.panes // _.id_i.to_list
 
     def kill(self):
         return self.native.kill_server()

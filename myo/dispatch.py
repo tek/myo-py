@@ -1,26 +1,27 @@
 from abc import ABCMeta, abstractmethod
 
-from tryp import __, Left, _
+from tryp import __, Left, _, Map
 from trypnv.machine import Message
 from trypnv.record import list_field, Record
 
 from myo.command import Command
+from myo.logging import Logging
 
 
-class Dispatcher(metaclass=ABCMeta):
+class Dispatcher(Logging, metaclass=ABCMeta):
 
     @abstractmethod
     def can_run(self, cmd: Command) -> bool:
         ...
 
-    def message(self, cmd: Command) -> Message:
+    def message(self, cmd: Command, options: Map) -> Message:
         ...
 
 
 class Dispatchers(Record):
     dispatchers = list_field()
 
-    def message(self, cmd: Command):
+    def message(self, cmd: Command, options: Map):
         eligible = self.dispatchers.filter(__.can_run(cmd))
         if eligible.length > 1:
             msg = 'Multiple dispatchers for {}: {}'
@@ -30,7 +31,7 @@ class Dispatchers(Record):
                 eligible
                 .head
                 .to_either('Cannot dispatch {}'.format(cmd)) /
-                __.message(cmd)
+                __.message(cmd, options)
             )
 
     def __add__(self, dispatcher: Dispatcher):

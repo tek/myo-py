@@ -41,7 +41,7 @@ class Layout(View):
                 .or_else(lambda: self._find_pane_in_layouts(name)))
 
     def _find_pane_in_layouts(self, name):
-        return self.layouts.deep_find(__.find_pane(name))
+        return self.layouts.find_map(__.find_pane_deep(name))
 
     @staticmethod
     def pane_lens(root, f: Callable[[Pane], bool]):

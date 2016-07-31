@@ -60,4 +60,24 @@ class DefaultLayoutSpec(_TmuxSpec):
         self._wait(1)
 
 
-__all__ = ('CutSizeSpec', 'DistributeSizeSpec', 'DefaultLayoutSpec')
+class DispatchSpec(_TmuxSpec):
+
+    @property
+    def _plugins(self):
+        return super()._plugins.cat('myo.plugins.command')
+
+    def _set_vars(self):
+        super()._set_vars()
+        self.vim.set_pvar('tmux_use_defaults', True)
+
+    def run_cmd(self):
+        s = 'cmd test'
+        self.json_cmd('MyoShellCommand test', line="echo '{}'".format(s))
+        self._wait(.1)
+        self.json_cmd('MyoTmuxOpenPane make')
+        self._wait(.1)
+        self.json_cmd('MyoRun test', pane='make')
+        self._wait(2)
+
+__all__ = ('CutSizeSpec', 'DistributeSizeSpec', 'DefaultLayoutSpec',
+           'DispatchSpec')

@@ -10,7 +10,7 @@ from myo.plugins.core.main import StageI
 from myo.main import Myo
 from myo.nvim import NvimFacade
 from myo.logging import Logging
-from myo.plugins.command import AddVimCommand, Run, AddCommand
+from myo.plugins.command import AddVimCommand, Run, AddCommand, AddShellCommand
 from myo.plugins.tmux.messages import (TmuxCreatePane, TmuxCreateSession,
                                        TmuxCreateLayout, TmuxSpawnSession,
                                        TmuxTest)
@@ -64,8 +64,8 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
     def myo_vim_command(self):
         pass
 
-    @json_msg_command(AddCommand)
-    def myo_command(self):
+    @json_msg_command(AddShellCommand)
+    def myo_shell_command(self):
         pass
 
     @json_msg_command(TmuxCreateSession)
@@ -88,7 +88,7 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
     def myo_tmux_open_pane(self):
         pass
 
-    @msg_command(Run)
+    @json_msg_command(Run)
     def myo_run(self):
         pass
 
