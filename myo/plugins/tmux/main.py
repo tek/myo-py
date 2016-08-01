@@ -185,16 +185,14 @@ class Transitions(MyoTransitions):
     @handle(TmuxRunCommand)
     def dispatch(self):
         opt = self.msg.options
-        self.log.verbose(opt)
         pane_name = opt.get('pane') | self._default_pane_name
         pane = self._pane(pane_name)
-        self.log.verbose(pane)
         return pane / L(self._run_command)(self.msg.command, _, opt) / RunTask
 
     @may_handle(TmuxTest)
     def test(self):
-        self.log.verbose('--------- test')
-        self.log.verbose(self.state)
+        self.log.info('--------- test')
+        self.log.info(self.state)
 
     Callback = Callable[[PanePath], Task]
 
