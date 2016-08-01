@@ -1,10 +1,6 @@
 from myo.main import Myo
 
-from tryp import List
-
-from lenses import lens
-
-from trypnv.record import Record, field
+from tryp import List, Map
 
 from myo.plugins.command import AddShellCommand, Run
 from myo.plugins.core.main import StageI
@@ -19,7 +15,7 @@ class Myo_(UnitSpec):
         myo = Myo(self.vim, plugins=plugs)
         with myo.transient():
             myo.send_sync(StageI())
-            myo.send_sync(AddShellCommand({'name': 'ls', 'line': 'ls'}))
-            myo.send_sync(Run('ls', {}))
+            myo.send_sync(AddShellCommand('ls', Map(line='ls')))
+            myo.send_sync(Run('ls', Map()))
 
 __all__ = ('Myo_',)
