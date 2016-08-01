@@ -71,13 +71,15 @@ class DispatchSpec(_TmuxSpec):
         self.vim.set_pvar('tmux_use_defaults', True)
 
     def run_cmd(self):
+        def check():
+            panes = self.sessions.head // _.windows.head / _.panes | List()
+            out = panes // _.capture
+            out.should.contain(s)
         s = 'cmd test'
         self.json_cmd('MyoShellCommand test', line="echo '{}'".format(s))
-        self._wait(.1)
         self.json_cmd('MyoTmuxOpenPane make')
-        self._wait(.1)
         self.json_cmd('MyoRun test', pane='make')
-        self._wait(2)
+        later(check)
 
 __all__ = ('CutSizeSpec', 'DistributeSizeSpec', 'DefaultLayoutSpec',
            'DispatchSpec')

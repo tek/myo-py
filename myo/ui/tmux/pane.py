@@ -1,7 +1,7 @@
 import re
 
 from tryp.task import task
-from tryp import __
+from tryp import __, List
 
 from trypnv.record import maybe_field, field
 
@@ -54,5 +54,9 @@ class PaneAdapter(Adapter):
     def send_keys(self, cmd, enter=True, suppress_history=True):
         return self.native.send_keys(cmd, enter=enter,
                                      suppress_history=suppress_history)
+
+    @property
+    def capture(self):
+        return List.wrap(self.native.cmd('capture-pane', '-p').stdout)
 
 __all__ = ('Pane', 'VimPane', 'PaneAdapter')
