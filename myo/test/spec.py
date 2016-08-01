@@ -4,6 +4,7 @@ import libtmux
 from libtmux.exc import LibTmuxException
 
 import tryp.test
+from tryp.test.path import fixture_path
 
 from myo.ui.tmux.server import Server
 
@@ -36,11 +37,13 @@ class TmuxSpec(Spec):
         return self.session is not None
 
     def _setup_server(self):
+        conf = fixture_path('conf', 'tmux.conf')
         self.socket = 'myo_spec'
         geom = '{}x{}'.format(self.win_width + 1, self.win_height + 1)
         args = ['urxvt', '-geometry', geom, '-e', 'tmux', '-L',
-                self.socket, '-f', '/dev/null']
-        self.term = subprocess.Popen(args)
+                self.socket, '-f', str(conf)]
+        self.term = subprocess.Popen(args, stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
         self.server = None
         self.session = None
         self._wait_for(self._find_server)
