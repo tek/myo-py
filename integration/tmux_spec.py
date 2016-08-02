@@ -31,7 +31,7 @@ class DistributeSizeSpec(_TmuxSpec):
         def check():
             panes = self.sessions.head // _.windows.head / _.panes | List()
             sizes = panes[1:] / _.size / _[1]
-            sizes.last.should.contain(h1)
+            sizes.head.should.contain(h1)
         self.json_cmd('MyoTmuxCreateLayout test', parent='root')
         self.json_cmd('MyoTmuxCreatePane pan1', parent='test', min_size=5,
                       max_size=h1, weight=1)

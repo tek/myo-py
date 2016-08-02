@@ -1,16 +1,18 @@
-from typing import Callable
+from typing import Callable, Any
 
 import libtmux
 
 from lenses import lens, Lens
 
-from tryp import List, _, __, curried, Just, Maybe, Map
+from tryp import (List, _, __, curried, Just, Maybe, Map, Either, Right, F,
+                  Left)
 from tryp.lazy import lazy
-from tryp.lens.tree import path_lens_unbound, path_lens_pred
+from tryp.lens.tree import (path_lens_unbound, path_lens_pred,
+                            path_lens_unbound_pre)
 from tryp.task import Task
 from tryp.anon import L
 
-from trypnv.machine import may_handle, handle, IO, DataTask, RunTask
+from trypnv.machine import may_handle, handle, DataTask, either_msg
 from trypnv.record import field, list_field, Record
 
 from myo.state import MyoComponent, MyoTransitions
@@ -25,14 +27,77 @@ from myo.ui.tmux.layout import (LayoutDirections, Layout, VimLayout,
 from myo.ui.tmux.session import Session
 from myo.ui.tmux.server import Server
 from myo.util import parse_int, view_params
-from myo.ui.tmux.window import VimWindow
+from myo.ui.tmux.window import VimWindow, Window
 from myo.ui.tmux.facade import LayoutFacade, PanePath
 from myo.ui.tmux.view import View
 from myo.plugins.core.message import AddDispatcher
 from myo.plugins.tmux.dispatch import TmuxDispatcher
+from myo.logging import Logging
 
 _is_vim_window = lambda a: isinstance(a, VimWindow)
 _is_vim_layout = lambda a: isinstance(a, VimLayout)
+
+PPCallback = Callable[[PanePath], Task[Either[Any, PanePath]]]
+
+
+class PanePathLens(Record):
+    lens = field(Lens)
+
+    @staticmethod
+    def create(lens: Lens):
+        return PanePathLens(lens=lens)
+
+    def dispatch(self, win, f) -> Task[Either[Any, Window]]:
+        # FIXME win is passed to f but changes to win are discarded because
+        # it is not part of the lens
+        bound = self.lens.bind(win)
+        path = PanePath.try_create(List.wrap(bound.get()))
+        update = F(_.to_list) >> bound.set
+        return Task.from_either(path) // f / (_ / update)
+
+    def iterate(self, win: Window, callbacks: List[PPCallback]) -> Task:
+        fs = callbacks / (lambda a: L(self.dispatch)(_, a))
+        return fs.fold_left(Task.now(Right(win)))(
+            lambda a, b: a // __.cata(Task.now, b))
+
+
+class PanePathMod(Logging):
+
+    def __init__(self, pred: Callable, f: Callable=None) -> None:
+        self.pred = pred
+        self.f = f or self._initial_f
+
+    def _initial_f(self, pp, window) -> Task[Either[Any, Window]]:
+        return Task.now(Right(window))
+
+    def map(self, f: Callable) -> Task[Either[Any, Window]]:
+        g = lambda pp: L(pp.dispatch)(_, f)
+        keep = F(Left) >> Task.now
+        chain = lambda pp, win: self.f(pp, win) // __.cata(keep, g(pp))
+        return PanePathMod(pred=self.pred, f=chain)
+
+    __truediv__ = map
+
+    def and_then(self, f: Callable):
+        g = lambda pp: L(pp.dispatch)(_, f)
+        def chain(pp, win):
+            return self.f(pp, win) // (lambda a: g(pp)(a | win))
+        return PanePathMod(pred=self.pred, f=chain)
+
+    __add__ = and_then
+
+    def run(self, window: Window) -> Task:
+        return self._lens(window) // L(self.f)(_, window)
+
+    def _lens(self, window):
+        f = __.panes.find_lens_pred(self.pred).map(lens().panes.add_lens)
+        sub = _.layouts
+        pre = _.root
+        return (
+            Task.from_maybe(path_lens_unbound_pre(window, sub, f, pre),
+                            'lens path failed for {}'.format(self.pred)) /
+            PanePathLens.create
+        )
 
 
 class TmuxState(Record):
@@ -92,9 +157,6 @@ class Transitions(MyoTransitions):
 
     def with_sub_and_msgs(self, state, msgs):
         return (self.with_sub(state),) + msgs
-
-    def with_sub_from_io(self, io):
-        return IO(perform=io / self.with_sub)
 
     @property
     def server(self):
@@ -176,51 +238,54 @@ class Transitions(MyoTransitions):
 
     @may_handle(TmuxOpenPane)
     def open(self):
-        callbacks = List(
-            self.layouts.open_pane,
-            self.layouts.pack_path,
-        )
-        return self._pane_path_mod(_.name == self.msg.name, callbacks)
+        return self._run_ppm(self._open_pane_ppm(self.msg.name))
 
-    @handle(TmuxRunCommand)
+    @may_handle(TmuxRunCommand)
     def dispatch(self):
         opt = self.msg.options
         pane_name = opt.get('pane') | self._default_pane_name
-        pane = self._pane(pane_name)
-        return pane / L(self._run_command)(self.msg.command, _, opt) / RunTask
+        def go(path):
+            return (self._run_command(self.msg.command, path.pane, opt) /
+                    (lambda a: Right(path)))
+        ppm = self._open_pane_ppm(pane_name) + go
+        return self._run_ppm(ppm)
 
     @may_handle(TmuxTest)
     def test(self):
         self.log.info('--------- test')
         self.log.info(self.state)
 
-    Callback = Callable[[PanePath], Task]
-
-    def _pane_path_mod(self, pred, callbacks: List[Callback]):
+    def _pane_path_mod_task(self, pred, callbacks: List[PPCallback]):
         ''' find the pane satisfying **pred** and successively call
-        the functions in **callbacks** with a PanePath argument
+        the functions in **callbacks** with a PanePath argument.
+        Callbacks are ignored after the first of them that returns Left.
         '''
-        def dispatch(win, unbound_lens, f):
-            # FIXME win is passed to f but changes to win are discarded because
-            # it is not part of the lens
-            bound = unbound_lens.bind(win.root)
-            path = PanePath.try_create(win, List.wrap(bound.get()))
-            return (Task.from_either(path) // f / _.to_list / bound.set /
-                    win.setter.root)
-        def iterate(win, l: Lens) -> Task:
-            return callbacks.fold_left(Task.now(win))(
-                lambda a, b: a // L(dispatch)(_, l, b))
-        def go(win):
-            l = self._pane_path(pred)(win.root)
-            return (
-                Task.from_maybe(l, 'lens path failed') //
-                L(iterate)(win, _)
-            )
-        def wrap_window(data):
-            state = self._state(data)
-            win = Task.from_maybe(state.vim_window, 'no vim window')
-            return win // go / L(self._with_vim_window)(data, state, _)
-        return DataTask(_ // wrap_window)
+        def it(w):
+            return (self._pane_path_lens(pred)(w) // __.iterate(w, callbacks))
+        return DataTask(_ // L(self._wrap_window)(_, it) / either_msg)
+
+    def _wrap_window(self, data, callback):
+        state = self._state(data)
+        win = Task.from_maybe(state.vim_window, 'no vim window')
+        update = __.map(L(self._with_vim_window)(data, state, _))
+        return win // callback / update
+
+    def _name_ppm(self, name):
+        return PanePathMod(pred=_.name == name)
+
+    def _run_ppm(self, ppm):
+        return DataTask(_ // L(self._wrap_window)(_, ppm.run) / either_msg)
+
+    def _open_pane_ppm(self, name: str):
+        l = self.layouts
+        return self._name_ppm(name) / l.open_pane / l.pack_path
+
+    @curried
+    def _pane_path_lens(self, pred, win):
+        return Task.from_maybe(
+            self._pane_path(pred)(win.root),
+            'lens path failed'
+        ) / (lambda a: PanePathLens(lens=a))
 
     @curried
     def _pane_path(self, pred, root):

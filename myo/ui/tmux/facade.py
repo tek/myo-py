@@ -4,7 +4,7 @@ from operator import ne
 
 from tryp.task import Task, task
 from tryp.anon import L
-from tryp import _, __, List, Either, Left, F, Empty, Just, Boolean
+from tryp import _, __, List, Either, Left, F, Just, Boolean, Right
 
 from trypnv.record import list_field, field, Record
 
@@ -29,15 +29,21 @@ class PanePath(Record):
         return PanePath(window=window, pane=pane, layout=layout, outer=outer)
 
     @staticmethod
-    def try_create(win: Window, views: List[View]) -> Either[str, 'PanePath']:
-        def try_create1(pane, layouts):
+    def try_create(views: List[View]) -> Either[str, 'PanePath']:
+        def try_create2(pane, win, layouts):
             return (
                 layouts.detach_last.map2(F(PanePath.create, win, pane))
                 .to_either('PanePath.create: last item is not Pane')
             )
+        def try_create1(pane, layouts):
+            return (
+                layouts.detach_head
+                .to_either('PanePath.create: last item is not Pane')
+                .flat_map2(F(try_create2, pane))
+            )
         return (
-            views.detach_last.map2(try_create1) |
-            Left('PanePath.create: empty List[View]')
+            views.detach_last.to_either('PanePath.create: empty List[View]')
+            .flat_map2(try_create1)
         )
 
     @property
@@ -46,7 +52,7 @@ class PanePath(Record):
 
     @property
     def to_list(self):
-        return self.layouts.cat(self.pane)
+        return self.layouts.cat(self.pane).cons(self.window)
 
     def map(self, fp: Callable[[Pane], Pane], fl: Callable[[Layout], Layout]):
         return PanePath.create(
@@ -72,13 +78,16 @@ class LayoutFacade(Logging):
         return layout.views.filter(self.view_open)
 
     def open_pane(self, path: PanePath) -> Task[PanePath]:
-        return (Task.now(path) if self.panes.is_open(path.pane) else
-                self._open_pane(path))
+        p = path.pane
+        return (Task.now(Left('pane {} already open'.format(p)))
+                if self.panes.is_open(p)
+                else self._open_pane(path))
 
     def _open_pane(self, path) -> Task[PanePath]:
         return (
             self._open_in_layouts(path.pane, path.layout, path.outer)
-            .map3(F(PanePath.create, path.window))
+            .map3(F(PanePath.create, path.window)) /
+            Right
         )
 
     def _open_in_layouts(self, pane, layout, outer):
@@ -114,7 +123,7 @@ class LayoutFacade(Logging):
         return panes.filter(self.panes.is_open)
 
     def pack_path(self, path: PanePath):
-        return self.pack_window(path.window) / (lambda a: path)
+        return self.pack_window(path.window) / (lambda a: Right(path))
 
     def pack_window(self, window: Window):
         t = (
