@@ -15,6 +15,7 @@ from myo.ui.tmux.layout import Layout
 from myo.ui.tmux.pane import Pane, parse_pane_id
 from myo.ui.tmux.view import View
 from myo.command import ShellCommand
+from myo.util import parse_int
 
 
 class PanePath(Record):
@@ -100,16 +101,14 @@ class LayoutFacade(Logging):
     def _open_in_layout(self, pane, layout) -> Task[Tuple[Layout, Pane]]:
         @task
         def go(ref):
-            new = (
+            update = lambda i, p: pane.set(id=i.to_maybe, pid=p.to_maybe)
+            return (
                 ref.id //
                 self.server.find_pane_by_id /
                 __.split(layout.horizontal) /
-                _._pane_id /
-                parse_pane_id |
-                Empty()
-            )
-            return pane.set(id=new.to_maybe), layout
-        return self._ref_pane(layout) // go
+                (lambda a: (parse_pane_id(a._pane_id), parse_int(a.pid)))
+            ).map2(update) | pane
+        return (self._ref_pane(layout) // go) & (Task.now(layout))
 
     def _opened_panes(self, panes):
         return panes.filter(self.panes.is_open)

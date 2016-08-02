@@ -18,6 +18,7 @@ def parse_pane_id(value):
 
 class Pane(View):
     id = maybe_field(int)
+    pid = maybe_field(int)
     name = field(str)
 
     @property
@@ -38,6 +39,10 @@ class PaneAdapter(Adapter):
     @property
     def id_i(self):
         return parse_pane_id(self.id)
+
+    @property
+    def pid(self):
+        return self.native.pid
 
     @task
     def resize(self, size, horizontal):
