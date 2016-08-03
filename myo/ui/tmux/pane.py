@@ -7,7 +7,7 @@ from trypnv.record import maybe_field, field
 
 from myo.ui.tmux.view import View
 from myo.ui.tmux.adapter import Adapter
-from myo.util import parse_id
+from myo.util import parse_id, parse_int
 
 _id_re = re.compile('^%(\d+)$')
 
@@ -42,7 +42,7 @@ class PaneAdapter(Adapter):
 
     @property
     def pid(self):
-        return self.native.pid
+        return parse_int(self.native.pid)
 
     @task
     def resize(self, size, horizontal):

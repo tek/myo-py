@@ -12,7 +12,7 @@ from myo.logging import Logging
 from myo.ui.tmux.server import Server
 from myo.ui.tmux.window import Window
 from myo.ui.tmux.layout import Layout
-from myo.ui.tmux.pane import Pane, parse_pane_id
+from myo.ui.tmux.pane import Pane, parse_pane_id, PaneAdapter
 from myo.ui.tmux.view import View
 from myo.command import ShellCommand
 from myo.util import parse_int
@@ -110,12 +110,13 @@ class LayoutFacade(Logging):
     def _open_in_layout(self, pane, layout) -> Task[Tuple[Layout, Pane]]:
         @task
         def go(ref):
-            update = lambda i, p: pane.set(id=i.to_maybe, pid=p.to_maybe)
+            update = lambda i, p: pane.set(id=Just(i), pid=Just(p))
             return (
                 ref.id //
                 self.server.find_pane_by_id /
                 __.split(layout.horizontal) /
-                (lambda a: (parse_pane_id(a._pane_id), parse_int(a.pid)))
+                PaneAdapter //
+                (lambda a: a.id_i & a.pid)
             ).map2(update) | pane
         return (self._ref_pane(layout) // go) & (Task.now(layout))
 
