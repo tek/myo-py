@@ -36,7 +36,7 @@ from myo.logging import Logging
 _is_vim_window = lambda a: isinstance(a, VimWindow)
 _is_vim_layout = lambda a: isinstance(a, VimLayout)
 
-PPCallback = Callable[[PanePath], Task[Either[Any, PanePath]]]
+PPTrans = Callable[[PanePath], Task[Either[Any, PanePath]]]
 
 
 class PanePathLens(Record):
@@ -46,7 +46,7 @@ class PanePathLens(Record):
     def create(lens: Lens):
         return PanePathLens(lens=lens)
 
-    def dispatch(self, win, f) -> Task[Either[Any, Window]]:
+    def run(self, win: Window, f: PPTrans) -> Task[Either[Any, Window]]:
         bound = self.lens.bind(win)
         path = PanePath.try_create(List.wrap(bound.get()))
         update = F(_.to_list) >> bound.set
@@ -57,29 +57,29 @@ class PanePathMod(Logging):
 
     def __init__(self, pred: Callable, f: Callable=None) -> None:
         self.pred = pred
-        self.f = f or self._initial_f
+        self._f = f or self._initial_f
 
     def _initial_f(self, pp, window) -> Task[Either[Any, Window]]:
         return Task.now(Right(window))
 
-    def map(self, f: Callable) -> Task[Either[Any, Window]]:
-        g = lambda pp: L(pp.dispatch)(_, f)
-        keep = F(Left) >> Task.now
-        chain = lambda pp, win: self.f(pp, win) // __.cata(keep, g(pp))
+    def _chain(self, f: PPTrans, g: Callable):
+        h = lambda pp: L(pp.run)(_, f)
+        chain = lambda pp, win: self._f(pp, win) // g(win, h(pp))
         return PanePathMod(pred=self.pred, f=chain)
+
+    def map(self, f: PPTrans) -> Task[Either[Any, Window]]:
+        keep_error = F(Left) >> Task.now
+        return self._chain(f, lambda w, d: __.cata(keep_error, d))
 
     __truediv__ = map
 
-    def and_then(self, f: Callable):
-        g = lambda pp: L(pp.dispatch)(_, f)
-        def chain(pp, win):
-            return self.f(pp, win) // (lambda a: g(pp)(a | win))
-        return PanePathMod(pred=self.pred, f=chain)
+    def and_then(self, f: PPTrans):
+        return self._chain(f, lambda w, d: lambda a: d(a | w))
 
     __add__ = and_then
 
     def run(self, window: Window) -> Task:
-        return self._lens(window) // L(self.f)(_, window)
+        return self._lens(window) // L(self._f)(_, window)
 
     def _lens(self, window):
         f = __.panes.find_lens_pred(self.pred).map(lens().panes.add_lens)
