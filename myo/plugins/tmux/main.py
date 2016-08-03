@@ -7,8 +7,7 @@ from lenses import lens, Lens
 from tryp import (List, _, __, curried, Just, Maybe, Map, Either, Right, F,
                   Left)
 from tryp.lazy import lazy
-from tryp.lens.tree import (path_lens_unbound, path_lens_pred,
-                            path_lens_unbound_pre)
+from tryp.lens.tree import path_lens_pred, path_lens_unbound_pre
 from tryp.task import Task
 from tryp.anon import L
 
@@ -48,17 +47,10 @@ class PanePathLens(Record):
         return PanePathLens(lens=lens)
 
     def dispatch(self, win, f) -> Task[Either[Any, Window]]:
-        # FIXME win is passed to f but changes to win are discarded because
-        # it is not part of the lens
         bound = self.lens.bind(win)
         path = PanePath.try_create(List.wrap(bound.get()))
         update = F(_.to_list) >> bound.set
         return Task.from_either(path) // f / (_ / update)
-
-    def iterate(self, win: Window, callbacks: List[PPCallback]) -> Task:
-        fs = callbacks / (lambda a: L(self.dispatch)(_, a))
-        return fs.fold_left(Task.now(Right(win)))(
-            lambda a, b: a // __.cata(Task.now, b))
 
 
 class PanePathMod(Logging):
@@ -255,15 +247,6 @@ class Transitions(MyoTransitions):
         self.log.info('--------- test')
         self.log.info(self.state)
 
-    def _pane_path_mod_task(self, pred, callbacks: List[PPCallback]):
-        ''' find the pane satisfying **pred** and successively call
-        the functions in **callbacks** with a PanePath argument.
-        Callbacks are ignored after the first of them that returns Left.
-        '''
-        def it(w):
-            return (self._pane_path_lens(pred)(w) // __.iterate(w, callbacks))
-        return DataTask(_ // L(self._wrap_window)(_, it) / either_msg)
-
     def _wrap_window(self, data, callback):
         state = self._state(data)
         win = Task.from_maybe(state.vim_window, 'no vim window')
@@ -279,23 +262,6 @@ class Transitions(MyoTransitions):
     def _open_pane_ppm(self, name: str):
         l = self.layouts
         return self._name_ppm(name) / l.open_pane / l.pack_path
-
-    @curried
-    def _pane_path_lens(self, pred, win):
-        return Task.from_maybe(
-            self._pane_path(pred)(win.root),
-            'lens path failed'
-        ) / (lambda a: PanePathLens(lens=a))
-
-    @curried
-    def _pane_path(self, pred, root):
-        f = __.panes.find_lens_pred(pred).map(lens().panes.add_lens)
-        sub = _.layouts
-        return path_lens_unbound(root, sub, f)
-
-    @curried
-    def _pane_path_bound(self, pred, root):
-        return self._pane_path(pred)(root) / __.bind(root)
 
     @curried
     def _layout_path_bound(self, pred, root):
