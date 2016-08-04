@@ -175,19 +175,17 @@ class LayoutFacade(Logging):
     def _distribute_sizes(self, min_s, max_s, weights, total):
         count = max_s.length
         surplus = total - sum(min_s)
-        no_weights = weights.flatten.empty
-        w = List.wrap([Just(1 / count)] * count) if no_weights else weights
-        sizes1 = min_s.zip(max_s, w).map3(
-            lambda l, h, w: min(l + (w | 0) * surplus, h))
+        sizes1 = min_s.zip(max_s, weights).map3(
+            lambda l, h, w: min(l + w * surplus, h))
         rest = total - sum(sizes1)
         unsat = (max_s & sizes1).map2(ne) / Boolean
         unsat_left = count - sum(unsat / _.value) > 0
         def trim_weights():
-            w1 = (unsat & w).map2(lambda s, w: s.flat_maybe(w))
+            w1 = (unsat & weights).map2(lambda s, w: s.maybe(w))
             return self._normalize_weights(w1)
         def dist_rest():
-            rest_w = trim_weights() if unsat_left else w
-            return (sizes1 & rest_w).map2(lambda a, w: a + (w | 0) * rest)
+            rest_w = trim_weights() if unsat_left else weights
+            return (sizes1 & rest_w).map2(lambda a, w: a + w * rest)
         return sizes1 if rest <= 0 else dist_rest()
 
     def _apply_size(self, pane, size, horizontal):
@@ -204,12 +202,20 @@ class LayoutFacade(Logging):
         return views / (lambda a: a.fixed_size.or_else(a.max_size) | 999)
 
     def weights(self, views):
-        return self._normalize_weights(views / _.weight)
+        return self._normalize_weights(views / _.effective_weight)
 
     def _normalize_weights(self, weights):
-        total = sum(weights.flatten)
-        return weights / (lambda a: a / (_ / total))
+        amended = self._amend_weights(weights)
+        total = sum(amended)
+        return amended / (_ / total)
 
+    def _amend_weights(self, weights):
+        total = sum(weights.flatten)
+        total1 = 1 if total == 0 else total
+        empties = weights.filter(_.is_empty).length
+        empties1 = 1 if empties == 0 else empties
+        empty = total1 / empties
+        return weights / (_ | empty)
 
 class PaneFacade(Logging):
 
