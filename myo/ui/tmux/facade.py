@@ -12,10 +12,9 @@ from myo.logging import Logging
 from myo.ui.tmux.server import Server
 from myo.ui.tmux.window import Window
 from myo.ui.tmux.layout import Layout
-from myo.ui.tmux.pane import Pane, parse_pane_id, PaneAdapter
+from myo.ui.tmux.pane import Pane, PaneAdapter
 from myo.ui.tmux.view import View
 from myo.command import ShellCommand
-from myo.util import parse_int
 
 
 class PanePath(Record):

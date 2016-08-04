@@ -1,5 +1,3 @@
-import re
-
 from tryp.task import task
 from tryp import __, List
 from tryp.lazy import lazy
@@ -8,13 +6,8 @@ from trypnv.record import maybe_field, field
 
 from myo.ui.tmux.view import View
 from myo.ui.tmux.adapter import Adapter
-from myo.util import parse_id, parse_int
-
-_id_re = re.compile('^%(\d+)$')
-
-
-def parse_pane_id(value):
-    return parse_id(value, _id_re, 'pane')
+from myo.util import parse_int
+from myo.ui.tmux.util import parse_window_id, parse_pane_id
 
 
 class Pane(View):

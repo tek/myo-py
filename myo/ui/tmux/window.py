@@ -1,4 +1,3 @@
-import re
 from tryp import List, __
 from tryp.lazy import lazy
 
@@ -7,13 +6,7 @@ from trypnv.record import Record, field
 from myo.ui.tmux.adapter import Adapter
 from myo.ui.tmux.pane import PaneAdapter
 from myo.ui.tmux.layout import Layout
-from myo.util import parse_id
-
-_id_re = re.compile('^@(\d+)$')
-
-
-def parse_window_id(value):
-    return parse_id(value, _id_re, 'window')
+from myo.ui.tmux.util import parse_window_id
 
 
 class Window(Record):
