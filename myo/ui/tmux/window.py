@@ -1,7 +1,7 @@
 from tryp import List, __
 from tryp.lazy import lazy
 
-from trypnv.record import Record, field
+from trypnv.record import Record, field, maybe_field
 
 from myo.ui.tmux.adapter import Adapter
 from myo.ui.tmux.pane import PaneAdapter
@@ -10,7 +10,7 @@ from myo.ui.tmux.util import parse_window_id
 
 
 class Window(Record):
-    id = field(int)
+    id = maybe_field(int)
     root = field(Layout)
 
 

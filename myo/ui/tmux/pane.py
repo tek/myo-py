@@ -58,4 +58,12 @@ class PaneAdapter(Adapter):
     def capture(self):
         return List.wrap(self.native.cmd('capture-pane', '-p').stdout)
 
+    @lazy
+    def window_id(self):
+        return self.native.window.id
+
+    @lazy
+    def window_id_i(self):
+        return parse_window_id(self.window_id)
+
 __all__ = ('Pane', 'VimPane', 'PaneAdapter')

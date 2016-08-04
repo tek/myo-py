@@ -1,3 +1,4 @@
 tryp-nvim
 git+git://github.com/ingolemo/python-lenses.git
 libtmux
+psutil

@@ -2,10 +2,12 @@ from typing import Callable, Any
 
 import libtmux
 
+import psutil
+
 from lenses import lens, Lens
 
 from tryp import (List, _, __, curried, Just, Maybe, Map, Either, Right, F,
-                  Left)
+                  Left, Try)
 from tryp.lazy import lazy
 from tryp.lens.tree import path_lens_pred, path_lens_unbound_pre
 from tryp.task import Task
@@ -177,18 +179,25 @@ class Transitions(MyoTransitions):
 
     @may_handle(TmuxFindVim)
     def find_vim(self):
-        id = self.vim.pvar('tmux_force_vim_pane_id') | self._find_vim_pane_id
-        wid = self.vim.pvar('tmux_force_vim_win_id') | self._find_vim_win_id
-        vim_w = self.vim.pvar('tmux_vim_width') | 80
-        pane = VimPane(id=parse_int(id).to_maybe, name='vim')
+        vim_pid = self._vim_pid
+        pane = vim_pid // self._find_vim_pane
+        id = (
+            (self.vim.pvar('tmux_force_vim_pane_id') // parse_int)
+            .or_else(pane // _.id_i)
+        )
+        wid = (
+            self.vim.pvar('tmux_force_vim_win_id')
+            .or_else(pane // _.window_id_i)
+        )
+        vim_w = self.vim.pvar('tmux_vim_width').or_else(Just(85))
+        pane = VimPane(id=id.to_maybe, name='vim', pid=vim_pid.to_maybe)
         vim_layout = VimLayout(name='vim',
                                direction=LayoutDirections.vertical,
-                               panes=List(pane), fixed_size=Just(vim_w),
-                               weight=Just(0.8))
+                               panes=List(pane), fixed_size=vim_w)
         root = LinearLayout(name='root',
                             direction=LayoutDirections.horizontal,
                             layouts=List(vim_layout))
-        win = VimWindow(id=wid, root=root)
+        win = VimWindow(id=wid.to_maybe, root=root)
         new_state = self.state.append1.windows(win)
         return self.with_sub(new_state)
 
@@ -304,12 +313,15 @@ class Transitions(MyoTransitions):
         return 'make'
 
     @property
-    def _find_vim_pane_id(self):
-        return -1
+    def _vim_pid(self):
+        return (
+            self.vim.call('getpid').to_either('no pid') /
+            psutil.Process //
+            (lambda p: Try(p.ppid))
+        )
 
-    @property
-    def _find_vim_win_id(self):
-        return -1
+    def _find_vim_pane(self, vim_pid):
+        return self.server.panes.find(__.pid.contains(vim_pid))
 
     def _run_command(self, command, pane, options):
         return self.panes.run_command(pane, command)
