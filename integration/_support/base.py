@@ -1,13 +1,12 @@
 from pathlib import Path
 
-from tryp.test import fixture_path
-
-from tryp import List
+from tryp import List, Right
 from trypnv.test import IntegrationSpec as TrypnvIntegrationSpec
 from trypnv.test import VimIntegrationSpec as TrypnvVimIntegrationSpec
 
 from myo.test.spec import Spec, TmuxSpec
 from myo.logging import Logging
+from myo.nvim_plugin import MyoNvimPlugin
 
 
 class IntegrationSpec(TrypnvIntegrationSpec):
@@ -16,9 +15,7 @@ class IntegrationSpec(TrypnvIntegrationSpec):
 
 class VimIntegrationSpec(TrypnvVimIntegrationSpec, Spec, Logging):
 
-    def setup(self):
-        super().setup()
-        self._pre_start()
+    def _pre_start(self):
         self.vim.cmd('MyoStart')
         self._wait_for(lambda: self.vim.pvar('started').is_just)
         self.vim.cmd('MyoPostStartup')
@@ -27,9 +24,6 @@ class VimIntegrationSpec(TrypnvVimIntegrationSpec, Spec, Logging):
     def _prefix(self):
         return 'myo'
 
-    def _pre_start_neovim(self):
-        self._setup_plugin()
-
     def _post_start_neovim(self):
         self._set_vars()
 
@@ -37,102 +31,13 @@ class VimIntegrationSpec(TrypnvVimIntegrationSpec, Spec, Logging):
         self.vim.set_pvar('config_path', str(self._config_path))
         self.vim.set_pvar('plugins', self._plugins)
 
-    def _setup_plugin(self):
-        self._rplugin_path = fixture_path(
-            'nvim_plugin', 'rplugin', 'python3', 'myo_nvim.py')
-        self._handlers = [
-            {
-                'sync': 1,
-                'name': 'MyoStart',
-                'type': 'command',
-                'opts': {'nargs': 0}
-            },
-            {
-                'sync': 0,
-                'name': 'MyoPostStartup',
-                'type': 'command',
-                'opts': {'nargs': 0}
-            },
-            {
-                'sync': 0,
-                'name': 'MyoVimCommand',
-                'type': 'command',
-                'opts': {'nargs': '+'}
-            },
-            {
-                'sync': 0,
-                'name': 'MyoShellCommand',
-                'type': 'command',
-                'opts': {'nargs': '+'}
-            },
-            {
-                'sync': 0,
-                'name': 'MyoRun',
-                'type': 'command',
-                'opts': {'nargs': '+'}
-            },
-            {
-                'sync': 0,
-                'name': 'BufEnter',
-                'type': 'autocmd',
-                'opts': {'pattern': '*'}
-            },
-            {
-                'sync': 0,
-                'name': 'MyoTest',
-                'type': 'command',
-                'opts': {'nargs': 0}
-            },
-            {
-                'sync': 0,
-                'name': 'MyoTmuxCreateSession',
-                'type': 'command',
-                'opts': {'nargs': '*'}
-            },
-            {
-                'sync': 0,
-                'name': 'MyoTmuxSpawnSession',
-                'type': 'command',
-                'opts': {'nargs': 1}
-            },
-            {
-                'sync': 0,
-                'name': 'MyoTmuxCreateLayout',
-                'type': 'command',
-                'opts': {'nargs': '*'}
-            },
-            {
-                'sync': 0,
-                'name': 'MyoTmuxCreatePane',
-                'type': 'command',
-                'opts': {'nargs': '*'}
-            },
-            {
-                'sync': 0,
-                'name': 'MyoTmuxOpenPane',
-                'type': 'command',
-                'opts': {'nargs': '+'}
-            },
-            {
-                'sync': 0,
-                'name': 'MyoTmuxClosePane',
-                'type': 'command',
-                'opts': {'nargs': 1}
-            },
-            {
-                'sync': 0,
-                'name': 'MyoTmuxInfo',
-                'type': 'command',
-                'opts': {'nargs': 0}
-            },
-        ]
+    @property
+    def plugin_class(self):
+        return Right(MyoNvimPlugin)
 
     @property
     def _plugins(self):
         return List()
-
-    def _pre_start(self):
-        pass
 
     @property
     def _config_path(self):
