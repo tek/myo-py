@@ -77,10 +77,9 @@ class Layout(View):
     def actual_max_sizes(self):
         return self.views / (lambda a: a.fixed_size.or_else(a.max_size) | 999)
 
-LinearLayout = Layout
 
 
-class VimLayout(LinearLayout):
     pass
+class VimLayout(Layout):
 
-__all__ = ('Layout', 'LinearLayout', 'LayoutDirection', 'VimLayout')
+__all__ = ('Layout', 'LayoutDirection', 'VimLayout')

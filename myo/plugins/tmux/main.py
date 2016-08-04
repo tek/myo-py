@@ -23,8 +23,7 @@ from myo.plugins.tmux.messages import (TmuxOpenPane, TmuxRunCommand,
                                        TmuxFindVim, TmuxTest, TmuxLoadDefaults)
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
-from myo.ui.tmux.layout import (LayoutDirections, Layout, VimLayout,
-                                LinearLayout)
+from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
 from myo.ui.tmux.session import Session
 from myo.ui.tmux.server import Server
 from myo.util import parse_int, view_params
@@ -197,9 +196,9 @@ class Transitions(MyoTransitions):
         vim_layout = VimLayout(name='vim',
                                direction=LayoutDirections.vertical,
                                panes=List(pane), fixed_size=vim_w)
-        root = LinearLayout(name='root',
-                            direction=LayoutDirections.horizontal,
-                            layouts=List(vim_layout))
+        root = Layout(name='root',
+                      direction=LayoutDirections.horizontal,
+                      layouts=List(vim_layout))
         win = VimWindow(id=wid.to_maybe, root=root)
         new_state = self.state.append1.windows(win)
         return self.with_sub(new_state)
@@ -230,8 +229,8 @@ class Transitions(MyoTransitions):
         opts = self.msg.options
         dir_s = opts.get('direction') | 'vertical'
         direction = LayoutDirections.parse(dir_s)
-        layout = LinearLayout(name=self.msg.name, direction=direction,
-                              **view_params(opts))
+        layout = Layout(name=self.msg.name, direction=direction,
+                        **view_params(opts))
         return self._add_to_layout(opts.get('parent'), _.layouts, layout)
 
     @handle(TmuxCreatePane)
