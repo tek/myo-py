@@ -172,12 +172,8 @@ class LayoutFacade(Logging):
 
     def _cut_sizes(self, min_s, weights, total):
         surplus = sum(min_s) - total
-        if weights.flatten.empty:
-            equi = surplus / min_s.length
-            return min_s / (_ - equi)
-        else:
-            dist = weights / (_ / (lambda a: surplus * (1 - a)) | 0)
-            return (min_s & dist).map2(_ - _)
+        dist = weights / (1 - _) / (surplus * _)
+        return (min_s & dist).map2(_ - _)
 
     def _distribute_sizes(self, min_s, max_s, weights, total):
         count = max_s.length
