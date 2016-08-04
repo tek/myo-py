@@ -1,4 +1,4 @@
-from tryp import List, _
+from tryp import List, _, L
 from tryp.test import later
 
 from integration._support.base import TmuxIntegrationSpec
@@ -66,6 +66,25 @@ class DistributeSize2Spec(_DefaultLayoutSpec):
             widths.should.equal(target)
         self.json_cmd('MyoTmuxOpenPane make')
         later(check)
+
+
+class ClosePaneSpec(_DefaultLayoutSpec):
+
+    def close(self):
+        def check(length: int):
+            panes = self.sessions.head // _.windows // _.panes
+            panes.should.have.length_of(length)
+        self.json_cmd('MyoTmuxOpenPane make')
+        later(L(check)(2))
+        self.vim.cmd('MyoTmuxClosePane make')
+        later(L(check)(1))
+        self.vim.cmd('MyoTmuxClosePane make')
+        self._wait(0.1)
+        later(L(check)(1))
+        self.json_cmd('MyoTmuxOpenPane make')
+        later(L(check)(2))
+        self.vim.cmd('MyoTmuxClosePane make')
+        later(L(check)(1))
 
 
 class DispatchSpec(_TmuxSpec):

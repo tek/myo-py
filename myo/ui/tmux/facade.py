@@ -83,6 +83,14 @@ class LayoutFacade(Logging):
                 if self.panes.is_open(p)
                 else self._open_pane(path))
 
+    def close_pane(self, path: PanePath):
+        err = 'cannot close pane {}: not found'.format(path.pane)
+        return (
+            Task.call(self.panes.find, path.pane) //
+            __.cata(__.kill.map(Right), lambda: Task.now(Left(err))) /
+            __.replace(path)
+        )
+
     def _open_pane(self, path) -> Task[PanePath]:
         return (
             self._open_in_layouts(path.pane, path.layout, path.outer)
@@ -94,11 +102,10 @@ class LayoutFacade(Logging):
         if self.layout_open(layout):
             return self._open_in_layout(pane, layout) / (_ + (outer,))
         else:
-            ret = (
+            return (
                 outer.detach_last.map2(F(self._open_in_layouts, pane)) |
                 Task.failed('cannot open {} without open layout'.format(pane))
-            )
-            return ret.map3(lambda p, l, o: (p, layout, o.cat(l)))
+            ).map3(lambda p, l, o: (p, layout, o.cat(l)))
 
     def _ref_pane(self, layout):
         def go(l):
@@ -124,7 +131,7 @@ class LayoutFacade(Logging):
         return panes.filter(self.panes.is_open)
 
     def pack_path(self, path: PanePath):
-        return self.pack_window(path.window) / (lambda a: Right(path))
+        return self.pack_window(path.window) / __.replace(path)
 
     def pack_window(self, window: Window):
         t = (
@@ -132,7 +139,7 @@ class LayoutFacade(Logging):
             L(Task.from_maybe)(_, 'window not found: {}'.format(window)) /
             _.size
         )
-        return t.flat_map2(L(self._pack_layout)(window.root, _, _))
+        return t.flat_map2(L(self._pack_layout)(window.root, _, _)) / Right
 
     def _pack_layout(self, l, w, h):
         horizontal = l.horizontal
@@ -210,7 +217,8 @@ class LayoutFacade(Logging):
     def _normalize_weights(self, weights):
         amended = self._amend_weights(weights)
         total = sum(amended)
-        return amended / (_ / total)
+        total1 = 1 if total == 0 else total
+        return amended / (_ / total1)
 
     def _amend_weights(self, weights):
         total = sum(weights.flatten)
@@ -219,6 +227,7 @@ class LayoutFacade(Logging):
         empties1 = 1 if empties == 0 else empties
         empty = total1 / empties1
         return weights / (_ | empty)
+
 
 class PaneFacade(Logging):
 
@@ -236,8 +245,11 @@ class PaneFacade(Logging):
     def is_open(self, pane):
         return pane.id.exists(self.pane_ids.contains)
 
+    def find_pane_by_id(self, id):
+        return self.panes.find(__.id_i.contains(id))
+
     def find(self, pane):
-        return pane.id // self.server.pane
+        return pane.id // self.find_pane_by_id
 
     def run_command(self, pane, command: ShellCommand):
         line = command.line

@@ -6,10 +6,12 @@ TmuxSpawnSession = message('TmuxSpawnSession', 'id')
 TmuxCreateLayout = message('TmuxCreateLayout', 'name', 'options')
 TmuxCreatePane = message('TmuxCreatePane', 'name', 'options')
 TmuxOpenPane = message('TmuxOpenPane', 'name', 'options')
+TmuxClosePane = message('TmuxClosePane', 'name')
 TmuxFindVim = message('TmuxFindVim')
 TmuxLoadDefaults = message('TmuxLoadDefaults')
 TmuxInfo = message('TmuxInfo')
 
 __all__ = ('TmuxRunCommand', 'TmuxOpenPane', 'TmuxCreatePane',
            'TmuxCreateSession', 'TmuxCreateLayout', 'TmuxCreateLayout',
-           'TmuxSpawnSession', 'TmuxFindVim', 'TmuxLoadDefaults')
+           'TmuxSpawnSession', 'TmuxFindVim', 'TmuxLoadDefaults',
+           'TmuxClosePane')

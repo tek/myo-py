@@ -115,6 +115,12 @@ class VimIntegrationSpec(TrypnvVimIntegrationSpec, Spec, Logging):
             },
             {
                 'sync': 0,
+                'name': 'MyoTmuxClosePane',
+                'type': 'command',
+                'opts': {'nargs': 1}
+            },
+            {
+                'sync': 0,
                 'name': 'MyoTmuxInfo',
                 'type': 'command',
                 'opts': {'nargs': 0}

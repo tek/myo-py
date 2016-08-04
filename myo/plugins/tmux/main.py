@@ -6,10 +6,9 @@ import psutil
 
 from lenses import lens, Lens
 
-from tryp import (List, _, __, curried, Just, Maybe, Map, Either, Right, F,
-                  Left, Try)
+from tryp import List, _, __, Just, Maybe, Map, Either, Right, F, Left, Try
 from tryp.lazy import lazy
-from tryp.lens.tree import path_lens_pred, path_lens_unbound_pre
+from tryp.lens.tree import path_lens_unbound_pre
 from tryp.task import Task
 from tryp.anon import L
 
@@ -20,7 +19,8 @@ from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.tmux.messages import (TmuxOpenPane, TmuxRunCommand,
                                        TmuxCreatePane, TmuxCreateLayout,
                                        TmuxCreateSession, TmuxSpawnSession,
-                                       TmuxFindVim, TmuxInfo, TmuxLoadDefaults)
+                                       TmuxFindVim, TmuxInfo, TmuxLoadDefaults,
+                                       TmuxClosePane)
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
@@ -244,6 +244,10 @@ class Transitions(MyoTransitions):
     def open(self):
         return self._open_pane_ppm(self.msg.name)
 
+    @may_handle(TmuxClosePane)
+    def close(self):
+        return self._close_pane_ppm(self.msg.name)
+
     @may_handle(TmuxRunCommand)
     def dispatch(self):
         opt = self.msg.options
@@ -276,15 +280,19 @@ class Transitions(MyoTransitions):
         # are cached
         return _name_ppm(name) / self._open_pane / self._pack_path
 
+    def _close_pane_ppm(self, name: str):
+        # cannot reference self.layouts.pack_path directly, because panes
+        # are cached
+        return _name_ppm(name) / self._close_pane / self._pack_path
+
     def _open_pane(self, w):
         return self.layouts.open_pane(w)
 
+    def _close_pane(self, w):
+        return self.layouts.close_pane(w)
+
     def _pack_path(self, w):
         return self.layouts.pack_path(w)
-
-    @curried
-    def _layout_path_bound(self, pred, root):
-        return path_lens_pred(root, _.layouts, pred)
 
     def _layout_lens_bound(self, name):
         def sub(a):

@@ -52,6 +52,11 @@ class PaneAdapter(Adapter):
         f = __.set_width if horizontal else __.set_height
         return f(size)(self.native)
 
+    @property  # type: ignore
+    @task
+    def kill(self):
+        return self.native.cmd('kill-pane')
+
     def split(self, horizontal):
         return self.native.split_window(vertical=not horizontal)
 
@@ -74,5 +79,8 @@ class PaneAdapter(Adapter):
     @lazy
     def window_id_i(self):
         return parse_window_id(self.window_id)
+
+    def __repr__(self):
+        return 'PA({})'.format(self.id, self.size)
 
 __all__ = ('Pane', 'VimPane', 'PaneAdapter')
