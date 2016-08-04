@@ -5,6 +5,7 @@ from operator import ne
 from tryp.task import Task, task
 from tryp.anon import L
 from tryp import _, __, List, Either, Left, F, Just, Boolean, Right
+from tryp.lazy import lazy
 
 from trypnv.record import list_field, field, Record
 
@@ -127,7 +128,7 @@ class LayoutFacade(Logging):
 
     def pack_window(self, window: Window):
         t = (
-            Task.call(self.server.window, window.id) //
+            Task.call(window.id.flat_map, self.server.window) //
             L(Task.from_maybe)(_, 'window not found: {}'.format(window)) /
             _.size
         )
@@ -145,7 +146,13 @@ class LayoutFacade(Logging):
         @recurse.register(Layout)
         def rec_layout(v, size):
             sub_size = (size, h) if horizontal else (w, size)
-            return self._pack_layout(v, *sub_size)
+            return (
+                self._pack_layout(v, *sub_size)
+                .flat_replace(
+                    self._ref_pane(v) //
+                    L(self._apply_size)(_, size, horizontal)
+                )
+            )
         views = self.open_views(l)
         count = views.length
         if count > 0:

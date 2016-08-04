@@ -49,15 +49,17 @@ class DefaultLayoutSpec(_TmuxSpec):
 
     def _set_vars(self):
         super()._set_vars()
+        self.vim_width = 10
         self.vim.set_pvar('tmux_use_defaults', True)
+        self.vim.set_pvar('tmux_vim_width', self.vim_width)
 
     def default_layout(self):
         def check():
-            panes = self.sessions.head // _.windows.head / _.panes | List()
-            panes.should.have.length_of(2)
+            widths = self.sessions.head // _.windows // _.panes / _.size[0]
+            target = List(self.vim_width, self.win_width - self.vim_width)
+            widths.should.equal(target)
         self.json_cmd('MyoTmuxOpenPane make')
-        self.vim.cmd('MyoTmuxTest')
-        self._wait(1)
+        later(check)
 
 
 class DispatchSpec(_TmuxSpec):
