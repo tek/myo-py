@@ -14,7 +14,7 @@ class _TmuxSpec(TmuxIntegrationSpec):
 
 class CutSizeSpec(_TmuxSpec):
 
-    def open_pane(self):
+    def cut_size(self):
         def check():
             panes = self.sessions.head // _.windows.head / _.panes | List()
             panes.should.have.length_of(2)
@@ -26,7 +26,7 @@ class CutSizeSpec(_TmuxSpec):
 
 class DistributeSizeSpec(_TmuxSpec):
 
-    def distribute_size(self):
+    def distribute(self):
         h1 = 7
         def check():
             panes = self.sessions.head // _.windows.head / _.panes | List()
@@ -52,7 +52,7 @@ class _DefaultLayoutSpec(_TmuxSpec):
         self.vim.set_pvar('tmux_use_defaults', True)
 
 
-class DistributeSizeSpec(_DefaultLayoutSpec):
+class DistributeSize2Spec(_DefaultLayoutSpec):
 
     def _set_vars(self):
         super()._set_vars()
