@@ -1,5 +1,6 @@
 import re
 from tryp import List, __
+from tryp.lazy import lazy
 
 from trypnv.record import Record, field
 
@@ -26,22 +27,22 @@ class VimWindow(Window):
 
 class WindowAdapter(Adapter):
 
-    @property
+    @lazy
     def panes(self):
         return List.wrap(self.native.panes) / PaneAdapter
 
     def find_pane_by_id(self, id: int):
         return self.panes.find(__.id_i.contains(id))
 
-    @property
+    @lazy
     def id(self):
         return self.native._window_id
 
-    @property
+    @lazy
     def id_i(self):
         return parse_window_id(self.id)
 
-    @property
+    @lazy
     def size(self):
         return int(self.native.width), int(self.native.height)
 

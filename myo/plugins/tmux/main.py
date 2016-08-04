@@ -328,7 +328,7 @@ class Plugin(MyoComponent):
     def server(self):
         return Server(self.native_server)
 
-    @lazy
+    @property
     def layouts(self):
         return LayoutFacade(self.server)
 

@@ -2,6 +2,7 @@ import re
 
 from tryp.task import task
 from tryp import __, List
+from tryp.lazy import lazy
 
 from trypnv.record import maybe_field, field
 
@@ -32,15 +33,15 @@ class VimPane(Pane):
 
 class PaneAdapter(Adapter):
 
-    @property
+    @lazy
     def id(self):
-        return self.native._pane_id
+        return self.native.id
 
-    @property
+    @lazy
     def id_i(self):
         return parse_pane_id(self.id)
 
-    @property
+    @lazy
     def pid(self):
         return parse_int(self.native.pid)
 
@@ -52,7 +53,7 @@ class PaneAdapter(Adapter):
     def split(self, horizontal):
         return self.native.split_window(vertical=not horizontal)
 
-    @property
+    @lazy
     def size(self):
         return int(self.native.width), int(self.native.height)
 
