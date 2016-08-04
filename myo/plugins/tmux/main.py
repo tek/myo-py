@@ -13,7 +13,7 @@ from tryp.lens.tree import path_lens_pred, path_lens_unbound_pre
 from tryp.task import Task
 from tryp.anon import L
 
-from trypnv.machine import may_handle, handle, DataTask, either_msg
+from trypnv.machine import may_handle, handle, DataTask, either_msg, Message
 from trypnv.record import field, list_field, Record
 
 from myo.state import MyoComponent, MyoTransitions
@@ -55,19 +55,18 @@ class PanePathLens(Record):
         return Task.from_either(path) // f / (_ / update)
 
 
-class PanePathMod(Logging):
+def _initial_ppm_f(pp, window) -> Task[Either[Any, Window]]:
+    return Task.now(Right(window))
 
-    def __init__(self, pred: Callable, f: Callable=None) -> None:
-        self.pred = pred
-        self._f = f or self._initial_f
 
-    def _initial_f(self, pp, window) -> Task[Either[Any, Window]]:
-        return Task.now(Right(window))
+class PanePathMod(Logging, Message):
+    pred = field(Callable)
+    _f = field(Callable, initial=(lambda: _initial_ppm_f))
 
     def _chain(self, f: PPTrans, g: Callable):
         h = lambda pp: L(pp.run)(_, f)
         chain = lambda pp, win: self._f(pp, win) // g(win, h(pp))
-        return PanePathMod(pred=self.pred, f=chain)
+        return PanePathMod(pred=self.pred, _f=chain)
 
     def map(self, f: PPTrans) -> Task[Either[Any, Window]]:
         keep_error = F(Left) >> Task.now
@@ -239,7 +238,7 @@ class Transitions(MyoTransitions):
 
     @may_handle(TmuxOpenPane)
     def open(self):
-        return self._run_ppm(self._open_pane_ppm(self.msg.name))
+        return self._open_pane_ppm(self.msg.name)
 
     @may_handle(TmuxRunCommand)
     def dispatch(self):
@@ -250,6 +249,10 @@ class Transitions(MyoTransitions):
                     (lambda a: Right(path)))
         ppm = self._open_pane_ppm(pane_name) + go
         return self._run_ppm(ppm)
+
+    @may_handle(PanePathMod)
+    def pane_path_mod(self):
+        return self._run_ppm(self.msg)
 
     @may_handle(TmuxTest)
     def test(self):
