@@ -217,13 +217,13 @@ class PaneFacade(Logging):
     def __init__(self, server: Server) -> None:
         self.server = server
 
-    @property
+    @lazy
     def panes(self):
         return self.server.panes
 
-    @property
+    @lazy
     def pane_ids(self):
-        return self.server.pane_ids
+        return self.panes // _.id_i.to_list
 
     def is_open(self, pane):
         return pane.id.exists(self.pane_ids.contains)

@@ -260,8 +260,15 @@ class Transitions(MyoTransitions):
         return DataTask(_ // L(self._wrap_window)(_, ppm.run) / either_msg)
 
     def _open_pane_ppm(self, name: str):
-        l = self.layouts
-        return self._name_ppm(name) / l.open_pane / l.pack_path
+        # cannot reference self.layouts.pack_path directly, because panes
+        # are cached
+        return self._name_ppm(name) / self._open_pane / self._pack_path
+
+    def _open_pane(self, w):
+        return self.layouts.open_pane(w)
+
+    def _pack_path(self, w):
+        return self.layouts.pack_path(w)
 
     @curried
     def _layout_path_bound(self, pred, root):
