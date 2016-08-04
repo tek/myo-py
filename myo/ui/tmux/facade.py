@@ -1,62 +1,19 @@
-from typing import Callable, Tuple
+from typing import Tuple
 from functools import singledispatch  # type: ignore
 from operator import ne
 
 from tryp.task import Task, task
 from tryp.anon import L
-from tryp import _, __, List, Either, Left, F, Just, Boolean, Right
+from tryp import _, __, List, Left, F, Just, Boolean, Right
 from tryp.lazy import lazy
-
-from trypnv.record import list_field, field, Record
 
 from myo.logging import Logging
 from myo.ui.tmux.server import Server
 from myo.ui.tmux.window import Window
 from myo.ui.tmux.layout import Layout
 from myo.ui.tmux.pane import Pane, PaneAdapter
-from myo.ui.tmux.view import View
 from myo.command import ShellCommand
-
-
-class PanePath(Record):
-    window = field(Window)
-    pane = field(Pane)
-    layout = field(Layout)
-    outer = list_field()
-
-    @staticmethod
-    def create(window, pane, layout, outer):
-        return PanePath(window=window, pane=pane, layout=layout, outer=outer)
-
-    @staticmethod
-    def try_create(views: List[View]) -> Either[str, 'PanePath']:
-        def try_create2(pane, win, layouts):
-            return (
-                layouts.detach_last.map2(F(PanePath.create, win, pane))
-                .to_either('PanePath.create: last item is not Pane')
-            )
-        def try_create1(pane, layouts):
-            return (
-                layouts.detach_head
-                .to_either('PanePath.create: last item is not Pane')
-                .flat_map2(F(try_create2, pane))
-            )
-        return (
-            views.detach_last.to_either('PanePath.create: empty List[View]')
-            .flat_map2(try_create1)
-        )
-
-    @property
-    def layouts(self):
-        return self.outer.cat(self.layout)
-
-    @property
-    def to_list(self):
-        return self.layouts.cat(self.pane).cons(self.window)
-
-    def map(self, fp: Callable[[Pane], Pane], fl: Callable[[Layout], Layout]):
-        return PanePath.create(
-            self.window, fp(self.pane), fl(self.layout), self.outer / fl)
+from myo.ui.tmux.pane_path import PanePath
 
 
 class LayoutFacade(Logging):
@@ -259,4 +216,4 @@ class PaneFacade(Logging):
             __.send_keys(line)
         )
 
-__all__ = ('PanePath', 'LayoutFacade')
+__all__ = ('LayoutFacade', 'PaneFacade')

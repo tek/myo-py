@@ -1,18 +1,17 @@
-from typing import Callable, Any
+from typing import Callable
 
 import libtmux
 
 import psutil
 
-from lenses import lens, Lens
+from lenses import lens
 
-from tryp import List, _, __, Just, Maybe, Map, Either, Right, F, Left, Try
+from tryp import List, _, __, Just, Maybe, Map, Right, Try
 from tryp.lazy import lazy
-from tryp.lens.tree import path_lens_unbound_pre
 from tryp.task import Task
 from tryp.anon import L
 
-from trypnv.machine import may_handle, handle, DataTask, either_msg, Message
+from trypnv.machine import may_handle, handle, DataTask, either_msg
 from trypnv.record import field, list_field, Record
 
 from myo.state import MyoComponent, MyoTransitions
@@ -27,70 +26,16 @@ from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
 from myo.ui.tmux.session import Session
 from myo.ui.tmux.server import Server
 from myo.util import parse_int, view_params
-from myo.ui.tmux.window import VimWindow, Window
-from myo.ui.tmux.facade import LayoutFacade, PanePath
+from myo.ui.tmux.window import VimWindow
+from myo.ui.tmux.facade import LayoutFacade
 from myo.ui.tmux.view import View
 from myo.plugins.core.message import AddDispatcher
 from myo.plugins.tmux.dispatch import TmuxDispatcher
-from myo.logging import Logging
 from myo.ui.tmux.util import format_state
+from myo.ui.tmux.pane_path import PanePathMod
 
 _is_vim_window = lambda a: isinstance(a, VimWindow)
 _is_vim_layout = lambda a: isinstance(a, VimLayout)
-
-PPTrans = Callable[[PanePath], Task[Either[Any, PanePath]]]
-
-
-class PanePathLens(Record):
-    lens = field(Lens)
-
-    @staticmethod
-    def create(lens: Lens):
-        return PanePathLens(lens=lens)
-
-    def run(self, win: Window, f: PPTrans) -> Task[Either[Any, Window]]:
-        bound = self.lens.bind(win)
-        path = PanePath.try_create(List.wrap(bound.get()))
-        update = F(_.to_list) >> bound.set
-        return Task.from_either(path) // f / (_ / update)
-
-
-def _initial_ppm_f(pp, window) -> Task[Either[Any, Window]]:
-    return Task.now(Right(window))
-
-
-class PanePathMod(Logging, Message):
-    pred = field(Callable)
-    _f = field(Callable, initial=(lambda: _initial_ppm_f))
-
-    def _chain(self, f: PPTrans, g: Callable):
-        h = lambda pp: L(pp.run)(_, f)
-        chain = lambda pp, win: self._f(pp, win) // g(win, h(pp))
-        return PanePathMod(pred=self.pred, _f=chain)
-
-    def map(self, f: PPTrans) -> Task[Either[Any, Window]]:
-        keep_error = F(Left) >> Task.now
-        return self._chain(f, lambda w, d: __.cata(keep_error, d))
-
-    __truediv__ = map
-
-    def and_then(self, f: PPTrans):
-        return self._chain(f, lambda w, d: lambda a: d(a | w))
-
-    __add__ = and_then
-
-    def run(self, window: Window) -> Task:
-        return self._lens(window) // L(self._f)(_, window)
-
-    def _lens(self, window):
-        f = __.panes.find_lens_pred(self.pred).map(lens().panes.add_lens)
-        sub = _.layouts
-        pre = _.root
-        return (
-            Task.from_maybe(path_lens_unbound_pre(window, sub, f, pre),
-                            'lens path failed for {}'.format(self.pred)) /
-            PanePathLens.create
-        )
 
 
 def _name_ppm(name):
