@@ -1,4 +1,5 @@
-from typing import Callable
+from typing import Callable, Union
+from uuid import UUID
 
 import libtmux
 
@@ -11,7 +12,7 @@ from tryp.lazy import lazy
 from tryp.task import Task
 from tryp.anon import L
 
-from trypnv.machine import may_handle, handle, DataTask, either_msg
+from trypnv.machine import may_handle, handle, DataTask, either_msg, Nop
 from trypnv.record import field, list_field, Record
 
 from myo.state import MyoComponent, MyoTransitions
@@ -19,7 +20,8 @@ from myo.plugins.tmux.messages import (TmuxOpenPane, TmuxRunCommand,
                                        TmuxCreatePane, TmuxCreateLayout,
                                        TmuxCreateSession, TmuxSpawnSession,
                                        TmuxFindVim, TmuxInfo, TmuxLoadDefaults,
-                                       TmuxClosePane)
+                                       TmuxClosePane, TmuxRunShell,
+                                       SetShellTarget, TmuxRunLineInShell)
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
@@ -38,8 +40,8 @@ _is_vim_window = lambda a: isinstance(a, VimWindow)
 _is_vim_layout = lambda a: isinstance(a, VimLayout)
 
 
-def _name_ppm(name):
-    return PanePathMod(pred=_.name == name)
+def _ident_ppm(ident: Union[str, UUID]):
+    return PanePathMod(pred=__.ident(ident))
 
 
 class TmuxState(Record):
@@ -194,14 +196,32 @@ class Transitions(MyoTransitions):
         return self._close_pane_ppm(self.msg.name)
 
     @may_handle(TmuxRunCommand)
-    def dispatch(self):
-        opt = self.msg.options
-        pane_name = opt.get('pane') | self._default_pane_name
-        def go(path):
-            return (self._run_command(self.msg.command, path.pane, opt) /
-                    (lambda a: Right(path)))
-        ppm = self._open_pane_ppm(pane_name) + go
-        return self._run_ppm(ppm)
+    def run_command(self):
+        line = self.msg.command.line
+        return self._run_ppm(self._run_command_ppm(line, self.msg.options))
+
+    @may_handle(TmuxRunShell)
+    def run_shell(self):
+        opts = self.msg.options
+        st = opts.get('pane') / L(SetShellTarget)(self.msg.shell, _) | Nop
+        return TmuxRunCommand(command=self.msg.shell, options=opts), st
+
+    @handle(SetShellTarget)
+    def set_shell_target(self):
+        target = self._pane_by_name(self.msg.pane) / _.uuid
+        def setter(shell):
+            return shell.modify(__.set(target=target))
+        return (self.data.command_lens(self.msg.shell.uuid)).map(setter)
+
+    @handle(TmuxRunLineInShell)
+    def run_line_in_shell(self):
+        ident = self.msg.shell.target | self._default_pane_name
+        opt = self.msg.options + ('pane', ident)
+        return (
+            opt.get('line') /
+            L(self._run_command_ppm)(_, opt) /
+            self._run_ppm
+        )
 
     @may_handle(PanePathMod)
     def pane_path_mod(self):
@@ -220,15 +240,22 @@ class Transitions(MyoTransitions):
     def _run_ppm(self, ppm):
         return DataTask(_ // L(self._wrap_window)(_, ppm.run) / either_msg)
 
-    def _open_pane_ppm(self, name: str):
+    def _open_pane_ppm(self, name: Union[str, UUID]):
         # cannot reference self.layouts.pack_path directly, because panes
         # are cached
-        return _name_ppm(name) / self._open_pane / self._pack_path
+        return _ident_ppm(name) / self._open_pane / self._pack_path
 
-    def _close_pane_ppm(self, name: str):
+    def _close_pane_ppm(self, name: Union[str, UUID]):
         # cannot reference self.layouts.pack_path directly, because panes
         # are cached
-        return _name_ppm(name) / self._close_pane / self._pack_path
+        return _ident_ppm(name) / self._close_pane / self._pack_path
+
+    def _run_command_ppm(self, line, opt: Map):
+        pane_ident = opt.get('pane') | self._default_pane_name
+        def go(path):
+            return (self._run_command_line(line, path.pane, opt) /
+                    (lambda a: Right(path)))
+        return self._open_pane_ppm(pane_ident) + go
 
     def _open_pane(self, w):
         return self.layouts.open_pane(w)
@@ -262,8 +289,14 @@ class Transitions(MyoTransitions):
     def _pane_lens(self, f: Callable):
         return Layout.pane_lens(self.state, f)
 
-    def _pane(self, name):
-        return self.state.vim_window // __.root.find_pane_deep(name)
+    def _pane_by_name(self, name: str):
+        return self.state.vim_window // __.root.find_pane_name(name)
+
+    def _pane_by_uuid(self, uuid: UUID):
+        return self.state.vim_window // __.root.find_pane_uuid(uuid)
+
+    def _pane_uuid_by_name(self, name: str):
+        return self._pane_by_name(name) / _.uuid
 
     def _default_pane_name(self):
         return 'make'
@@ -279,8 +312,8 @@ class Transitions(MyoTransitions):
     def _find_vim_pane(self, vim_pid):
         return self.server.panes.find(__.pid.contains(vim_pid))
 
-    def _run_command(self, command, pane, options):
-        return self.panes.run_command(pane, command)
+    def _run_command_line(self, line, pane, options):
+        return self.panes.run_command_line(pane, line)
 
 
 class Plugin(MyoComponent):

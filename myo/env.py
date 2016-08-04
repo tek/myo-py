@@ -1,7 +1,10 @@
-from typing import Union
+from typing import Union, Callable
 from pathlib import Path
+from uuid import UUID
 
 from fn import _
+
+from lenses import lens
 
 from tryp import Map
 
@@ -31,7 +34,17 @@ class Env(Data):
     def command(self, name: str):
         return self.commands[name]
 
+    def shell(self, name: str):
+        return self.commands.shell(name)
+
     def dispatch_message(self, cmd: Command, options: Map):
         return self.dispatchers.message(cmd, options)
+
+    def _lens(self, getter: Callable, uuid: UUID):
+        deep = getter(getter(self)).find_lens_pred(_.uuid == uuid)
+        return deep / getter(getter(lens(self))).add_lens
+
+    def command_lens(self, uuid: UUID):
+        return self._lens(_.commands, uuid)
 
 __all__ = ('Env')

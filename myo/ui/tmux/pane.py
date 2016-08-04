@@ -1,3 +1,6 @@
+from typing import Union
+from uuid import UUID
+
 from tryp.task import task
 from tryp import __, List
 from tryp.lazy import lazy
@@ -24,6 +27,10 @@ class Pane(View):
         id = self.id / ' %{}'.format | ''
         pid = self.pid / ' | pid -> {}'.format | ''
         return 'P{} \'{}\'{} {}'.format(id, self.name, pid, self.size_desc)
+
+    def ident(self, ident: Union[str, UUID]):
+        attr = self.uuid if isinstance(ident, UUID) else self.name
+        return attr == ident
 
 
 class VimPane(Pane):

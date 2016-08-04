@@ -1,12 +1,15 @@
+from uuid import UUID
+
 from fn import _
 
-import pyrsistent
-
 from trypnv.data import field
-from trypnv.record import Record, list_field
+
+from trypnv.record import list_field, maybe_field
+
+from myo.record import Record
 
 
-class Command(pyrsistent.PRecord):
+class Command(Record):
     name = field(str)
     line = field(str)
 
@@ -17,6 +20,10 @@ class VimCommand(Command):
 
 class ShellCommand(Command):
     pass
+
+
+class Shell(ShellCommand):
+    target = maybe_field(UUID)
 
 
 class Commands(Record):
@@ -33,5 +40,9 @@ class Commands(Record):
             self.__class__.__name__,
             ','.join(map(repr, self.commands))
         )
+
+    def shell(self, name):
+        pred = lambda a: isinstance(a, Shell) and a.name == name
+        return self.commands.find(pred)
 
 __all__ = ('Commands', 'Command')

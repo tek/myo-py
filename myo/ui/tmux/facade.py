@@ -205,15 +205,17 @@ class PaneFacade(Logging):
     def find_pane_by_id(self, id):
         return self.panes.find(__.id_i.contains(id))
 
-    def find(self, pane):
+    def find(self, pane: Pane):
         return pane.id // self.find_pane_by_id
 
-    def run_command(self, pane, command: ShellCommand):
-        line = command.line
+    def run_command(self, pane: Pane, command: ShellCommand):
+        return self.run_command_line(pane, command.line)
+
+    def run_command_line(self, pane: Pane, line: str):
         return (
             Task.call(self.find, pane) //
             L(Task.from_maybe)(_, 'pane not found') /
-            __.send_keys(line)
+            __.send_keys(line, suppress_history=False)
         )
 
 __all__ = ('LayoutFacade', 'PaneFacade')

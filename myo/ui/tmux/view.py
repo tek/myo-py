@@ -1,8 +1,10 @@
 from numbers import Number
 
-from trypnv.record import Record, maybe_field
+from trypnv.record import maybe_field
 
 from tryp import Just, L, List, _
+
+from myo.record import Record
 
 
 class View(Record):

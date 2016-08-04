@@ -1,4 +1,5 @@
 from typing import Callable
+from uuid import UUID
 
 from myo.ui.tmux.view import View
 from myo.ui.tmux.pane import Pane
@@ -36,12 +37,18 @@ class Layout(View):
     def pane_index(self, f: Callable[[Pane], bool]):
         self.panes.index_where(f)
 
-    def find_pane_deep(self, name):
-        return (self.panes.find(_.name == name)
-                .or_else(lambda: self._find_pane_in_layouts(name)))
+    def find_pane(self, pred: Callable[[Pane], bool]):
+        return (self.panes.find(pred)
+                .or_else(lambda: self._find_pane_in_layouts(pred)))
 
-    def _find_pane_in_layouts(self, name):
-        return self.layouts.find_map(__.find_pane_deep(name))
+    def _find_pane_in_layouts(self, pred: Callable[[Pane], bool]):
+        return self.layouts.find_map(__.find_pane(pred))
+
+    def find_pane_name(self, name: str):
+        return self.find_pane(_.name == name)
+
+    def find_pane_uuid(self, uuid: UUID):
+        return self.find_pane(_.uuid == uuid)
 
     @staticmethod
     def pane_lens(root, f: Callable[[Pane], bool]):

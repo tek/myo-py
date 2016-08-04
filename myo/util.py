@@ -25,4 +25,4 @@ def view_params(m: Map):
     return optional_params(m, 'min_size', 'max_size', 'fixed_size', 'position',
                            'weight')
 
-__all__ = ('parse_int', 'optional_params', 'view_params')
+__all__ = ('parse_int', 'optional_params', 'view_params', 'parse_id')
