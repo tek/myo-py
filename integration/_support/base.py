@@ -115,7 +115,7 @@ class VimIntegrationSpec(TrypnvVimIntegrationSpec, Spec, Logging):
             },
             {
                 'sync': 0,
-                'name': 'MyoTmuxTest',
+                'name': 'MyoTmuxInfo',
                 'type': 'command',
                 'opts': {'nargs': 0}
             },

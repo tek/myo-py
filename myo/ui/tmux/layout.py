@@ -77,9 +77,16 @@ class Layout(View):
     def actual_max_sizes(self):
         return self.views / (lambda a: a.fixed_size.or_else(a.max_size) | 999)
 
+    @property
+    def desc(self):
+        dir = 'H' if self.horizontal else 'V'
+        return 'L {} \'{}\' {}'.format(dir, self.name, self.size_desc)
 
 
-    pass
 class VimLayout(Layout):
+
+    @property
+    def desc(self):
+        return 'V{}'.format(super().desc)
 
 __all__ = ('Layout', 'LayoutDirection', 'VimLayout')

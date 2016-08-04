@@ -45,15 +45,21 @@ class DistributeSizeSpec(_TmuxSpec):
         later(check)
 
 
-class DefaultLayoutSpec(_TmuxSpec):
+class _DefaultLayoutSpec(_TmuxSpec):
+
+    def _set_vars(self):
+        super()._set_vars()
+        self.vim.set_pvar('tmux_use_defaults', True)
+
+
+class DistributeSizeSpec(_DefaultLayoutSpec):
 
     def _set_vars(self):
         super()._set_vars()
         self.vim_width = 10
-        self.vim.set_pvar('tmux_use_defaults', True)
         self.vim.set_pvar('tmux_vim_width', self.vim_width)
 
-    def default_layout(self):
+    def distribute(self):
         def check():
             widths = self.sessions.head // _.windows // _.panes / _.size[0]
             target = List(self.vim_width, self.win_width - self.vim_width)
@@ -83,5 +89,13 @@ class DispatchSpec(_TmuxSpec):
         self.json_cmd('MyoRun test', pane='make')
         later(check)
 
-__all__ = ('CutSizeSpec', 'DistributeSizeSpec', 'DefaultLayoutSpec',
-           'DispatchSpec')
+
+class InfoSpec(_TmuxSpec):
+
+    def output(self):
+        def check():
+            self._log_out.should_not.be.empty
+        self.vim.cmd('MyoTmuxInfo')
+        later(check)
+
+__all__ = ('CutSizeSpec', 'DistributeSizeSpec', 'DispatchSpec')

@@ -13,9 +13,17 @@ class Window(Record):
     id = maybe_field(int)
     root = field(Layout)
 
+    @property
+    def desc(self):
+        id = self.id / ' @{}'.format | ''
+        return 'W{}'.format(id)
+
 
 class VimWindow(Window):
-    pass
+
+    @property
+    def desc(self):
+        return 'V{}'.format(super().desc)
 
 
 class WindowAdapter(Adapter):

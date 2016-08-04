@@ -19,9 +19,18 @@ class Pane(View):
     def id_s(self):
         return self.id / '%{}'.format
 
+    @property
+    def desc(self):
+        id = self.id / ' %{}'.format | ''
+        pid = self.pid / ' | pid -> {}'.format | ''
+        return 'P{} \'{}\'{} {}'.format(id, self.name, pid, self.size_desc)
+
 
 class VimPane(Pane):
-    pass
+
+    @property
+    def desc(self):
+        return 'V{}'.format(super().desc)
 
 
 class PaneAdapter(Adapter):

@@ -13,7 +13,7 @@ from myo.logging import Logging
 from myo.plugins.command import AddVimCommand, Run, AddCommand, AddShellCommand
 from myo.plugins.tmux.messages import (TmuxCreatePane, TmuxCreateSession,
                                        TmuxCreateLayout, TmuxSpawnSession,
-                                       TmuxTest)
+                                       TmuxInfo)
 from myo.plugins.tmux import TmuxOpenPane
 
 
@@ -92,8 +92,8 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
     def myo_run(self):
         pass
 
-    @msg_command(TmuxTest)
-    def myo_tmux_test(self):
+    @msg_command(TmuxInfo)
+    def myo_tmux_info(self):
         pass
 
 __all__ = ('MyoNvimPlugin',)

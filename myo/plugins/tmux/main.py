@@ -20,7 +20,7 @@ from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.tmux.messages import (TmuxOpenPane, TmuxRunCommand,
                                        TmuxCreatePane, TmuxCreateLayout,
                                        TmuxCreateSession, TmuxSpawnSession,
-                                       TmuxFindVim, TmuxTest, TmuxLoadDefaults)
+                                       TmuxFindVim, TmuxInfo, TmuxLoadDefaults)
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
@@ -33,6 +33,7 @@ from myo.ui.tmux.view import View
 from myo.plugins.core.message import AddDispatcher
 from myo.plugins.tmux.dispatch import TmuxDispatcher
 from myo.logging import Logging
+from myo.ui.tmux.util import format_state
 
 _is_vim_window = lambda a: isinstance(a, VimWindow)
 _is_vim_layout = lambda a: isinstance(a, VimLayout)
@@ -257,10 +258,9 @@ class Transitions(MyoTransitions):
     def pane_path_mod(self):
         return self._run_ppm(self.msg)
 
-    @may_handle(TmuxTest)
-    def test(self):
-        self.log.info('--------- test')
-        self.log.info(self.state)
+    @may_handle(TmuxInfo)
+    def info(self):
+        self.log.info('\n'.join(format_state(self.state)))
 
     def _wrap_window(self, data, callback):
         state = self._state(data)
