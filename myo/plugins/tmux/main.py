@@ -93,6 +93,10 @@ class PanePathMod(Logging, Message):
         )
 
 
+def _name_ppm(name):
+    return PanePathMod(pred=_.name == name)
+
+
 class TmuxState(Record):
     server = field(Server)
     sessions = list_field()
@@ -265,16 +269,13 @@ class Transitions(MyoTransitions):
         update = __.map(L(self._with_vim_window)(data, state, _))
         return win // callback / update
 
-    def _name_ppm(self, name):
-        return PanePathMod(pred=_.name == name)
-
     def _run_ppm(self, ppm):
         return DataTask(_ // L(self._wrap_window)(_, ppm.run) / either_msg)
 
     def _open_pane_ppm(self, name: str):
         # cannot reference self.layouts.pack_path directly, because panes
         # are cached
-        return self._name_ppm(name) / self._open_pane / self._pack_path
+        return _name_ppm(name) / self._open_pane / self._pack_path
 
     def _open_pane(self, w):
         return self.layouts.open_pane(w)
