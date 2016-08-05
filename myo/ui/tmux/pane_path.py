@@ -3,7 +3,7 @@ from typing import Callable, Any
 from tryp.task import Task
 
 from lenses import Lens, lens
-from tryp import Either, List, F, _, L, Left, __, Right
+from tryp import Either, List, F, _, L, Left, __, Right, I
 from tryp.lens.tree import path_lens_unbound_pre
 
 from trypnv.record import Record, field, list_field
@@ -55,6 +55,9 @@ class PanePath(Record):
     def map(self, fp: Callable[[Pane], Pane], fl: Callable[[Layout], Layout]):
         return PanePath.create(
             self.window, fp(self.pane), fl(self.layout), self.outer / fl)
+
+    def map_pane(self, f: Callable[[Pane], Pane]):
+        return self.map(f, I)
 
 PPTrans = Callable[[PanePath], Task[Either[Any, PanePath]]]
 

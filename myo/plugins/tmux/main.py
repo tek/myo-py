@@ -12,7 +12,8 @@ from tryp.lazy import lazy
 from tryp.task import Task
 from tryp.anon import L
 
-from trypnv.machine import may_handle, handle, DataTask, either_msg, Nop
+from trypnv.machine import (may_handle, handle, DataTask, either_msg, Nop,
+                            Quit, RunTask)
 from trypnv.record import field, list_field, Record
 
 from myo.state import MyoComponent, MyoTransitions
@@ -29,7 +30,7 @@ from myo.ui.tmux.session import Session
 from myo.ui.tmux.server import Server
 from myo.util import parse_int, view_params
 from myo.ui.tmux.window import VimWindow
-from myo.ui.tmux.facade import LayoutFacade
+from myo.ui.tmux.facade import LayoutFacade, PaneFacade
 from myo.ui.tmux.view import View
 from myo.plugins.core.message import AddDispatcher
 from myo.plugins.tmux.dispatch import TmuxDispatcher
@@ -38,6 +39,7 @@ from myo.ui.tmux.pane_path import PanePathMod
 
 _is_vim_window = lambda a: isinstance(a, VimWindow)
 _is_vim_layout = lambda a: isinstance(a, VimLayout)
+_is_vim_pane = lambda a: isinstance(a, VimPane)
 
 
 def _ident_ppm(ident: Union[str, UUID]):
@@ -73,6 +75,18 @@ class TmuxState(Record):
     @property
     def vim_pane(self):
         return self.vim_layout / _.panes / _.head
+
+    @property
+    def all_panes(self):
+        return self.windows // _.root.all_panes
+
+    @property
+    def possibly_open_panes(self):
+        return (
+            self.all_panes
+            .filter(_.id.is_just)
+            .filter(lambda a: not _is_vim_pane(a))
+        )
 
 
 class Transitions(MyoTransitions):
@@ -227,6 +241,11 @@ class Transitions(MyoTransitions):
     def pane_path_mod(self):
         return self._run_ppm(self.msg)
 
+    @may_handle(Quit)
+    def quit(self):
+        t = self.state.possibly_open_panes // _.id / self.panes.close_id
+        return RunTask(t.sequence(Task))
+
     @may_handle(TmuxInfo)
     def info(self):
         self.log.info('\n'.join(format_state(self.state)))
@@ -246,8 +265,6 @@ class Transitions(MyoTransitions):
         return _ident_ppm(name) / self._open_pane / self._pack_path
 
     def _close_pane_ppm(self, name: Union[str, UUID]):
-        # cannot reference self.layouts.pack_path directly, because panes
-        # are cached
         return _ident_ppm(name) / self._close_pane / self._pack_path
 
     def _run_command_ppm(self, line, opt: Map):
@@ -261,7 +278,7 @@ class Transitions(MyoTransitions):
         return self.layouts.open_pane(w)
 
     def _close_pane(self, w):
-        return self.layouts.close_pane(w)
+        return self.layouts.close_pane_path(w)
 
     def _pack_path(self, w):
         return self.layouts.pack_path(w)
@@ -335,7 +352,7 @@ class Plugin(MyoComponent):
 
     @property
     def panes(self):
-        return self.layouts.panes
+        return PaneFacade(self.server)
 
     def new_state(self):
         return TmuxState(server=self.server)

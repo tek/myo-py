@@ -70,21 +70,30 @@ class DistributeSize2Spec(_DefaultLayoutSpec):
 
 class ClosePaneSpec(_DefaultLayoutSpec):
 
-    def close(self):
-        def check(length: int):
+    def _check(self, length: int):
+        def go():
             panes = self.sessions.head // _.windows // _.panes
             panes.should.have.length_of(length)
+        return later(go)
+
+    def close(self):
         self.json_cmd('MyoTmuxOpenPane make')
-        later(L(check)(2))
+        self._check(2)
         self.vim.cmd('MyoTmuxClosePane make')
-        later(L(check)(1))
+        self._check(1)
         self.vim.cmd('MyoTmuxClosePane make')
         self._wait(0.1)
-        later(L(check)(1))
+        self._check(1)
         self.json_cmd('MyoTmuxOpenPane make')
-        later(L(check)(2))
+        self._check(2)
         self.vim.cmd('MyoTmuxClosePane make')
-        later(L(check)(1))
+        self._check(1)
+
+    def auto_close(self):
+        self.json_cmd('MyoTmuxOpenPane make')
+        self._check(2)
+        self.vim.doautocmd('VimLeave')
+        self._check(1)
 
 
 class DispatchSpec(_TmuxSpec):

@@ -4,6 +4,7 @@ from myo.logging import Logging
 from myo.ui.tmux.session import SessionAdapter
 
 from tryp import _, List, __
+from tryp.task import task
 
 
 class Server(Logging):
@@ -38,5 +39,9 @@ class Server(Logging):
 
     def kill(self):
         return self.native.kill_server()
+
+    @task
+    def cmd(self, *a, **kw):
+        return self.native.cmd(*a, **kw)
 
 __all__ = ('Server',)

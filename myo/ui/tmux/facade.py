@@ -4,7 +4,7 @@ from operator import ne
 
 from tryp.task import Task, task
 from tryp.anon import L
-from tryp import _, __, List, Left, F, Just, Boolean, Right
+from tryp import _, __, List, Left, F, Just, Boolean, Right, Empty
 from tryp.lazy import lazy
 
 from myo.logging import Logging
@@ -40,13 +40,9 @@ class LayoutFacade(Logging):
                 if self.panes.is_open(p)
                 else self._open_pane(path))
 
-    def close_pane(self, path: PanePath):
-        err = 'cannot close pane {}: not found'.format(path.pane)
-        return (
-            Task.call(self.panes.find, path.pane) //
-            __.cata(__.kill.map(Right), lambda: Task.now(Left(err))) /
-            __.replace(path)
-        )
+    def close_pane_path(self, path: PanePath):
+        new_path = path.map_pane(__.set(id=Empty()))
+        return self.panes.close(path.pane) / __.replace(new_path)
 
     def _open_pane(self, path) -> Task[PanePath]:
         return (
@@ -217,5 +213,13 @@ class PaneFacade(Logging):
             L(Task.from_maybe)(_, 'pane not found') /
             __.send_keys(line, suppress_history=False)
         )
+
+    def close(self, pane: Pane):
+        err = 'cannot close pane {}: not found'.format(pane)
+        return (Task.call(self.find, pane) //
+                __.cata(__.kill.map(Right), lambda: Task.now(Left(err))))
+
+    def close_id(self, id: int):
+        return self.server.cmd('kill-pane', '-t', '%{}'.format(id))
 
 __all__ = ('LayoutFacade', 'PaneFacade')

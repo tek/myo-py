@@ -89,6 +89,10 @@ class Layout(View):
         dir = 'H' if self.horizontal else 'V'
         return 'L {} \'{}\' {}'.format(dir, self.name, self.size_desc)
 
+    @property
+    def all_panes(self):
+        return self.panes + (self.layouts // _.all_panes)
+
 
 class VimLayout(Layout):
 

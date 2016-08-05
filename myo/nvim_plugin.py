@@ -21,7 +21,7 @@ from myo.plugins.tmux import TmuxOpenPane
 class MyoNvimPlugin(NvimStatePlugin, Logging):
 
     def __init__(self, vim: neovim.Nvim) -> None:
-        super(MyoNvimPlugin, self).__init__(NvimFacade(vim))
+        super().__init__(NvimFacade(vim))
         self.myo = None  # type: Myo
         self._post_initialized = False
 
@@ -36,6 +36,7 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
     @command()
     def myo_quit(self):
         if self.myo is not None:
+            self.myo.stop()
             self.vim.clean()
             self.myo = None
 
@@ -108,5 +109,9 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
     @msg_command(TmuxInfo)
     def myo_tmux_info(self):
         pass
+
+    @neovim.autocmd('VimLeave', sync=True)
+    def vim_leave(self):
+        self.myo_quit()
 
 __all__ = ('MyoNvimPlugin',)

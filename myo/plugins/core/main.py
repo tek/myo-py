@@ -1,14 +1,11 @@
-from trypnv.machine import may_handle, message, io, Error
+from trypnv.machine import may_handle, io, Error
 
 import tryp
 from tryp import __, F
 
 from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.core.dispatch import VimDispatcher
-
-StageI = message('StageI')
-StageII = message('StageII')
-Initialized = message('Initialized')
+from myo.plugins.core.message import StageI, Initialized
 
 
 class Plugin(MyoComponent):
@@ -33,4 +30,4 @@ class Plugin(MyoComponent):
                        self.log.error)
             handler(m)
 
-__all__ = ('Plugin', 'StageI', 'StageII', 'Initialized')
+__all__ = ('Plugin',)
