@@ -1,12 +1,11 @@
-from uuid import UUID
-
 from fn import _
 
-from trypnv.data import field
+from trypnv.record import list_field, field
 
-from trypnv.record import list_field, maybe_field
+from tryp import Maybe, Empty
 
 from myo.record import Record
+from myo.ui.tmux.pane import contains_pane_ident
 
 
 class Command(Record):
@@ -23,7 +22,7 @@ class ShellCommand(Command):
 
 
 class Shell(ShellCommand):
-    target = maybe_field(UUID)
+    target = field(Maybe, initial=Empty(), invariant=contains_pane_ident)
 
 
 class Commands(Record):

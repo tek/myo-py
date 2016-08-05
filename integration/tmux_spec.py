@@ -1,4 +1,4 @@
-from tryp import List, _, L
+from tryp import List, _
 from tryp.test import later
 
 from integration._support.base import TmuxIntegrationSpec
@@ -126,8 +126,8 @@ class DispatchSpec(_TmuxSpec):
             out = panes // _.capture
             out.should.contain(s.format(i))
         line = 'print(\'{}\'.format(\'{}\'))'.format(s, i)
-        self.json_cmd('MyoShell py', line='python')
-        self.json_cmd('MyoRun py', pane='make')
+        self.json_cmd('MyoShell py', line='python', target='make')
+        self.json_cmd('MyoRun py')
         self.json_cmd('MyoRunInShell py', line=line)
         later(check)
 

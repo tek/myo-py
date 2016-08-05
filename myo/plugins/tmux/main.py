@@ -1,5 +1,4 @@
-from typing import Callable, Union
-from uuid import UUID
+from typing import Callable
 
 import libtmux
 
@@ -12,8 +11,8 @@ from tryp.lazy import lazy
 from tryp.task import Task
 from tryp.anon import L
 
-from trypnv.machine import (may_handle, handle, DataTask, either_msg, Nop,
-                            Quit, RunTask)
+from trypnv.machine import (may_handle, handle, DataTask, either_msg, Quit,
+                            RunTask)
 from trypnv.record import field, list_field, Record
 
 from myo.state import MyoComponent, MyoTransitions
@@ -22,9 +21,9 @@ from myo.plugins.tmux.messages import (TmuxOpenPane, TmuxRunCommand,
                                        TmuxCreateSession, TmuxSpawnSession,
                                        TmuxFindVim, TmuxInfo, TmuxLoadDefaults,
                                        TmuxClosePane, TmuxRunShell,
-                                       SetShellTarget, TmuxRunLineInShell)
+                                       TmuxRunLineInShell)
 from myo.plugins.core.main import StageI
-from myo.ui.tmux.pane import Pane, VimPane
+from myo.ui.tmux.pane import Pane, VimPane, PaneIdent
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
 from myo.ui.tmux.session import Session
 from myo.ui.tmux.server import Server
@@ -36,13 +35,14 @@ from myo.plugins.core.message import AddDispatcher
 from myo.plugins.tmux.dispatch import TmuxDispatcher
 from myo.ui.tmux.util import format_state
 from myo.ui.tmux.pane_path import PanePathMod
+from myo.plugins.command import SetShellTarget
 
 _is_vim_window = lambda a: isinstance(a, VimWindow)
 _is_vim_layout = lambda a: isinstance(a, VimLayout)
 _is_vim_pane = lambda a: isinstance(a, VimPane)
 
 
-def _ident_ppm(ident: Union[str, UUID]):
+def _ident_ppm(ident: PaneIdent):
     return PanePathMod(pred=__.ident(ident))
 
 
@@ -216,15 +216,15 @@ class Transitions(MyoTransitions):
 
     @may_handle(TmuxRunShell)
     def run_shell(self):
-        opts = self.msg.options
-        st = opts.get('pane') / L(SetShellTarget)(self.msg.shell, _) | Nop
-        return TmuxRunCommand(command=self.msg.shell, options=opts), st
+        shell = self.msg.shell
+        default = Map(shell.target.map(lambda a: ('pane', a)).to_list)
+        opts = default ** self.msg.options
+        return TmuxRunCommand(command=shell, options=opts)
 
     @handle(SetShellTarget)
     def set_shell_target(self):
-        target = self._pane_by_name(self.msg.pane) / _.uuid
-        def setter(shell):
-            return shell.modify(__.set(target=target))
+        target = self._pane(self.msg.target) / _.uuid
+        setter = __.modify(__.set(target=target))
         return (self.data.command_lens(self.msg.shell.uuid)).map(setter)
 
     @handle(TmuxRunLineInShell)
@@ -259,12 +259,12 @@ class Transitions(MyoTransitions):
     def _run_ppm(self, ppm):
         return DataTask(_ // L(self._wrap_window)(_, ppm.run) / either_msg)
 
-    def _open_pane_ppm(self, name: Union[str, UUID]):
+    def _open_pane_ppm(self, name: PaneIdent):
         # cannot reference self.layouts.pack_path directly, because panes
         # are cached
         return _ident_ppm(name) / self._open_pane / self._pack_path
 
-    def _close_pane_ppm(self, name: Union[str, UUID]):
+    def _close_pane_ppm(self, name: PaneIdent):
         return _ident_ppm(name) / self._close_pane / self._pack_path
 
     def _run_command_ppm(self, line, opt: Map):
@@ -306,14 +306,11 @@ class Transitions(MyoTransitions):
     def _pane_lens(self, f: Callable):
         return Layout.pane_lens(self.state, f)
 
-    def _pane_by_name(self, name: str):
-        return self.state.vim_window // __.root.find_pane_name(name)
+    def _pane(self, ident: PaneIdent):
+        return self.state.vim_window // __.root.find_pane(ident)
 
-    def _pane_by_uuid(self, uuid: UUID):
-        return self.state.vim_window // __.root.find_pane_uuid(uuid)
-
-    def _pane_uuid_by_name(self, name: str):
-        return self._pane_by_name(name) / _.uuid
+    def _pane_uuid(self, ident: PaneIdent):
+        return self._pane(ident) / _.uuid
 
     def _default_pane_name(self):
         return 'make'

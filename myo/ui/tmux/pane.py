@@ -2,7 +2,7 @@ from typing import Union
 from uuid import UUID
 
 from tryp.task import task
-from tryp import __, List
+from tryp import __, List, Maybe, L, _
 from tryp.lazy import lazy
 
 from trypnv.record import maybe_field, field
@@ -11,6 +11,15 @@ from myo.ui.tmux.view import View
 from myo.ui.tmux.adapter import Adapter
 from myo.util import parse_int
 from myo.ui.tmux.util import parse_window_id, parse_pane_id
+
+PaneIdent = Union[str, UUID]
+
+
+def contains_pane_ident(a: Maybe):
+    tpes = List(UUID, str)
+    bad = lambda a: not tpes.exists(L(isinstance)(a, _))
+    err = 'must be Maybe[PaneIdent]'
+    return not a.exists(bad), err
 
 
 class Pane(View):
@@ -28,7 +37,7 @@ class Pane(View):
         pid = self.pid / ' | pid -> {}'.format | ''
         return 'P{} \'{}\'{} {}'.format(id, self.name, pid, self.size_desc)
 
-    def ident(self, ident: Union[str, UUID]):
+    def ident(self, ident: PaneIdent):
         attr = self.uuid if isinstance(ident, UUID) else self.name
         return attr == ident
 

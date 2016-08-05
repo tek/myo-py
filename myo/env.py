@@ -22,7 +22,7 @@ class Env(Data):
     views = field(Views, initial=Views())
     dispatchers = field(Dispatchers, initial=Dispatchers())
 
-    def __add__(self, item: Union[Command, View, Dispatcher]):
+    def cat(self, item: Union[Command, View, Dispatcher]):
         name = (
             'commands' if isinstance(item, Command) else
             'views' if isinstance(item, View) else
@@ -30,6 +30,8 @@ class Env(Data):
             None
         )
         return self.mod(name, _ + item)
+
+    __add__ = cat
 
     def command(self, name: str):
         return self.commands[name]

@@ -14,10 +14,9 @@ TmuxClosePane = message('TmuxClosePane', 'name')
 TmuxFindVim = message('TmuxFindVim')
 TmuxLoadDefaults = message('TmuxLoadDefaults')
 TmuxInfo = message('TmuxInfo')
-SetShellTarget = message('SetShellTarget', 'shell', 'pane')
 
 __all__ = ('TmuxRunCommand', 'TmuxOpenPane', 'TmuxCreatePane',
            'TmuxCreateSession', 'TmuxCreateLayout', 'TmuxCreateLayout',
            'TmuxSpawnSession', 'TmuxFindVim', 'TmuxLoadDefaults',
            'TmuxClosePane', 'TmuxRunCommandInShell', 'TmuxRunLineInShell',
-           'TmuxRunShell', 'SetShellTarget')
+           'TmuxRunShell')
