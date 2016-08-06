@@ -39,7 +39,7 @@ class Plugin(MyoComponent):
                 self.data.cat
             )
 
-        @may_handle(AddCommand)
+        @handle(AddCommand)
         def add_command(self):
             return self._add(Command, List('line'), List(), name=self.msg.name)
 
@@ -48,7 +48,7 @@ class Plugin(MyoComponent):
             return self.data + VimCommand(name=self.msg.name,
                                           **self.msg.options)
 
-        @may_handle(AddShellCommand)
+        @handle(AddShellCommand)
         def add_shell_command(self):
             return self._add(ShellCommand, List('line'), List(),
                              name=self.msg.name)
