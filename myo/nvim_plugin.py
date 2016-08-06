@@ -107,7 +107,7 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
         pass
 
     @msg_command(TmuxInfo)
-    def myo_tmux_info(self):
+    def myo_tmux_show(self):
         pass
 
     @neovim.autocmd('VimLeave', sync=True)
