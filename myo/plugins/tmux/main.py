@@ -338,7 +338,7 @@ class Transitions(MyoTransitions):
         return self.vim.call('getpid').to_either('no pid')
 
     def _find_vim_pane(self, vim_pid):
-        return self.server.panes.find(__.pid.contains(vim_pid))
+        return self.server.panes.find(__.command_pid.contains(vim_pid))
 
     def _run_command_line(self, line, pane, options):
         return self.panes.run_command_line(pane, line)
