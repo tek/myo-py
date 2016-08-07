@@ -1,8 +1,9 @@
-from typing import Union
 from uuid import UUID
 
 from tryp.task import task
-from tryp import __, List, Maybe, L, _
+
+from psutil import Process
+from tryp import __, List, Boolean, Maybe, _
 from tryp.lazy import lazy
 
 from trypnv.record import maybe_field, field
@@ -10,20 +11,12 @@ from trypnv.record import maybe_field, field
 from myo.ui.tmux.view import View
 from myo.ui.tmux.adapter import Adapter
 from myo.util import parse_int
-from myo.ui.tmux.util import parse_window_id, parse_pane_id
-
-PaneIdent = Union[str, UUID]
-
-
-def contains_pane_ident(a: Maybe):
-    tpes = List(UUID, str)
-    bad = lambda a: not tpes.exists(L(isinstance)(a, _))
-    err = 'must be Maybe[PaneIdent]'
-    return not a.exists(bad), err
+from myo.ui.tmux.util import parse_window_id, parse_pane_id, PaneIdent
 
 
 class Pane(View):
     id = maybe_field(int)
+    shell_pid = maybe_field(int)
     pid = maybe_field(int)
     name = field(str)
 
@@ -63,6 +56,18 @@ class PaneAdapter(Adapter):
     def pid(self):
         return parse_int(self.native.pid)
 
+    @lazy
+    def command_pid(self) -> Maybe[int]:
+        return (
+            self.pid /
+            Process /
+            __.children() /
+            List.wrap //
+            _.head /
+            _.pid //
+            Maybe
+        )
+
     @task
     def resize(self, size, horizontal):
         f = __.set_width if horizontal else __.set_height
@@ -98,5 +103,13 @@ class PaneAdapter(Adapter):
 
     def __repr__(self):
         return 'PA({})'.format(self.id, self.size)
+
+    @lazy
+    def running(self) -> Boolean:
+        return self.command_pid.is_just
+
+    @property
+    def not_running(self) -> Boolean:
+        return Boolean(not self.running)
 
 __all__ = ('Pane', 'VimPane', 'PaneAdapter')

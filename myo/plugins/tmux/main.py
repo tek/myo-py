@@ -2,11 +2,9 @@ from typing import Callable
 
 import libtmux
 
-import psutil
-
 from lenses import lens
 
-from tryp import List, _, __, Just, Maybe, Map, Right, Try
+from tryp import List, _, __, Just, Maybe, Map, Right
 from tryp.lazy import lazy
 from tryp.task import Task
 from tryp.anon import L
@@ -36,6 +34,7 @@ from myo.plugins.tmux.dispatch import TmuxDispatcher
 from myo.ui.tmux.util import format_state
 from myo.ui.tmux.pane_path import PanePathMod
 from myo.plugins.command import SetShellTarget
+from myo.command import Command, Shell
 
 _is_vim_window = lambda a: isinstance(a, VimWindow)
 _is_vim_layout = lambda a: isinstance(a, VimLayout)
@@ -211,8 +210,14 @@ class Transitions(MyoTransitions):
 
     @may_handle(TmuxRunCommand)
     def run_command(self):
-        line = self.msg.command.line
-        return self._run_ppm(self._run_command_ppm(line, self.msg.options))
+        command = self.msg.command
+        line = command.line
+        shell = command.shell // self.data.shell
+        options = self.msg.options
+        return shell.cata(
+            L(self._run_in_shell)(command, _, options),
+            L(self._run_command)(line, options)
+        )
 
     @may_handle(TmuxRunShell)
     def run_shell(self):
@@ -229,12 +234,11 @@ class Transitions(MyoTransitions):
 
     @handle(TmuxRunLineInShell)
     def run_line_in_shell(self):
-        ident = self.msg.shell.target | self._default_pane_name
-        opt = self.msg.options + ('pane', ident)
+        opt = self.msg.options
         return (
             opt.get('line') /
-            L(self._run_command_ppm)(_, opt) /
-            self._run_ppm
+            (lambda a: Command(name='temp', line=a)) /
+            L(self._run_in_shell)(_, self.msg.shell, opt)
         )
 
     @may_handle(PanePathMod)
@@ -268,11 +272,25 @@ class Transitions(MyoTransitions):
         return _ident_ppm(name) / self._close_pane / self._pack_path
 
     def _run_command_ppm(self, line, opt: Map):
+        in_shell = 'shell' in opt
         pane_ident = opt.get('pane') | self._default_pane_name
-        def go(path):
-            return (self._run_command_line(line, path.pane, opt) /
-                    (lambda a: Right(path)))
-        return self._open_pane_ppm(pane_ident) + go
+        def check_running(path):
+            return Task.now(Right(path)) if in_shell else (
+                self.panes.ensure_not_running(path.pane) /
+                __.replace(path)
+            )
+        def run(path):
+            return (
+                self._run_command_line(line, path.pane, opt) /
+                (lambda a: Right(path))
+            )
+        def pid(path):
+            return (
+                self.panes.command_pid(path.pane) /
+                (lambda a: path.map_pane(__.set(pid=a))) /
+                Right
+            )
+        return (self._open_pane_ppm(pane_ident) + check_running) / run / pid
 
     def _open_pane(self, w):
         return self.layouts.open_pane(w)
@@ -317,17 +335,24 @@ class Transitions(MyoTransitions):
 
     @property
     def _vim_pid(self):
-        return (
-            self.vim.call('getpid').to_either('no pid') /
-            psutil.Process //
-            (lambda p: Try(p.ppid))
-        )
+        return self.vim.call('getpid').to_either('no pid')
 
     def _find_vim_pane(self, vim_pid):
         return self.server.panes.find(__.pid.contains(vim_pid))
 
     def _run_command_line(self, line, pane, options):
         return self.panes.run_command_line(pane, line)
+
+    def _run_command(self, line, options):
+        return self._run_command_ppm(line, options)
+
+    def _run_in_shell(self, command: Command, shell: Shell, options: Map):
+        ident = shell.target | self._default_pane_name
+        opt = options + ('pane', ident) + ('shell', shell)
+        return (
+            TmuxRunShell(shell, Map()),
+            self._run_command(command.line, opt)
+        )
 
 
 class Plugin(MyoComponent):

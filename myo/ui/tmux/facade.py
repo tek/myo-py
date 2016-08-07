@@ -70,7 +70,7 @@ class LayoutFacade(Logging):
     def _open_in_layout(self, pane, layout) -> Task[Tuple[Layout, Pane]]:
         @task
         def go(ref):
-            update = lambda i, p: pane.set(id=Just(i), pid=Just(p))
+            update = lambda i, p: pane.set(id=Just(i), shell_pid=Just(p))
             return (
                 ref.id //
                 self.server.find_pane_by_id /
@@ -201,18 +201,26 @@ class PaneFacade(Logging):
     def find_pane_by_id(self, id):
         return self.panes.find(__.id_i.contains(id))
 
-    def find(self, pane: Pane):
+    def find(self, pane: Pane) -> PaneAdapter:
         return pane.id // self.find_pane_by_id
+
+    def _find_task(self, pane: Pane) -> Task[PaneAdapter]:
+        return (
+            Task.call(self.find, pane) //
+            L(Task.from_maybe)(_, 'pane not found')
+        )
 
     def run_command(self, pane: Pane, command: ShellCommand):
         return self.run_command_line(pane, command.line)
 
     def run_command_line(self, pane: Pane, line: str):
         return (
-            Task.call(self.find, pane) //
-            L(Task.from_maybe)(_, 'pane not found') /
+            self._find_task(pane) /
             __.send_keys(line, suppress_history=False)
         )
+
+    def command_pid(self, pane: Pane):
+        return self._find_task(pane) / _.command_pid
 
     def close(self, pane: Pane):
         err = 'cannot close pane {}: not found'.format(pane)
@@ -221,5 +229,11 @@ class PaneFacade(Logging):
 
     def close_id(self, id: int):
         return self.server.cmd('kill-pane', '-t', '%{}'.format(id))
+
+    def ensure_not_running(self, pane: Pane):
+        return (
+            self._find_task(pane) /
+            __.not_running.either('command already running', True)
+        )
 
 __all__ = ('LayoutFacade', 'PaneFacade')

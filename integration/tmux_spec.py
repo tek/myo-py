@@ -118,26 +118,38 @@ class DispatchSpec(_TmuxSpec):
         self.json_cmd('MyoRun test', pane='make')
         later(check)
 
-    def shell(self):
+    def _shell(self, create):
         s = 'cmd test {}'
         i = 5342
+        target = s.format(i)
         def check():
             panes = self.sessions.head // _.windows.head / _.panes | List()
             out = panes // _.capture
-            out.should.contain(s.format(i))
+            out.should.contain(target)
         line = 'print(\'{}\'.format(\'{}\'))'.format(s, i)
         self.json_cmd('MyoShell py', line='python', target='make')
-        self.json_cmd('MyoRun py')
-        self.json_cmd('MyoRunInShell py', line=line)
+        create(line)
         later(check)
 
+    def run_in_shell(self):
+        def create(line):
+            self.json_cmd('MyoRun py')
+            self.json_cmd('MyoRunInShell py', line=line)
+        self._shell(create)
 
-class InfoSpec(_TmuxSpec):
+    def shell_command(self):
+        def create(line):
+            self.json_cmd('MyoShellCommand test', line=line, shell='py')
+            self.json_cmd('MyoRun test')
+        self._shell(create)
+
+
+class ShowSpec(_TmuxSpec):
 
     def output(self):
         def check():
             self._log_out.should_not.be.empty
-        self.vim.cmd('MyoTmuxInfo')
+        self.vim.cmd('MyoTmuxShow')
         later(check)
 
 __all__ = ('CutSizeSpec', 'DistributeSizeSpec', 'DispatchSpec')

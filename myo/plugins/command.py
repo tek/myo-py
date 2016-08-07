@@ -45,12 +45,12 @@ class Plugin(MyoComponent):
 
         @may_handle(AddVimCommand)
         def add_vim_command(self):
-            return self.data + VimCommand(name=self.msg.name,
-                                          **self.msg.options)
+            return self._add(VimCommand, List('line'), List(),
+                             name=self.msg.name)
 
         @handle(AddShellCommand)
         def add_shell_command(self):
-            return self._add(ShellCommand, List('line'), List(),
+            return self._add(ShellCommand, List('line'), List('shell'),
                              name=self.msg.name)
 
         @handle(AddShell)

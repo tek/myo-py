@@ -1,8 +1,12 @@
 import re
+from uuid import UUID
+from typing import Union
+
+from tryp import List, Maybe, Empty, L, _
+
+from trypnv.record import field
 
 from myo.util import parse_id
-
-from tryp import List
 
 _win_id_re = re.compile('^@(\d+)$')
 
@@ -37,5 +41,17 @@ def format_window(win):
 def format_state(state) -> List[str]:
     return state.windows // format_window
 
+PaneIdent = Union[str, UUID]
+
+
+def contains_pane_ident(a: Maybe):
+    tpes = List(UUID, str)
+    bad = lambda a: not tpes.exists(L(isinstance)(a, _))
+    err = 'must be Maybe[PaneIdent]'
+    return not a.exists(bad), err
+
+
+def ident_field():
+    return field(Maybe, initial=Empty(), invariant=contains_pane_ident)
 
 __all__ = ('parse_window_id', 'parse_pane_id')

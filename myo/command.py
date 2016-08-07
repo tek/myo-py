@@ -2,10 +2,8 @@ from fn import _
 
 from trypnv.record import list_field, field
 
-from tryp import Maybe, Empty
-
 from myo.record import Record
-from myo.ui.tmux.pane import contains_pane_ident
+from myo.ui.tmux.util import ident_field
 
 
 class Command(Record):
@@ -18,11 +16,11 @@ class VimCommand(Command):
 
 
 class ShellCommand(Command):
-    pass
+    shell = ident_field()
 
 
 class Shell(ShellCommand):
-    target = field(Maybe, initial=Empty(), invariant=contains_pane_ident)
+    target = ident_field()
 
 
 class Commands(Record):
