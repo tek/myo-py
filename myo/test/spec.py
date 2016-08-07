@@ -21,20 +21,18 @@ class TmuxSpec(Spec):
         super().setup()
 
     def _find_server(self):
-        if self.server is None:
+        if self.native_server is None:
             try:
-                self.server = Server(libtmux.Server(socket_name=self.socket))
+                self.native_server = libtmux.Server(socket_name=self.socket)
             except LibTmuxException:
                 pass
-        return self.server is not None
+        return self.native_server is not None
 
     def _find_session(self):
-        if self.session is None:
-            try:
-                self.session = self.server.sessions[0]
-            except LibTmuxException:
-                pass
-        return self.session is not None
+        try:
+            return self.session is not None
+        except LibTmuxException:
+            pass
 
     def _setup_server(self):
         conf = fixture_path('conf', 'tmux.conf')
@@ -44,14 +42,21 @@ class TmuxSpec(Spec):
                 self.socket, '-f', str(conf)]
         self.term = subprocess.Popen(args, stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
-        self.server = None
-        self.session = None
+        self.native_server = None
         self._wait_for(self._find_server)
         self._wait_for(self._find_session)
 
     def _teardown_server(self):
         self.term.kill()
         self.server.kill()
+
+    @property
+    def server(self):
+        return Server(self.native_server)
+
+    @property
+    def session(self):
+        return self.server.sessions[0]
 
     @property
     def sessions(self):

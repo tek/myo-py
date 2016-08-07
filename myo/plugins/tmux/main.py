@@ -143,17 +143,24 @@ class Transitions(MyoTransitions):
     @may_handle(TmuxFindVim)
     def find_vim(self):
         vim_pid = self._vim_pid
-        pane = vim_pid // self._find_vim_pane
+        vim_pane = vim_pid // self._find_vim_pane
         id = (
             (self.vim.pvar('tmux_force_vim_pane_id') // parse_int)
-            .or_else(pane // _.id_i)
+            .or_else(vim_pane // _.id_i)
         )
         wid = (
             self.vim.pvar('tmux_force_vim_win_id')
-            .or_else(pane // _.window_id_i)
+            .or_else(vim_pane // _.window_id_i)
+            .to_either('no vim win id')
+        )
+        sid = (
+            self.vim.pvar('tmux_force_vim_session_id')
+            .or_else(vim_pane // _.session_id_i)
+            .to_either('no vim session id')
         )
         vim_w = self.vim.pvar('tmux_vim_width').or_else(Just(85))
-        pane = VimPane(id=id.to_maybe, name='vim', pid=vim_pid.to_maybe)
+        pane = VimPane(id=id.to_maybe, name='vim', pid=vim_pid.to_maybe,
+                       window_id=wid, session_id=sid)
         vim_layout = VimLayout(name='vim',
                                direction=LayoutDirections.vertical,
                                panes=List(pane), fixed_size=vim_w)
@@ -338,7 +345,7 @@ class Transitions(MyoTransitions):
         return self.vim.call('getpid').to_either('no pid')
 
     def _find_vim_pane(self, vim_pid):
-        return self.server.panes.find(__.command_pid.contains(vim_pid))
+        return self.server.pane_data.find(__.command_pid.contains(vim_pid))
 
     def _run_command_line(self, line, pane, options):
         return self.panes.run_command_line(pane, line)
@@ -364,7 +371,7 @@ class Plugin(MyoComponent):
         socket = self.vim.pvar('tmux_socket') | None
         return libtmux.Server(socket_name=socket)
 
-    @lazy
+    @property
     def server(self):
         return Server(self.native_server)
 

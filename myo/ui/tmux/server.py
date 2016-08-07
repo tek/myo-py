@@ -2,9 +2,11 @@ import libtmux
 
 from myo.logging import Logging
 from myo.ui.tmux.session import SessionAdapter
+from myo.ui.tmux.pane import PaneData
 
-from tryp import _, List, __
+from tryp import _, List, __, Map
 from tryp.task import task
+from tryp.lazy import lazy
 
 
 class Server(Logging):
@@ -12,30 +14,34 @@ class Server(Logging):
     def __init__(self, native: libtmux.Server) -> None:
         self.native = native
 
-    @property
+    @lazy
     def sessions(self):
         return List.wrap(self.native.sessions) / SessionAdapter
 
-    def find_pane_by_id(self, id: int):
-        return self.sessions.find_map(__.find_pane_by_id(id))
+    def session_by_id(self, id: int):
+        return self.sessions.find(__.id_i.contains(id))
 
-    @property
+    @lazy
     def windows(self):
         return self.sessions // _.windows
 
     def window(self, id):
         return self.windows.find(__.id_i.contains(id))
 
-    @property
+    @lazy
     def panes(self):
         return self.windows // _.panes
 
     def pane(self, id):
         return self.panes.find(__.id_i.contains(id))
 
-    @property
+    @lazy
+    def pane_data(self):
+        return List.wrap(self.native._list_panes()) / Map / PaneData
+
+    @lazy
     def pane_ids(self):
-        return self.panes // _.id_i.to_list
+        return self.pane_data // _.id_i.to_list
 
     def kill(self):
         return self.native.kill_server()

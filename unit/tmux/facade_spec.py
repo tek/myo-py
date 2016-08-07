@@ -9,7 +9,7 @@ class LayoutFacadeSpec(TmuxUnitSpec):
 
     def setup(self):
         super().setup()
-        self.f = LayoutFacade(None)
+        self.f = LayoutFacade(self.server)
 
     def distribute(self):
         min_s = List(10, 0)
@@ -20,4 +20,4 @@ class LayoutFacadeSpec(TmuxUnitSpec):
         res = self.f._distribute_sizes(min_s, max_s, nw, total)
         res.should.equal(List(10, 40))
 
-__all__ = ('FacadeSpec',)
+__all__ = ('LayoutFacadeSpec',)

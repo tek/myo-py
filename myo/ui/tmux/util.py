@@ -8,6 +8,12 @@ from trypnv.record import field
 
 from myo.util import parse_id
 
+_session_id_re = re.compile('^\$(\d+)$')
+
+
+def parse_session_id(value):
+    return parse_id(value, _session_id_re, 'session')
+
 _win_id_re = re.compile('^@(\d+)$')
 
 

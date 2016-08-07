@@ -32,7 +32,7 @@ class WindowAdapter(Adapter):
     def panes(self):
         return List.wrap(self.native.panes) / PaneAdapter
 
-    def find_pane_by_id(self, id: int):
+    def pane_by_id(self, id: int):
         return self.panes.find(__.id_i.contains(id))
 
     @lazy

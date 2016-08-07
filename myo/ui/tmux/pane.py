@@ -1,24 +1,28 @@
 from uuid import UUID
+import abc
 
 from tryp.task import task
 
 from psutil import Process
-from tryp import __, List, Boolean, Maybe, _
+from tryp import __, List, Boolean, Maybe, _, Map, Just
 from tryp.lazy import lazy
 
-from trypnv.record import maybe_field, field
+from trypnv.record import maybe_field, field, either_field
 
 from myo.ui.tmux.view import View
 from myo.ui.tmux.adapter import Adapter
 from myo.util import parse_int
-from myo.ui.tmux.util import parse_window_id, parse_pane_id, PaneIdent
+from myo.ui.tmux.util import (parse_window_id, parse_pane_id, PaneIdent,
+                              parse_session_id)
 
 
 class Pane(View):
     id = maybe_field(int)
-    shell_pid = maybe_field(int)
-    pid = maybe_field(int)
     name = field(str)
+    pid = maybe_field(int)
+    shell_pid = maybe_field(int)
+    window_id = either_field(int)
+    session_id = either_field(int)
 
     @property
     def id_s(self):
@@ -34,6 +38,10 @@ class Pane(View):
         attr = self.uuid if isinstance(ident, UUID) else self.name
         return attr == ident
 
+    def open(self, pa: 'PaneAdapter'):
+        return self.set(id=pa.id_i.to_maybe, shell_pid=pa.pid.to_maybe,
+                        session_id=pa.session_id_i, window_id=pa.window_id_i)
+
 
 class VimPane(Pane):
 
@@ -42,19 +50,15 @@ class VimPane(Pane):
         return 'V{}'.format(super().desc)
 
 
-class PaneAdapter(Adapter):
+class PaneI(metaclass=abc.ABCMeta):
 
-    @lazy
-    def id(self):
-        return self.native.id
-
-    @lazy
-    def id_i(self):
-        return parse_pane_id(self.id)
+    @abc.abstractproperty
+    def _raw_pid(self) -> Maybe[int]:
+        ...
 
     @lazy
     def pid(self):
-        return parse_int(self.native.pid)
+        return self._raw_pid // parse_int
 
     @lazy
     def command_pid(self) -> Maybe[int]:
@@ -67,6 +71,61 @@ class PaneAdapter(Adapter):
             _.pid //
             Maybe
         )
+
+
+class PaneData(PaneI):
+
+    def __init__(self, data: Map) -> None:
+        self.data = data
+
+    def attr(self, name):
+        return (
+            self.data.get(name)
+            .or_else(self.data.get('pane_{}'.format(name)))
+        )
+
+    @lazy
+    def id(self):
+        return self.attr('id')
+
+    @property
+    def id_i(self):
+        return self.id // parse_pane_id
+
+    @lazy
+    def window_id(self):
+        return self.attr('window_id')
+
+    @property
+    def window_id_i(self):
+        return self.window_id // parse_window_id
+
+    @lazy
+    def session_id(self):
+        return self.attr('session_id')
+
+    @property
+    def session_id_i(self):
+        return self.session_id // parse_session_id
+
+    @property
+    def _raw_pid(self):
+        return self.data.get('pane_pid')
+
+
+class PaneAdapter(Adapter, PaneI):
+
+    @lazy
+    def id(self):
+        return self.native.id
+
+    @lazy
+    def id_i(self):
+        return parse_pane_id(self.id)
+
+    @property
+    def _raw_pid(self):
+        return Just(self.native.pid)
 
     @task
     def resize(self, size, horizontal):
@@ -92,6 +151,14 @@ class PaneAdapter(Adapter):
     @property
     def capture(self):
         return List.wrap(self.native.cmd('capture-pane', '-p').stdout)
+
+    @property
+    def session_id(self):
+        return self.native.session.id
+
+    @lazy
+    def session_id_i(self):
+        return parse_session_id(self.session_id)
 
     @lazy
     def window_id(self):

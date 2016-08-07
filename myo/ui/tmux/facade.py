@@ -4,7 +4,7 @@ from operator import ne
 
 from tryp.task import Task, task
 from tryp.anon import L
-from tryp import _, __, List, Left, F, Just, Boolean, Right, Empty
+from tryp import _, __, List, Left, F, Boolean, Right, Empty
 from tryp.lazy import lazy
 
 from myo.logging import Logging
@@ -69,16 +69,14 @@ class LayoutFacade(Logging):
 
     def _open_in_layout(self, pane, layout) -> Task[Tuple[Layout, Pane]]:
         @task
-        def go(ref):
-            update = lambda i, p: pane.set(id=Just(i), shell_pid=Just(p))
+        def open(ref):
             return (
-                ref.id //
-                self.server.find_pane_by_id /
+                self.panes.find(ref) /
                 __.split(layout.horizontal) /
-                PaneAdapter //
-                (lambda a: a.id_i & a.pid)
-            ).map2(update) | pane
-        return (self._ref_pane(layout) // go) & (Task.now(layout))
+                PaneAdapter /
+                pane.open
+            ) | pane
+        return (self._ref_pane(layout) // open) & (Task.now(layout))
 
     def _opened_panes(self, panes):
         return panes.filter(self.panes.is_open)
@@ -153,7 +151,7 @@ class LayoutFacade(Logging):
 
     def _apply_size(self, pane, size, horizontal):
         return (
-            Task.call(pane.id.flat_map, self.server.pane) //
+            Task.call(self.panes.find, pane) //
             L(Task.from_maybe)(_, 'pane not found: {}'.format(pane)) //
             __.resize(size, horizontal)
         )
@@ -192,8 +190,12 @@ class PaneFacade(Logging):
         return self.server.panes
 
     @lazy
+    def pane_data(self):
+        return self.server.pane_data
+
+    @lazy
     def pane_ids(self):
-        return self.panes // _.id_i.to_list
+        return self.pane_data // _.id_i.to_list
 
     def is_open(self, pane):
         return pane.id.exists(self.pane_ids.contains)
@@ -201,8 +203,21 @@ class PaneFacade(Logging):
     def find_pane_by_id(self, id):
         return self.panes.find(__.id_i.contains(id))
 
+    def select_pane(self, session_id, window_id, pane_id):
+        return (
+            self.server.session_by_id(session_id) //
+            __.window_by_id(window_id) //
+            __.pane_by_id(pane_id)
+        )
+
     def find(self, pane: Pane) -> PaneAdapter:
-        return pane.id // self.find_pane_by_id
+        def find_by_id(pane_id):
+            return (
+                (pane.session_id & pane.window_id)
+                .flat_map2(L(self.select_pane)(_, _, pane_id))
+                .or_else(L(self.find_pane_by_id)(pane_id))
+            )
+        return pane.id // find_by_id
 
     def _find_task(self, pane: Pane) -> Task[PaneAdapter]:
         return (
