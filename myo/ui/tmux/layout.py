@@ -44,7 +44,7 @@ class Layout(View):
         return self.layouts.find_map(__.find_pane_pred(pred))
 
     def find_pane(self, ident: PaneIdent):
-        return self.find_pane_pred(_.ident == ident)
+        return self.find_pane_pred(__.ident(ident))
 
     @staticmethod
     def pane_lens(root, f: Callable[[Pane], bool]):

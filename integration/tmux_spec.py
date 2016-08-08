@@ -127,7 +127,8 @@ class DispatchSpec(_TmuxSpec):
             out = panes // _.capture
             out.should.contain(target)
         line = 'print(\'{}\'.format(\'{}\'))'.format(s, i)
-        self.json_cmd('MyoShell py', line='python', target='make')
+        self.json_cmd('MyoTmuxCreatePane py', parent='main')
+        self.json_cmd('MyoShell py', line='python', target='py')
         create(line)
         later(check)
 
