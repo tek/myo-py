@@ -200,8 +200,11 @@ class PaneFacade(Logging):
     def is_open(self, pane):
         return pane.id.exists(self.pane_ids.contains)
 
-    def find_pane_by_id(self, id):
+    def find_by_id(self, id):
         return self.panes.find(__.id_i.contains(id))
+
+    def find_by_name(self, name):
+        return self.panes.find(_.name == name)
 
     def select_pane(self, session_id, window_id, pane_id):
         return (
@@ -215,7 +218,7 @@ class PaneFacade(Logging):
             return (
                 (pane.session_id & pane.window_id)
                 .flat_map2(L(self.select_pane)(_, _, pane_id))
-                .or_else(L(self.find_pane_by_id)(pane_id))
+                .or_else(L(self.find_by_id)(pane_id))
             )
         return pane.id // find_by_id
 

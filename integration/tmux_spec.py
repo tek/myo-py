@@ -1,6 +1,8 @@
 from tryp import List, _
 from tryp.test import later
 
+from psutil import Process
+
 from integration._support.base import TmuxIntegrationSpec
 
 
@@ -106,6 +108,7 @@ class DispatchSpec(_TmuxSpec):
         super()._set_vars()
         self.vim.set_pvar('tmux_use_defaults', True)
         self.vim.set_pvar('tmux_vim_width', 10)
+        self.vim.set_pvar('tmux_watcher_interval', 0.1)
 
     def simple(self):
         s = 'cmd test'
@@ -138,11 +141,17 @@ class DispatchSpec(_TmuxSpec):
             self.json_cmd('MyoRunInShell py', line=line)
         self._shell(create)
 
-    def shell_command(self):
+    def kill_shell_command(self):
         def create(line):
             self.json_cmd('MyoShellCommand test', line=line, shell='py')
             self.json_cmd('MyoRun test')
+        def pid():
+            expr = '''data.pane("py") // _.pid | -1'''
+            return self.vim.call('MyoTmuxEval', expr) | None
         self._shell(create)
+        later(lambda: pid().should_not.equal(-1))
+        Process(pid()).kill()
+        later(lambda: pid().should.equal(-1))
 
 
 class ShowSpec(_TmuxSpec):
@@ -152,5 +161,6 @@ class ShowSpec(_TmuxSpec):
             self._log_out.should_not.be.empty
         self.vim.cmd('MyoTmuxShow')
         later(check)
+
 
 __all__ = ('CutSizeSpec', 'DistributeSizeSpec', 'DispatchSpec')
