@@ -2,13 +2,12 @@ from pathlib import Path
 
 import neovim
 
-from tryp import List
+from tryp import List, L, _, I
 
 from trypnv import command, NvimStatePlugin, msg_command, json_msg_command
 
 from myo.plugins.core.main import StageI
 from myo.main import Myo
-from myo.nvim import NvimFacade
 from myo.logging import Logging
 from myo.plugins.command import (AddVimCommand, Run, AddShellCommand, AddShell,
                                  ShellRun)
@@ -21,9 +20,13 @@ from myo.plugins.tmux import TmuxOpenPane
 class MyoNvimPlugin(NvimStatePlugin, Logging):
 
     def __init__(self, vim: neovim.Nvim) -> None:
-        super().__init__(NvimFacade(vim))
+        super().__init__(vim)
         self.myo = None  # type: Myo
         self._post_initialized = False
+
+    @property
+    def name(self):
+        return 'myo'
 
     def state(self):
         return self.myo
@@ -109,6 +112,22 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
     @msg_command(TmuxInfo)
     def myo_tmux_show(self):
         pass
+
+    def _eval(self, args, go):
+        result = List.wrap(args).head.to_either('expression needed') // go
+        return result.cata(self.log.error, I)
+
+    @neovim.function('MyoEval', sync=True)
+    def myo_eval(self, args):
+        return self._eval(args, self.myo.eval_expr)
+
+    @neovim.function('MyoTmuxEval', sync=True)
+    def myo_tmux_eval(self, args):
+        def mod(data, plugins):
+            d = data.sub_states.get('tmux') | data
+            p = plugins.get('tmux') | plugins
+            return d, p
+        return self._eval(args, L(self.myo.eval_expr)(_, mod))
 
     @neovim.autocmd('VimLeave', sync=True)
     def vim_leave(self):
