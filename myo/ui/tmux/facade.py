@@ -2,9 +2,9 @@ from typing import Tuple
 from functools import singledispatch  # type: ignore
 from operator import ne
 
-from tryp.task import Task, task
+from tryp.task import Task
 from tryp.anon import L
-from tryp import _, __, List, Left, F, Boolean, Right, Empty
+from tryp import _, __, List, Left, F, Boolean, Right, Empty, Either
 from tryp.lazy import lazy
 
 from myo.logging import Logging
@@ -34,49 +34,69 @@ class LayoutFacade(Logging):
     def open_views(self, layout):
         return layout.views.filter(self.view_open)
 
-    def open_pane(self, path: PanePath) -> Task[PanePath]:
-        p = path.pane
-        return (Task.now(Left('pane {} already open'.format(p)))
-                if self.panes.is_open(p)
-                else self._open_pane(path))
-
-    def close_pane_path(self, path: PanePath):
-        new_path = path.map_pane(__.set(id=Empty()))
-        return self.panes.close(path.pane) / __.replace(new_path)
-
-    def _open_pane(self, path) -> Task[PanePath]:
+    def open_pane(self, path: PanePath) -> Task[Either[str, PanePath]]:
         return (
-            self._open_in_layouts(path.pane, path.layout, path.outer)
-            .map3(F(PanePath.create, path.window)) /
-            Right
+            self._pane_opener(path).eff(Either) //
+            L(self._split_pane)(_, path.pane).map(Right) /
+            path.setter.pane
+        ).value
+
+    def _pane_opener(self, path: PanePath) -> Task[Either[str, Layout]]:
+        pane = path.pane
+        def find_layout():
+            return (path.layouts.reversed.find(self.layout_open)
+                    .to_either('no open layout when trying to open pane'))
+        return Task.now(
+            self.panes.is_open(pane).no.flat_either_call(
+                'pane {} already open'.format(pane),
+                find_layout,
+            )
         )
 
-    def _open_in_layouts(self, pane, layout, outer):
-        if self.layout_open(layout):
-            return self._open_in_layout(pane, layout) / (_ + (outer,))
-        else:
-            return (
-                outer.detach_last.map2(F(self._open_in_layouts, pane)) |
-                Task.failed('cannot open {} without open layout'.format(pane))
-            ).map3(lambda p, l, o: (p, layout, o.cat(l)))
+    def _split_pane(self, layout, pane) -> Task[Pane]:
+        return self._ref_pane(layout) / (
+            lambda a:
+            self.panes.find(a) /
+            __.split(layout.horizontal) /
+            PaneAdapter /
+            pane.open |
+            pane
+        )
 
-    def _ref_pane(self, layout):
+    def _ref_pane(self, layout) -> Task[Pane]:
+        ''' A pane in the layout to be used to open a pane.
+        Uses the first open pane available.
+        Failure if no panes are open.
+        '''
         def go(l):
             return (self._opened_panes(l.panes).head
                     .or_else(l.layouts.find_map(go)))
         return (Task.call(go, layout) //
                 L(Task.from_maybe)(_, "no ref pane for {}".format(layout)))
 
-    def _open_in_layout(self, pane, layout) -> Task[Tuple[Layout, Pane]]:
-        @task
-        def open(ref):
+    def open_pane_path(self, path: PanePath) -> Task[Either[str, PanePath]]:
+        ''' legacy version
+        '''
+        p = path.pane
+        return (Task.now(Left('pane {} already open'.format(p)))
+                if self.panes.is_open(p)
+                else self._open_pane_path(path))
+
+    def _open_in_layouts_path(self, pane, layout, outer):
+        if self.layout_open(layout):
+            return self._open_in_layout(pane, layout) / (_ + (outer,))
+        else:
             return (
-                self.panes.find(ref) /
-                __.split(layout.horizontal) /
-                PaneAdapter /
-                pane.open
-            ) | pane
-        return (self._ref_pane(layout) // open) & (Task.now(layout))
+                outer.detach_last.map2(F(self._open_in_layouts_path, pane)) |
+                Task.failed('cannot open {} without open layout'.format(pane))
+            ).map3(lambda p, l, o: (p, layout, o.cat(l)))
+
+    def _open_in_layout(self, pane, layout) -> Task[Tuple[Layout, Pane]]:
+        return self._split_pane(layout, pane) & (Task.now(layout))
+
+    def close_pane_path(self, path: PanePath):
+        new_path = path.map_pane(__.set(id=Empty()))
+        return self.panes.close(path.pane) / __.replace(new_path)
 
     def _opened_panes(self, panes):
         return panes.filter(self.panes.is_open)
