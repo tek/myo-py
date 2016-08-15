@@ -72,8 +72,12 @@ class PanePathLens(Record):
     def run(self, win: Window, f: PPTrans) -> Task[Either[Any, Window]]:
         bound = self.lens.bind(win)
         path = PanePath.try_create(List.wrap(bound.get()))
-        update = F(_.to_list) >> bound.set
-        return Task.from_either(path) // f / (_ / update)
+        def update(pp):
+            return bound.set(pp.to_list)
+        def apply(pp):
+            res = f(pp)
+            return res / (_ / update)
+        return Task.from_either(path) // apply
 
 
 def _initial_ppm_f(pp, window) -> Task[Either[Any, Window]]:
