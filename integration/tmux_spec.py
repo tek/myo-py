@@ -146,10 +146,10 @@ class DispatchSpec(_TmuxSpec):
             self.json_cmd('MyoShellCommand test', line=line, shell='py')
             self.json_cmd('MyoRun test')
         def pid():
-            expr = '''data.pane("py") // _.pid | -1'''
-            return self.vim.call('MyoTmuxEval', expr) | None
+            expr = '''data.pane("py") // (lambda a: a.pid) | -1'''
+            return self.vim.call('MyoTmuxEval', expr) | -2
         self._shell(create)
-        later(lambda: pid().should_not.equal(-1))
+        later(lambda: pid().should.be.greater_than(0))
         Process(pid()).kill()
         later(lambda: pid().should.equal(-1))
 
