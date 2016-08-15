@@ -4,7 +4,7 @@ from operator import ne
 
 from tryp.task import Task
 from tryp.anon import L
-from tryp import _, __, List, Left, F, Boolean, Right, Empty, Either
+from tryp import _, __, List, Left, F, Boolean, Right, Empty, Either, Maybe
 from tryp.lazy import lazy
 
 from myo.logging import Logging
@@ -233,7 +233,7 @@ class PaneFacade(Logging):
             __.pane_by_id(pane_id)
         )
 
-    def find(self, pane: Pane) -> PaneAdapter:
+    def find(self, pane: Pane) -> Maybe[PaneAdapter]:
         def find_by_id(pane_id):
             return (
                 (pane.session_id & pane.window_id)
@@ -272,6 +272,14 @@ class PaneFacade(Logging):
         return (
             self._find_task(pane) /
             __.not_running.either('command already running', True)
+        )
+
+    def pipe(self, pane: Pane, base: str):
+        return (
+            self.find(pane)
+            .task('capture: pane not found') /
+            __.pipe(base) /
+            pane.setter.log_path
         )
 
 __all__ = ('LayoutFacade', 'PaneFacade')

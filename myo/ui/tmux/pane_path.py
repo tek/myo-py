@@ -75,8 +75,7 @@ class PanePathLens(Record):
         def update(pp):
             return bound.set(pp.to_list)
         def apply(pp):
-            res = f(pp)
-            return res / (_ / update)
+            return f(pp) / (_ / update)
         return Task.from_either(path) // apply
 
 

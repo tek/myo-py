@@ -1,5 +1,8 @@
 from uuid import UUID
 import abc
+from pathlib import Path
+import tempfile
+import os
 
 from tryp.task import task
 
@@ -7,7 +10,7 @@ from psutil import Process
 from tryp import __, List, Boolean, Maybe, _, Map, Just
 from tryp.lazy import lazy
 
-from trypnv.record import maybe_field, field, either_field
+from trypnv.record import maybe_field, either_field
 
 from myo.ui.tmux.view import View
 from myo.ui.tmux.adapter import Adapter
@@ -22,6 +25,7 @@ class Pane(View):
     shell_pid = maybe_field(int)
     window_id = either_field(int)
     session_id = either_field(int)
+    log_path = maybe_field(Path)
 
     @property
     def id_s(self):
@@ -177,5 +181,13 @@ class PaneAdapter(Adapter, PaneI):
     @property
     def not_running(self) -> Boolean:
         return Boolean(not self.running)
+
+    def pipe(self, base):
+        uid = os.getuid()
+        tmpdir = Path(tempfile.gettempdir()) / 'myo-{}'.format(uid) / base
+        tmpdir.mkdir(exist_ok=True, parents=True)
+        (fh, fname) = tempfile.mkstemp(prefix='pane-', dir=str(tmpdir))
+        self.native.cmd('pipe-pane', fname)
+        return Just(Path(fname))
 
 __all__ = ('Pane', 'VimPane', 'PaneAdapter')

@@ -51,6 +51,7 @@ class TmuxState(Record):
     server = field(Server)
     sessions = list_field()
     windows = list_field()
+    instance_id = field(str, initial='', factory=L(List.random_string)(5))
 
     @property
     def vim_window(self):
@@ -302,6 +303,12 @@ class TmuxTransitions(MyoTransitions):
                 self.panes.ensure_not_running(path.pane) /
                 __.replace(path)
             )
+        def pipe(path):
+            return (
+                self.panes.pipe(path.pane, self.state.instance_id) /
+                path.setter.pane /
+                Right
+            )
         def run(path):
             return (
                 self._run_command_line(command.line, path.pane, opt) /
@@ -321,6 +328,7 @@ class TmuxTransitions(MyoTransitions):
             )
         return (
             (self._open_pane_ppm(pane_ident) + check_running) /
+            pipe /
             run /
             pid /
             watch
