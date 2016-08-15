@@ -69,7 +69,7 @@ class Layout(View):
     @lazy
     def weights(self):
         w = self.views / _.weight
-        total = sum(w.flatten)
+        total = sum(w.join)
         return w / (lambda a: a / (_ / total))
 
     @lazy

@@ -172,7 +172,7 @@ class LayoutFacade(Logging):
         return amended / (_ / total1)
 
     def _amend_weights(self, weights):
-        total = sum(weights.flatten)
+        total = sum(weights.join)
         total1 = 1 if total == 0 else total
         empties = weights.filter(_.is_empty).length
         empties1 = 1 if empties == 0 else empties
