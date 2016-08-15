@@ -18,7 +18,6 @@ from myo.ui.tmux.util import (parse_window_id, parse_pane_id, PaneIdent,
 
 class Pane(View):
     id = maybe_field(int)
-    name = field(str)
     pid = maybe_field(int)
     shell_pid = maybe_field(int)
     window_id = either_field(int)

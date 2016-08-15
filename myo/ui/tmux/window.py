@@ -18,6 +18,9 @@ class Window(Record):
         id = self.id / ' @{}'.format | ''
         return 'W{}'.format(id)
 
+    def __repr__(self):
+        return '{}({})'.format(self.__class__.__name__, self.root.name)
+
 
 class VimWindow(Window):
 

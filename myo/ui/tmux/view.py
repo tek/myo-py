@@ -1,6 +1,6 @@
 from numbers import Number
 
-from trypnv.record import maybe_field
+from trypnv.record import maybe_field, field
 
 from tryp import Just, L, List, _
 
@@ -8,6 +8,7 @@ from myo.record import Record
 
 
 class View(Record):
+    name = field(str)
     min_size = maybe_field(Number)
     max_size = maybe_field(Number)
     fixed_size = maybe_field(Number)
@@ -26,5 +27,8 @@ class View(Record):
         def fmt(a, b):
             return b / L('| {} -> {}'.format)(a, _)
         return candidates.flat_map2(fmt).join(' ')
+
+    def __repr__(self):
+        return '{}({})'.format(self.__class__.__name__, self.name)
 
 __all__ = ('View',)

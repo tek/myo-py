@@ -28,7 +28,6 @@ class LayoutDirections:
 
 
 class Layout(View):
-    name = field(str)
     panes = list_field()
     layouts = list_field()
     direction = dfield(LayoutDirections.vertical)
