@@ -1,4 +1,3 @@
-from uuid import UUID
 import abc
 from pathlib import Path
 import tempfile
@@ -15,8 +14,7 @@ from trypnv.record import maybe_field, either_field
 from myo.ui.tmux.view import View
 from myo.ui.tmux.adapter import Adapter
 from myo.util import parse_int
-from myo.ui.tmux.util import (parse_window_id, parse_pane_id, PaneIdent,
-                              parse_session_id)
+from myo.ui.tmux.util import parse_window_id, parse_pane_id, parse_session_id
 
 
 class Pane(View):
@@ -36,10 +34,6 @@ class Pane(View):
         id = self.id / ' %{}'.format | ''
         pid = self.pid / ' | pid -> {}'.format | ''
         return 'P{} \'{}\'{} {}'.format(id, self.name, pid, self.size_desc)
-
-    def ident(self, ident: PaneIdent):
-        attr = self.uuid if isinstance(ident, UUID) else self.name
-        return attr == ident
 
     def open(self, pa: 'PaneAdapter'):
         return self.set(id=pa.id_i.to_maybe, shell_pid=pa.pid.to_maybe,

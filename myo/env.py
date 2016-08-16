@@ -1,18 +1,16 @@
 from typing import Union, Callable
 from pathlib import Path
-from uuid import UUID
-
-from fn import _
 
 from lenses import lens
 
-from tryp import Map
+from tryp import Map, _, __
 
 from trypnv.data import field, Data
 
 from myo.command import Commands, Command
 from myo.view import Views, View
 from myo.dispatch import Dispatchers, Dispatcher
+from myo.ui.tmux.util import Ident
 
 
 class Env(Data):
@@ -42,11 +40,11 @@ class Env(Data):
     def dispatch_message(self, cmd: Command, options: Map):
         return self.dispatchers.message(cmd, options)
 
-    def _lens(self, getter: Callable, uuid: UUID):
-        deep = getter(getter(self)).find_lens_pred(_.uuid == uuid)
+    def _lens(self, getter: Callable, ident: Ident):
+        deep = getter(getter(self)).find_lens_pred(__.has_ident(ident))
         return deep / getter(getter(lens(self))).add_lens
 
-    def command_lens(self, uuid: UUID):
-        return self._lens(_.commands, uuid)
+    def command_lens(self, ident: Ident):
+        return self._lens(_.commands, ident)
 
 __all__ = ('Env')

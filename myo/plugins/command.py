@@ -4,17 +4,20 @@ from trypnv.machine import may_handle, message, handle, Nop
 
 from myo.state import MyoComponent, MyoTransitions
 
-from tryp import L, _, List
+from tryp import L, _, List, Try, __
 from myo.command import Command, VimCommand, ShellCommand, Shell
 from myo.util import optional_params
+from myo.plugins.core.message import Parse, ParseOutput
 
 Run = message('Run', 'command', 'options')
 ShellRun = message('ShellRun', 'shell', 'options')
+Dispatch = message('Dispatch', 'command', 'options')
 AddCommand = message('AddCommand', 'name', 'options')
 AddShellCommand = message('AddShellCommand', 'name', 'options')
 AddShell = message('AddShell', 'name', 'options')
 AddVimCommand = message('AddVimCommand', 'name', 'options')
 SetShellTarget = message('SetShellTarget', 'shell', 'target')
+CommandExecuted = message('CommandExecuted', 'command')
 
 RunInShell = namedtuple('RunInShell', ['shell'])
 
@@ -67,19 +70,52 @@ class Plugin(MyoComponent):
         @handle(Run)
         def run(self):
             return (
-                self.data.command(self.msg.command) //
-                L(self.data.dispatch_message)(_, self.msg.options) /
-                _.pub
+                self.data.command(self.msg.command) /
+                L(Dispatch)(_, self.msg.options)
             )
 
-        @handle(ShellRun)
+        @may_handle(ShellRun)
         def run_in_shell(self):
+            line = self.msg.options.get('line') | ''
             return (
                 self.data.shell(self.msg.shell) /
-                RunInShell //
-                L(self.data.dispatch_message)(_, self.msg.options) /
-                _.pub
+                (lambda a: ShellCommand(name='manual', shell=a, line=line)) /
+                L(Dispatch)(_, self.msg.options)
             )
+
+        @handle(Dispatch)
+        def dispatch(self):
+            cmd = self.msg.command
+            return (
+                self.data.dispatch_message(cmd, self.msg.options) /
+                _.pub /
+                (lambda a: (a, CommandExecuted(cmd)))
+            )
+
+        @may_handle(CommandExecuted)
+        def command_executed(self):
+            new = self.data.commands.add_history(self.msg.command.uuid)
+            return self.data.set(commands=new)
+
+        @handle(Parse)
+        def parse(self):
+            cmd = (
+                self.msg.options.get('command')
+                .cata(self.data.command, self._latest_command)
+                .to_either('invalid command name or empty history')
+            )
+            log_path = cmd // __.log_path.to_either('command has no log')
+            def parse(c, l):
+                return (
+                    Try(l.read_text) /
+                    __.splitlines() /
+                    L(ParseOutput)(c, _, self.msg.options) /
+                    _.pub
+                )
+            return (cmd & log_path).flat_map2(parse)
+
+        def _latest_command(self):
+            return self.data.commands.history.head // self.data.command
 
 __all__ = ('Plugin', 'AddVimCommand', 'AddCommand', 'Run', 'AddShell',
            'AddShellCommand', 'SetShellTarget')

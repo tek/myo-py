@@ -1,7 +1,8 @@
 from typing import Callable
 
 from myo.ui.tmux.view import View
-from myo.ui.tmux.pane import Pane, PaneIdent
+from myo.ui.tmux.pane import Pane
+from myo.ui.tmux.util import Ident
 
 from lenses import lens
 
@@ -42,8 +43,8 @@ class Layout(View):
     def _find_pane_in_layouts(self, pred: Callable[[Pane], bool]):
         return self.layouts.find_map(__.find_pane_pred(pred))
 
-    def find_pane(self, ident: PaneIdent):
-        return self.find_pane_pred(__.ident(ident))
+    def find_pane(self, ident: Ident):
+        return self.find_pane_pred(__.has_ident(ident))
 
     @staticmethod
     def pane_lens(root, f: Callable[[Pane], bool]):

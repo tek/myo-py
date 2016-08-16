@@ -175,7 +175,8 @@ class ParseSpec(_CmdSpec):
         self.json_cmd('MyoTmuxOpenPane make')
         self._wait(1)
         self.json_cmd('MyoRun test')
-        self.json_cmd('MyoTmuxParse', pane='make')
+        self._wait(1)
+        self.json_cmd('MyoParse')
         self._wait(1)
 
 __all__ = ('CutSizeSpec', 'DistributeSizeSpec', 'DispatchSpec')

@@ -1,14 +1,14 @@
-from fn import _
+from tryp import Path, __
 
-from trypnv.record import list_field, field
+from trypnv.record import list_field, field, maybe_field
 
-from myo.record import Record
-from myo.ui.tmux.util import ident_field
+from myo.record import Record, Named
+from myo.ui.tmux.util import ident_field, Ident
 
 
-class Command(Record):
-    name = field(str)
+class Command(Named):
     line = field(str)
+    log_path = maybe_field(Path)
 
 
 class VimCommand(Command):
@@ -25,12 +25,13 @@ class Shell(ShellCommand):
 
 class Commands(Record):
     commands = list_field()
+    history = list_field()
 
     def __add__(self, command: Command):
         return self.append1.commands(command)
 
-    def __getitem__(self, name):
-        return self.commands.find(_.name == name)
+    def __getitem__(self, ident: Ident):
+        return self.commands.find(__.has_ident(ident))
 
     def __str__(self):
         return '{}({})'.format(
@@ -41,5 +42,8 @@ class Commands(Record):
     def shell(self, name):
         pred = lambda a: isinstance(a, Shell) and a.name == name
         return self.commands.find(pred)
+
+    def add_history(self, uuid):
+        return self.append1.history(uuid)
 
 __all__ = ('Commands', 'Command')

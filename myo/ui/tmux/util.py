@@ -47,13 +47,13 @@ def format_window(win):
 def format_state(state) -> List[str]:
     return state.windows // format_window
 
-PaneIdent = Union[str, UUID]
+Ident = Union[str, UUID]
 
 
 def contains_pane_ident(a: Maybe):
     tpes = List(UUID, str)
     bad = lambda a: not tpes.exists(L(isinstance)(a, _))
-    err = 'must be Maybe[PaneIdent]'
+    err = 'must be Maybe[Ident]'
     return not a.exists(bad), err
 
 

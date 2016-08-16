@@ -20,9 +20,10 @@ from myo.plugins.tmux.messages import (TmuxOpenPane, TmuxRunCommand,
                                        TmuxFindVim, TmuxInfo, TmuxLoadDefaults,
                                        TmuxClosePane, TmuxRunShell,
                                        TmuxRunLineInShell, StartWatcher,
-                                       WatchCommand, QuitWatcher, TmuxParse)
+                                       WatchCommand, QuitWatcher, TmuxParse,
+                                       SetCommandLog)
 from myo.plugins.core.main import StageI
-from myo.ui.tmux.pane import Pane, VimPane, PaneIdent
+from myo.ui.tmux.pane import Pane, VimPane
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
 from myo.ui.tmux.session import Session
 from myo.ui.tmux.server import Server
@@ -32,7 +33,7 @@ from myo.ui.tmux.facade import LayoutFacade, PaneFacade
 from myo.ui.tmux.view import View
 from myo.plugins.core.message import AddDispatcher, ParseOutput
 from myo.plugins.tmux.dispatch import TmuxDispatcher
-from myo.ui.tmux.util import format_state
+from myo.ui.tmux.util import format_state, Ident
 from myo.ui.tmux.pane_path import PanePathMod
 from myo.plugins.command import SetShellTarget
 from myo.command import Command, Shell
@@ -43,8 +44,8 @@ _is_vim_layout = lambda a: isinstance(a, VimLayout)
 _is_vim_pane = lambda a: isinstance(a, VimPane)
 
 
-def _ident_ppm(ident: PaneIdent):
-    return PanePathMod(pred=__.ident(ident))
+def _ident_ppm(ident: Ident):
+    return PanePathMod(pred=__.has_ident(ident))
 
 
 class TmuxState(Record):
@@ -83,7 +84,7 @@ class TmuxState(Record):
         return self.windows // _.root.all_panes
 
     def pane(self, ident):
-        return self.all_panes.find(__.ident(ident))
+        return self.all_panes.find(__.has_ident(ident))
 
     @property
     def possibly_open_panes(self):
@@ -278,16 +279,14 @@ class TmuxTransitions(MyoTransitions):
     def terminated(self):
         return self._pane_mod(self.msg.pane.uuid, __.setter.pid(Empty()))
 
-    @handle(TmuxParse)
-    def parse(self):
-        ident = self.msg.options.get('pane') | self._default_pane_name
-        return (
-            (self._pane(ident) // _.log_path).to_either('pane has no log') //
-            L(Try)(_.read_text) /
-            __.splitlines() /
-            L(ParseOutput)(_, {}) /
-            _.pub
-        )
+    @may_handle(SetCommandLog)
+    def set_command_log(self):
+        def set_log(data):
+            log_path = self._pane(self.msg.pane_ident) // _.log_path
+            cmd = data.command_lens(self.msg.cmd_ident)
+            res = cmd / (lambda c: c.modify(__.set(log_path=log_path)))
+            return res.to_either('command not found')
+        return DataTask(_ / set_log / either_msg)
 
     def _wrap_window(self, data, callback):
         state = self._state(data)
@@ -298,12 +297,12 @@ class TmuxTransitions(MyoTransitions):
     def _run_ppm(self, ppm):
         return DataTask(_ // L(self._wrap_window)(_, ppm.run) / either_msg)
 
-    def _open_pane_ppm(self, name: PaneIdent):
+    def _open_pane_ppm(self, name: Ident):
         # cannot reference self.layouts.pack_path directly, because panes
         # are cached
         return _ident_ppm(name) / self._open_pane / self._pack_path
 
-    def _close_pane_ppm(self, name: PaneIdent):
+    def _close_pane_ppm(self, name: Ident):
         return _ident_ppm(name) / self._close_pane / self._pack_path
 
     def _run_command_ppm(self, command, opt: Map):
@@ -343,7 +342,7 @@ class TmuxTransitions(MyoTransitions):
             run /
             pid /
             watch
-        )
+        ), SetCommandLog(command.uuid, pane_ident)
 
     def _open_pane(self, w):
         return self.layouts.open_pane(w)
@@ -374,16 +373,16 @@ class TmuxTransitions(MyoTransitions):
             self.with_sub
         )
 
-    def _pane(self, ident: PaneIdent):
+    def _pane(self, ident: Ident):
         return self.state.vim_window // __.root.find_pane(ident)
 
-    def _pane_uuid(self, ident: PaneIdent):
+    def _pane_uuid(self, ident: Ident):
         return self._pane(ident) / _.uuid
 
     def _default_pane_name(self):
         return 'make'
 
-    def _pane_mod(self, ident: PaneIdent, f: Callable[[Pane], Pane]):
+    def _pane_mod(self, ident: Ident, f: Callable[[Pane], Pane]):
         def g(path):
             return Task.now(Right(path.map_pane(f)))
         return _ident_ppm(ident) / g
