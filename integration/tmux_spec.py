@@ -1,7 +1,11 @@
-from tryp import List, _
-from tryp.test import later
+import re
 
 from psutil import Process
+
+from tryp import List, _, Maybe, __
+from tryp.test import later
+
+from myo.output import ParseResult, OutputEvent, OutputEntry
 
 from integration._support.base import TmuxIntegrationSpec
 
@@ -165,18 +169,36 @@ class ShowSpec(_TmuxSpec):
         self.vim.cmd('MyoTmuxShow')
         later(check)
 
+_parse_head = 'parsed output:'
+_event_head = 'event 1:'
+
+
+def _parse_echo(data):
+    matcher = re.compile('^line (\d+)')
+    matches = data / matcher.match // Maybe / __.group(1)
+    entries = matches / (lambda a: OutputEntry(text='entry {}'.format(a)))
+    event = OutputEvent(head=_event_head, entries=entries)
+    return ParseResult(head=_parse_head, events=List(event))
+
 
 class ParseSpec(_CmdSpec):
 
     def parse(self):
-        s = 'parse spec'
+        s = 'line 1\\nline 2\\nline 3'
+        heads = List(_parse_head, _event_head)
+        target = heads + s.replace('line', 'entry').split('\\n')
+        def check1():
+            panes = self.sessions.head // _.windows.head / _.panes | List()
+            out = panes // _.capture
+            out.should.contain('line 1')
+        check2 = lambda: self.vim.buffer.content.should.equal(target)
         self.json_cmd('MyoShellCommand test', line="echo '{}'".format(s),
-                      target='make')
+                      target='make',
+                      parser='py:integration.tmux_spec._parse_echo')
         self.json_cmd('MyoTmuxOpenPane make')
-        self._wait(1)
         self.json_cmd('MyoRun test')
-        self._wait(1)
+        later(check1)
         self.json_cmd('MyoParse')
-        self._wait(1)
+        later(check2)
 
 __all__ = ('CutSizeSpec', 'DistributeSizeSpec', 'DispatchSpec')

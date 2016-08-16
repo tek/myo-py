@@ -1,6 +1,6 @@
 from tryp import Path, __
 
-from trypnv.record import list_field, field, maybe_field
+from trypnv.record import list_field, field, maybe_field, dfield
 
 from myo.record import Record, Named
 from myo.ui.tmux.util import ident_field, Ident
@@ -9,6 +9,7 @@ from myo.ui.tmux.util import ident_field, Ident
 class Command(Named):
     line = field(str)
     log_path = maybe_field(Path)
+    parser = maybe_field(str)
 
 
 class VimCommand(Command):

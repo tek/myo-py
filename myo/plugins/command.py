@@ -26,6 +26,10 @@ class Plugin(MyoComponent):
 
     class Transitions(MyoTransitions):
 
+        @property
+        def _cmd_opt(self):
+            return List('parser')
+
         def _create(self, tpe: type, mand_keys: List[str], opt_keys: List[str],
                     **strict):
             o = self.msg.options
@@ -44,17 +48,18 @@ class Plugin(MyoComponent):
 
         @handle(AddCommand)
         def add_command(self):
-            return self._add(Command, List('line'), List(), name=self.msg.name)
+            return self._add(Command, List('line'), self._cmd_opt,
+                             name=self.msg.name)
 
         @may_handle(AddVimCommand)
         def add_vim_command(self):
-            return self._add(VimCommand, List('line'), List(),
+            return self._add(VimCommand, List('line'), self._cmd_opt,
                              name=self.msg.name)
 
         @handle(AddShellCommand)
         def add_shell_command(self):
-            return self._add(ShellCommand, List('line'), List('shell'),
-                             name=self.msg.name)
+            return self._add(ShellCommand, List('line'),
+                             self._cmd_opt.cat('shell'), name=self.msg.name)
 
         @handle(AddShell)
         def add_shell(self):
@@ -109,6 +114,7 @@ class Plugin(MyoComponent):
                 return (
                     Try(l.read_text) /
                     __.splitlines() /
+                    List.wrap /
                     L(ParseOutput)(c, _, self.msg.options) /
                     _.pub
                 )
