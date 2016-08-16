@@ -4,7 +4,7 @@ import libtmux
 
 from lenses import lens
 
-from tryp import List, _, __, Just, Maybe, Map, Right, Empty
+from tryp import List, _, __, Just, Maybe, Map, Right, Empty, Try
 from tryp.lazy import lazy
 from tryp.task import Task
 from tryp.anon import L
@@ -20,7 +20,7 @@ from myo.plugins.tmux.messages import (TmuxOpenPane, TmuxRunCommand,
                                        TmuxFindVim, TmuxInfo, TmuxLoadDefaults,
                                        TmuxClosePane, TmuxRunShell,
                                        TmuxRunLineInShell, StartWatcher,
-                                       WatchCommand, QuitWatcher)
+                                       WatchCommand, QuitWatcher, TmuxParse)
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane, PaneIdent
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
@@ -30,7 +30,7 @@ from myo.util import parse_int, view_params
 from myo.ui.tmux.window import VimWindow
 from myo.ui.tmux.facade import LayoutFacade, PaneFacade
 from myo.ui.tmux.view import View
-from myo.plugins.core.message import AddDispatcher
+from myo.plugins.core.message import AddDispatcher, ParseOutput
 from myo.plugins.tmux.dispatch import TmuxDispatcher
 from myo.ui.tmux.util import format_state
 from myo.ui.tmux.pane_path import PanePathMod
@@ -277,6 +277,17 @@ class TmuxTransitions(MyoTransitions):
     @may_handle(Terminated)
     def terminated(self):
         return self._pane_mod(self.msg.pane.uuid, __.setter.pid(Empty()))
+
+    @handle(TmuxParse)
+    def parse(self):
+        ident = self.msg.options.get('pane') | self._default_pane_name
+        return (
+            (self._pane(ident) // _.log_path).to_either('pane has no log') //
+            L(Try)(_.read_text) /
+            __.splitlines() /
+            L(ParseOutput)(_, {}) /
+            _.pub
+        )
 
     def _wrap_window(self, data, callback):
         state = self._state(data)

@@ -182,12 +182,17 @@ class PaneAdapter(Adapter, PaneI):
     def not_running(self) -> Boolean:
         return Boolean(not self.running)
 
+    @property
+    def _pipe_filter(self):
+        return 'sed -u -e \'s/\r//g\' -e \'s/\x1b\[[0-9;?]*[mlK]//g\''
+
     def pipe(self, base):
         uid = os.getuid()
         tmpdir = Path(tempfile.gettempdir()) / 'myo-{}'.format(uid) / base
         tmpdir.mkdir(exist_ok=True, parents=True)
         (fh, fname) = tempfile.mkstemp(prefix='pane-', dir=str(tmpdir))
-        self.native.cmd('pipe-pane', fname)
+        self.native.cmd('pipe-pane', '{} > {}'.format(self._pipe_filter,
+                                                      fname))
         return Just(Path(fname))
 
 __all__ = ('Pane', 'VimPane', 'PaneAdapter')

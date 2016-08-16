@@ -98,7 +98,7 @@ class ClosePaneSpec(_DefaultLayoutSpec):
         self._check(1)
 
 
-class DispatchSpec(_TmuxSpec):
+class _CmdSpec(_TmuxSpec):
 
     @property
     def _plugins(self):
@@ -109,6 +109,9 @@ class DispatchSpec(_TmuxSpec):
         self.vim.set_pvar('tmux_use_defaults', True)
         self.vim.set_pvar('tmux_vim_width', 10)
         self.vim.set_pvar('tmux_watcher_interval', 0.1)
+
+
+class DispatchSpec(_CmdSpec):
 
     def simple(self):
         s = 'cmd test'
@@ -162,5 +165,17 @@ class ShowSpec(_TmuxSpec):
         self.vim.cmd('MyoTmuxShow')
         later(check)
 
+
+class ParseSpec(_CmdSpec):
+
+    def parse(self):
+        s = 'parse spec'
+        self.json_cmd('MyoShellCommand test', line="echo '{}'".format(s),
+                      target='make')
+        self.json_cmd('MyoTmuxOpenPane make')
+        self._wait(1)
+        self.json_cmd('MyoRun test')
+        self.json_cmd('MyoTmuxParse', pane='make')
+        self._wait(1)
 
 __all__ = ('CutSizeSpec', 'DistributeSizeSpec', 'DispatchSpec')

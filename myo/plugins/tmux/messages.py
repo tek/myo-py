@@ -14,6 +14,8 @@ TmuxClosePane = message('TmuxClosePane', 'name')
 TmuxFindVim = message('TmuxFindVim')
 TmuxLoadDefaults = message('TmuxLoadDefaults')
 TmuxInfo = message('TmuxInfo')
+TmuxParse = message('TmuxParse', 'options')
+
 StartWatcher = message('StartWatcher')
 QuitWatcher = message('QuitWatcher')
 WatchCommand = message('WatchCommand', 'command', 'pane')
@@ -22,4 +24,5 @@ __all__ = ('TmuxRunCommand', 'TmuxOpenPane', 'TmuxCreatePane',
            'TmuxCreateSession', 'TmuxCreateLayout', 'TmuxCreateLayout',
            'TmuxSpawnSession', 'TmuxFindVim', 'TmuxLoadDefaults',
            'TmuxClosePane', 'TmuxRunCommandInShell', 'TmuxRunLineInShell',
-           'TmuxRunShell', 'StartWatcher', 'WatchCommand', 'QuitWatcher')
+           'TmuxRunShell', 'StartWatcher', 'WatchCommand', 'QuitWatcher',
+           'TmuxParse')

@@ -5,7 +5,7 @@ from tryp import __, F
 
 from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.core.dispatch import VimDispatcher
-from myo.plugins.core.message import StageI, Initialized
+from myo.plugins.core.message import StageI, Initialized, ParseOutput
 
 
 class Plugin(MyoComponent):
@@ -29,5 +29,9 @@ class Plugin(MyoComponent):
                        tryp.development and isinstance(m, Exception) else
                        self.log.error)
             handler(m)
+
+        @may_handle(ParseOutput)
+        def parse_output(self):
+            pass
 
 __all__ = ('Plugin',)
