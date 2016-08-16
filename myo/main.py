@@ -4,7 +4,8 @@ from toolz.itertoolz import cons
 
 from tryp import List
 
-from myo.nvim import NvimFacade
+from trypnv import NvimFacade
+
 from myo.env import Env
 from myo.state import MyoState
 

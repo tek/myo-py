@@ -1,8 +1,7 @@
-from trypnv import Machine, PluginStateMachine
+from trypnv import Machine, PluginStateMachine, NvimFacade
 from trypnv.nvim import HasNvim
 from trypnv.machine import ModularMachine, Transitions
 
-from myo.nvim import NvimFacade
 from myo.logging import Logging
 from myo.env import Env
 
