@@ -9,9 +9,9 @@ from trypnv import command, NvimStatePlugin, msg_command, json_msg_command
 from myo.plugins.core.main import StageI
 from myo.main import Myo
 from myo.logging import Logging
-from myo.plugins.command import (AddVimCommand, Run, AddShellCommand, AddShell,
-                                 ShellRun)
-from myo.plugins.tmux.messages import (TmuxCreatePane, TmuxCreateSession,
+from myo.plugins.command.message import (AddVimCommand, Run, AddShellCommand,
+                                         AddShell, ShellRun)
+from myo.plugins.tmux.message import (TmuxCreatePane, TmuxCreateSession,
                                        TmuxCreateLayout, TmuxSpawnSession,
                                        TmuxInfo, TmuxClosePane)
 from myo.plugins.tmux import TmuxOpenPane

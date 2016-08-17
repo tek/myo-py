@@ -26,6 +26,6 @@ class View(Named):
                           ('pos', self.position))
         def fmt(a, b):
             return b / L('| {} -> {}'.format)(a, _)
-        return candidates.flat_map2(fmt).join(' ')
+        return candidates.flat_map2(fmt).mk_string(' ')
 
 __all__ = ('View',)

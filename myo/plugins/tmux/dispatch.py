@@ -4,9 +4,9 @@ from trypnv.machine import Error
 
 from myo.dispatch import Dispatcher
 from myo.command import ShellCommand, Shell
-from myo.plugins.tmux.messages import (TmuxRunCommand, TmuxRunLineInShell,
+from myo.plugins.tmux.message import (TmuxRunCommand, TmuxRunLineInShell,
                                        TmuxRunShell)
-from myo.plugins.command import RunInShell
+from myo.plugins.command.main import RunInShell
 
 
 @singledispatch

@@ -4,7 +4,7 @@ import libtmux
 
 from lenses import lens
 
-from tryp import List, _, __, Just, Maybe, Map, Right, Empty, Try
+from tryp import List, _, __, Just, Maybe, Map, Right, Empty
 from tryp.lazy import lazy
 from tryp.task import Task
 from tryp.anon import L
@@ -14,14 +14,13 @@ from trypnv.machine import (may_handle, handle, DataTask, either_msg, Quit,
 from trypnv.record import field, list_field, Record
 
 from myo.state import MyoComponent, MyoTransitions
-from myo.plugins.tmux.messages import (TmuxOpenPane, TmuxRunCommand,
-                                       TmuxCreatePane, TmuxCreateLayout,
-                                       TmuxCreateSession, TmuxSpawnSession,
-                                       TmuxFindVim, TmuxInfo, TmuxLoadDefaults,
-                                       TmuxClosePane, TmuxRunShell,
-                                       TmuxRunLineInShell, StartWatcher,
-                                       WatchCommand, QuitWatcher, TmuxParse,
-                                       SetCommandLog)
+from myo.plugins.tmux.message import (TmuxOpenPane, TmuxRunCommand,
+                                      TmuxCreatePane, TmuxCreateLayout,
+                                      TmuxCreateSession, TmuxSpawnSession,
+                                      TmuxFindVim, TmuxInfo, TmuxLoadDefaults,
+                                      TmuxClosePane, TmuxRunShell,
+                                      TmuxRunLineInShell, StartWatcher,
+                                      WatchCommand, QuitWatcher, SetCommandLog)
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
@@ -31,11 +30,11 @@ from myo.util import parse_int, view_params
 from myo.ui.tmux.window import VimWindow
 from myo.ui.tmux.facade import LayoutFacade, PaneFacade
 from myo.ui.tmux.view import View
-from myo.plugins.core.message import AddDispatcher, ParseOutput
+from myo.plugins.core.message import AddDispatcher
 from myo.plugins.tmux.dispatch import TmuxDispatcher
 from myo.ui.tmux.util import format_state, Ident
 from myo.ui.tmux.pane_path import PanePathMod
-from myo.plugins.command import SetShellTarget
+from myo.plugins.command.message import SetShellTarget
 from myo.command import Command, Shell
 from myo.plugins.tmux.watcher import Watcher, Terminated
 
@@ -336,13 +335,14 @@ class TmuxTransitions(MyoTransitions):
                 Task.call(self.machine.watcher.send, msg)
                 .replace(Right(path))
             )
-        return (
+        opener = (
             (self._open_pane_ppm(pane_ident) + check_running) /
             pipe /
             run /
             pid /
             watch
-        ), SetCommandLog(command.uuid, pane_ident)
+        )
+        return List(opener, SetCommandLog(command.uuid, pane_ident))
 
     def _open_pane(self, w):
         return self.layouts.open_pane(w)
@@ -403,10 +403,9 @@ class TmuxTransitions(MyoTransitions):
     def _run_in_shell(self, command: Command, shell: Shell, options: Map):
         ident = shell.target | self._default_pane_name
         opt = options + ('pane', ident) + ('shell', shell)
-        return (
-            TmuxRunShell(shell, Map()),
-            self._run_command(command, opt)
-        )
+        cmd_runner = self._run_command(command, opt)
+        shell_runner = TmuxRunShell(shell, Map())
+        return cmd_runner.cons(shell_runner)
 
 
 class Plugin(MyoComponent):

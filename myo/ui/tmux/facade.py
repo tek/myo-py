@@ -1,6 +1,6 @@
 from typing import Tuple
 from functools import singledispatch  # type: ignore
-from operator import ne
+from operator import ne, sub
 
 from tryp.task import Task
 from tryp.anon import L
@@ -151,7 +151,7 @@ class LayoutFacade(Logging):
     def _cut_sizes(self, min_s, weights, total):
         surplus = sum(min_s) - total
         dist = weights / (1 - _) / (surplus * _)
-        return (min_s & dist).map2(_ - _)
+        return (min_s & dist).map2(sub)
 
     def _distribute_sizes(self, min_s, max_s, weights, total):
         count = max_s.length

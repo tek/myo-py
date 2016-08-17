@@ -10,7 +10,7 @@ from tryp import Empty, Try, __, List, L, _
 from tryp.task import Task
 
 from myo.record import Record
-from myo.plugins.tmux.messages import WatchCommand
+from myo.plugins.tmux.message import WatchCommand
 from myo.command import Command
 from myo.ui.tmux.pane import Pane
 

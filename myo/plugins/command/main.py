@@ -1,23 +1,17 @@
 from collections import namedtuple
 
-from trypnv.machine import may_handle, message, handle, Nop
+from trypnv.machine import may_handle, handle, Nop
 
 from myo.state import MyoComponent, MyoTransitions
 
-from tryp import L, _, List, Try, __
+from tryp import L, _, List, Try, __, Maybe
 from myo.command import Command, VimCommand, ShellCommand, Shell
 from myo.util import optional_params
 from myo.plugins.core.message import Parse, ParseOutput
-
-Run = message('Run', 'command', 'options')
-ShellRun = message('ShellRun', 'shell', 'options')
-Dispatch = message('Dispatch', 'command', 'options')
-AddCommand = message('AddCommand', 'name', 'options')
-AddShellCommand = message('AddShellCommand', 'name', 'options')
-AddShell = message('AddShell', 'name', 'options')
-AddVimCommand = message('AddVimCommand', 'name', 'options')
-SetShellTarget = message('SetShellTarget', 'shell', 'target')
-CommandExecuted = message('CommandExecuted', 'command')
+from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
+                                         AddShellCommand, AddShell,
+                                         AddVimCommand, SetShellTarget,
+                                         CommandExecuted)
 
 RunInShell = namedtuple('RunInShell', ['shell'])
 
@@ -79,11 +73,13 @@ class Plugin(MyoComponent):
                 L(Dispatch)(_, self.msg.options)
             )
 
-        @may_handle(ShellRun)
+        @handle(ShellRun)
         def run_in_shell(self):
             line = self.msg.options.get('line') | ''
             return (
                 self.data.shell(self.msg.shell) /
+                _.uuid /
+                Maybe /
                 (lambda a: ShellCommand(name='manual', shell=a, line=line)) /
                 L(Dispatch)(_, self.msg.options)
             )

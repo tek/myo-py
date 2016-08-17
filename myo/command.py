@@ -40,8 +40,8 @@ class Commands(Record):
             ','.join(map(repr, self.commands))
         )
 
-    def shell(self, name):
-        pred = lambda a: isinstance(a, Shell) and a.name == name
+    def shell(self, ident):
+        pred = lambda a: isinstance(a, Shell) and a.has_ident(ident)
         return self.commands.find(pred)
 
     def add_history(self, uuid):
