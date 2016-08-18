@@ -1,4 +1,6 @@
-from tryp import Right, Left, Map, List, Maybe, __
+import re
+
+from tryp import Right, Left, Map, List, Maybe, __, F, Empty, Either
 
 
 def parse_int(i):
@@ -25,4 +27,35 @@ def view_params(m: Map):
     return optional_params(m, 'min_size', 'max_size', 'fixed_size', 'position',
                            'weight')
 
-__all__ = ('parse_int', 'optional_params', 'view_params', 'parse_id')
+_py_callback_re = re.compile('^py:(.+)')
+_vim_callback_re = re.compile('^vim:(.+)')
+
+
+def _cb_err(data):
+    return 'invalid callback string: {}'.format(data)
+
+
+def parse_python_callback(data: str):
+    def parse_path(path):
+        return (
+            List.wrap(path.rsplit('.', 1))
+            .lift_all(0, 1)
+            .to_either('invalid module path: {}'.format(path))
+            .flat_map2(Either.import_name)
+        )
+    return (
+        Maybe(_py_callback_re.match(data)) /
+        __.group(1) /
+        parse_path
+    ).to_either(_cb_err(data))
+
+
+def parse_vim_callback(data: str):
+    return Left(_cb_err(data))
+
+
+def parse_callback_spec(data: str):
+    return parse_python_callback(data).or_else(F(parse_vim_callback, data))
+
+__all__ = ('parse_int', 'optional_params', 'view_params', 'parse_id',
+           'parse_callback_spec')

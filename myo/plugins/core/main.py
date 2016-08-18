@@ -1,16 +1,13 @@
-import re
-
-from trypnv.machine import may_handle, io, Error, RunTask
+from trypnv.machine import may_handle, io, Error, RunTask, handle
 
 import tryp
-from tryp import __, F, List, Maybe, Either, L, _
+from tryp import __, F, L, _
 
 from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.core.dispatch import VimDispatcher
 from myo.plugins.core.message import StageI, Initialized, ParseOutput
 from myo.output import VimCompiler, CustomOutputHandler
-
-_parser_re = re.compile('^py:(.+)')
+from myo.util import parse_callback_spec
 
 
 class CoreTransitions(MyoTransitions):
@@ -33,22 +30,19 @@ class CoreTransitions(MyoTransitions):
                    self.log.error)
         handler(m)
 
-    @may_handle(ParseOutput)
+    @handle(ParseOutput)
     def parse_output(self):
-        parser = self._error_handler(self.msg.command)
-        return RunTask(parser.parse(self.msg.output) // parser.display)
+        return self._error_handler(self.msg.command) / (
+            lambda parser:
+            RunTask(parser.parse(self.msg.output) // parser.display)
+        )
 
     def _error_handler(self, cmd):
-        path = cmd.parser / _parser_re.match // Maybe / __.group(1)
-        def extended(path):
-            parts = List.wrap(path.rsplit('.', 1))
-            return (
-                parts.lift_all(0, 1)
-                .to_either('invalid module path: {}'.format(path))
-                .flat_map2(Either.import_name) /
-                L(CustomOutputHandler)(self.vim, _)
+        return (
+            (cmd.parser // parse_callback_spec) / (
+                _ / L(CustomOutputHandler)(self.vim, _) | VimCompiler(self.vim)
             )
-        return path // extended | VimCompiler(self.vim)
+        )
 
 
 class Plugin(MyoComponent):
