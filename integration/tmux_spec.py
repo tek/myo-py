@@ -1,13 +1,14 @@
 import re
-
 from psutil import Process
 
 from tryp import List, _, Maybe, __
 from tryp.test import later
+from tryp.test.path import fixture_path, base_dir
 
 from myo.output import ParseResult, OutputEvent, OutputEntry
 
 from integration._support.base import TmuxIntegrationSpec
+from integration._support.vimtest import vimtest
 
 
 class _TmuxSpec(TmuxIntegrationSpec):
@@ -202,6 +203,32 @@ class ParseSpec(_CmdSpec):
         later(check1)
         self.json_cmd('MyoParse')
         later(check2)
+
+_test_line = 'this is a test'
+
+
+def _test_ctor():
+    return 'echo \'{}\''.format(_test_line)
+
+
+class TestSpec(_CmdSpec):
+
+    def simple(self):
+        self.json_cmd('MyoTest', ctor='py:integration.tmux_spec._test_ctor')
+        self._wait(2)
+
+    @vimtest
+    def vimtest(self):
+        fname = fixture_path('tmux', 'vim_test', 'test.py')
+        target = str(fname.relative_to(base_dir().parent))
+        def check():
+            panes = self.sessions.head // _.windows.head / _.panes | List()
+            out = panes // _.capture
+            out.exists(lambda a: target in a).should.be.true
+        self.vim.cmd_sync('noswapfile edit {}'.format(fname))
+        self.vim.cursor(5, 0)
+        self.json_cmd('MyoVimTest')
+        later(check)
 
 __all__ = ('CutSizeSpec', 'DistributeSizeSpec', 'DispatchSpec', 'ParseSpec',
            'ShowSpec', 'ClosePaneSpec', 'DistributeSize2Spec')

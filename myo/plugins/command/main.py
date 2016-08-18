@@ -4,14 +4,15 @@ from trypnv.machine import may_handle, handle, Nop
 
 from myo.state import MyoComponent, MyoTransitions
 
-from tryp import L, _, List, Try, __, Maybe
+from tryp import L, _, List, Try, __, Maybe, curried
 from myo.command import Command, VimCommand, ShellCommand, Shell
-from myo.util import optional_params
+from myo.util import optional_params, parse_callback_spec
 from myo.plugins.core.message import Parse, ParseOutput
 from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
                                          AddShellCommand, AddShell,
                                          AddVimCommand, SetShellTarget,
-                                         CommandExecuted)
+                                         CommandExecuted, RunTest, RunVimTest)
+from myo.plugins.command.util import assemble_vim_test_line
 
 RunInShell = namedtuple('RunInShell', ['shell'])
 
@@ -76,6 +77,8 @@ class Plugin(MyoComponent):
         @handle(ShellRun)
         def run_in_shell(self):
             line = self.msg.options.get('line') | ''
+            # double Maybe is necessary - the outer indicates success, the
+            # inner is the type of the ShellCommand field
             return (
                 self.data.shell(self.msg.shell) /
                 _.uuid /
@@ -117,8 +120,31 @@ class Plugin(MyoComponent):
                 )
             return (cmd & log_path).flat_map2(parse)
 
+        @handle(RunTest)
+        def run_test(self):
+            opt = self.msg.options
+            return (
+                opt.get('ctor') //
+                self._assemble /
+                self._run_test_line(opt - 'ctor')
+            )
+
+        @handle(RunVimTest)
+        def run_vim_test(self):
+            return (assemble_vim_test_line(self.vim) //
+                    _.head /
+                    self._run_test_line(self.msg.options))
+
         def _latest_command(self):
             return self.data.commands.history.head // self.data.command
+
+        def _assemble(self, ctor):
+            return parse_callback_spec(ctor).join / (lambda a: a())
+
+        @curried
+        def _run_test_line(self, options, line):
+            cmd = ShellCommand(name='test', line=line, transient=True)
+            return Dispatch(cmd, options)
 
 __all__ = ('Plugin', 'AddVimCommand', 'AddCommand', 'Run', 'AddShell',
            'AddShellCommand', 'SetShellTarget')
