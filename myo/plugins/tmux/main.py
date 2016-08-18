@@ -342,7 +342,9 @@ class TmuxTransitions(MyoTransitions):
             pid /
             watch
         )
-        return List(opener, SetCommandLog(command.uuid, pane_ident))
+        set_log = command.transient.no.maybe(
+            SetCommandLog(command.uuid, pane_ident))
+        return set_log.to_list.cons(opener)
 
     def _open_pane(self, w):
         return self.layouts.open_pane(w)

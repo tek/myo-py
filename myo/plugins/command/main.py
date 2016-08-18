@@ -80,7 +80,8 @@ class Plugin(MyoComponent):
                 self.data.shell(self.msg.shell) /
                 _.uuid /
                 Maybe /
-                (lambda a: ShellCommand(name='manual', shell=a, line=line)) /
+                (lambda a: ShellCommand(name='shell_run', shell=a, line=line,
+                                        transient=True)) /
                 L(Dispatch)(_, self.msg.options)
             )
 
