@@ -1,22 +1,22 @@
 from pathlib import Path
 
 from tryp import List, Right
-from trypnv.test import IntegrationSpec as TrypnvIntegrationSpec
-from trypnv.test import VimIntegrationSpec as TrypnvVimIntegrationSpec
+
+from trypnv.test import VimIntegrationSpec, PluginIntegrationSpec
 
 from myo.test.spec import Spec, TmuxSpec
 from myo.logging import Logging
 from myo.nvim_plugin import MyoNvimPlugin
 
 
-class IntegrationSpec(TrypnvIntegrationSpec):
+class MyoIntegrationSpec(VimIntegrationSpec):
     pass
 
 
-class VimIntegrationSpec(TrypnvVimIntegrationSpec, Spec, Logging):
+class MyoPluginIntegrationSpec(PluginIntegrationSpec, Spec, Logging):
 
     def _pre_start(self):
-        self.vim.cmd('MyoStart')
+        self.vim.cmd_sync('MyoStart')
         self._wait_for(lambda: self.vim.pvar('started').is_just)
         self.vim.cmd('MyoPostStartup')
 
@@ -25,6 +25,7 @@ class VimIntegrationSpec(TrypnvVimIntegrationSpec, Spec, Logging):
         return 'myo'
 
     def _post_start_neovim(self):
+        super()._post_start_neovim()
         self._set_vars()
 
     def _set_vars(self):
@@ -44,7 +45,7 @@ class VimIntegrationSpec(TrypnvVimIntegrationSpec, Spec, Logging):
         return Path('/dev/null')
 
 
-class TmuxIntegrationSpec(VimIntegrationSpec, TmuxSpec):
+class TmuxIntegrationSpec(MyoPluginIntegrationSpec, TmuxSpec):
 
     def _pre_start_neovim(self):
         super()._pre_start_neovim()
@@ -62,4 +63,5 @@ class TmuxIntegrationSpec(VimIntegrationSpec, TmuxSpec):
         super().teardown()
         self._teardown_server()
 
-__all__ = ('IntegrationSpec', 'VimIntegrationSpec', 'TmuxIntegrationSpec')
+__all__ = ('TmuxIntegrationSpec', 'MyoIntegrationSpec',
+           'MyoPluginIntegrationSpec')
