@@ -71,8 +71,9 @@ class VimCompiler(OutputHandler):
         self.vim = vim
 
     def parse(self, output: List[str]):
+        r = ParseResult(head='errorformat')
         return (Task.call(self.vim.cmd_sync, 'cgetexpr', output.join_lines)
-                .replace(ParseResult()))
+                .replace(r))
 
     def display(self, result):
         return Task.call(self.vim.cmd_sync, 'cfirst')
