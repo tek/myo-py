@@ -20,7 +20,7 @@ class Myo(MyoState):
     ) -> None:
         self._config_path = config_path
         core = 'myo.plugins.core'
-        MyoState.__init__(self, vim, List.wrap(cons(core, plugins)))
+        super().__init__(vim, List.wrap(cons(core, plugins)))
 
     @property
     def init(self):

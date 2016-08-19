@@ -15,7 +15,7 @@ class VimTestSpec(MyoIntegrationSpec):
         self.vim.cmd('noswapfile edit {}'.format(fname))
         self.vim.cursor(5, 0)
         base = base_dir().parent
-        target = '{} -k test_something'.format(fname.relative_to(base))
-        assemble_vim_test_line(self.vim).should.contain(List(target))
+        target = 'py.test {} -k test_something'.format(fname.relative_to(base))
+        assemble_vim_test_line(self.vim).to_maybe.should.contain(List(target))
 
 __all__ = ('VimTestSpec',)
