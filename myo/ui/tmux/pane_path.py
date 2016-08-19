@@ -1,13 +1,13 @@
 from typing import Callable, Any
 
-from tryp.task import Task
+from amino.task import Task
 
 from lenses import Lens, lens
-from tryp import Either, List, F, _, L, Left, __, Right, I
-from tryp.lens.tree import path_lens_unbound_pre
+from amino import Either, List, F, _, L, Left, __, Right, I
+from amino.lens.tree import path_lens_unbound_pre
 
-from trypnv.record import Record, field, list_field
-from trypnv.machine import Message
+from ribosome.record import Record, field, list_field
+from ribosome.machine import Message
 
 from myo.ui.tmux.window import Window
 from myo.logging import Logging

@@ -6,10 +6,10 @@ from myo.ui.tmux.util import Ident
 
 from lenses import lens
 
-from tryp import _, __, List
-from tryp.lazy import lazy
+from amino import _, __, List
+from amino.lazy import lazy
 
-from trypnv.record import dfield, list_field, field, Record
+from ribosome.record import dfield, list_field, field, Record
 
 
 class LayoutDirection(Record):

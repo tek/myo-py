@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from tryp import List, Right
+from amino import List, Right
 
-from trypnv.test import VimIntegrationSpec, PluginIntegrationSpec
+from ribosome.test import VimIntegrationSpec, PluginIntegrationSpec
 
 from myo.test.spec import Spec, TmuxSpec
 from myo.logging import Logging

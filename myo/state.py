@@ -1,26 +1,24 @@
-from trypnv import Machine, PluginStateMachine, NvimFacade
-from trypnv.nvim import HasNvim
-from trypnv.machine import ModularMachine, Transitions
+from ribosome import Machine, NvimFacade, RootMachine
+from ribosome.nvim import HasNvim
+from ribosome.machine import ModularMachine, Transitions
 
 from myo.logging import Logging
 from myo.env import Env
 
-from tryp import List
-
 
 class MyoComponent(ModularMachine, HasNvim, Logging):
 
-    def __init__(self, name: str, vim: NvimFacade, parent=None) -> None:
-        Machine.__init__(self, name, parent)
+    def __init__(self, vim: NvimFacade, parent=None) -> None:
+        Machine.__init__(self, parent)
         HasNvim.__init__(self, vim)
 
 
-class MyoState(PluginStateMachine, HasNvim, Logging):
+class MyoState(RootMachine, Logging):
     _data_type = Env
 
-    def __init__(self, vim: NvimFacade, plugins: List[str]) -> None:
-        HasNvim.__init__(self, vim)
-        PluginStateMachine.__init__(self, 'myo', plugins)
+    @property
+    def title(self):
+        'myo'
 
 
 class MyoTransitions(Transitions, HasNvim):

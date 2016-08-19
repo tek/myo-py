@@ -1,6 +1,6 @@
-from trypnv import NvimFacade
+from ribosome import NvimFacade
 
-from tryp import _, L, List
+from amino import _, L, List, Right, Left
 
 
 def vimtest_position(vim: NvimFacade):
@@ -16,13 +16,21 @@ def assemble_vim_test_line(vim: NvimFacade):
         fmt = lambda a: '{} {}'.format(exe, a)
         return bpos / fmt
     def args(runner, pos):
+        from ribosome.logging import log
+        log.verbose(pos)
+        log.verbose(runner)
         exe = vim.call('test#{}#executable'.format(runner))
         bpos = (vim.call('test#base#build_position', runner, 'nearest', pos) /
                 List.wrap)
         return (exe & bpos).map2(build)
     def runner(pos):
+        chk_res = lambda a: (
+            Right(a) if isinstance(a, str) else Left('no runner found'))
+        from ribosome.logging import log
+        log.verbose(pos)
         return (
             vim.call('test#determine_runner', pos['file']) //
+            chk_res //
             L(args)(_, pos)
         )
     return vimtest_position(vim) // runner

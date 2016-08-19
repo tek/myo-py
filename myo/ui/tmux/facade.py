@@ -2,10 +2,10 @@ from typing import Tuple
 from functools import singledispatch  # type: ignore
 from operator import ne, sub
 
-from tryp.task import Task
-from tryp.anon import L
-from tryp import _, __, List, Left, F, Boolean, Right, Empty, Either, Maybe
-from tryp.lazy import lazy
+from amino.task import Task
+from amino.anon import L
+from amino import _, __, List, Left, F, Boolean, Right, Empty, Either, Maybe
+from amino.lazy import lazy
 
 from myo.logging import Logging
 from myo.ui.tmux.server import Server

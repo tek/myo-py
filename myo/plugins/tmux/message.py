@@ -1,4 +1,4 @@
-from trypnv.machine import message
+from ribosome.machine import message
 
 TmuxRunCommand = message('TmuxRunCommand', 'command', 'options')
 TmuxRunShell = message('TmuxRunShell', 'shell', 'options')

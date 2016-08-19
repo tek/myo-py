@@ -3,13 +3,13 @@ import subprocess
 import libtmux
 from libtmux.exc import LibTmuxException
 
-import tryp.test
-from tryp.test.path import fixture_path
+import amino.test
+from amino.test.path import fixture_path
 
 from myo.ui.tmux.server import Server
 
 
-class Spec(tryp.test.Spec):
+class Spec(amino.test.Spec):
     pass
 
 

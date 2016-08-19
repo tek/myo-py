@@ -1,9 +1,9 @@
 import libtmux
 
-from trypnv.record import field, Record
+from ribosome.record import field, Record
 
-from tryp import List, __, _
-from tryp.lazy import lazy
+from amino import List, __, _
+from amino.lazy import lazy
 
 from myo.ui.tmux.adapter import Adapter
 from myo.ui.tmux.window import WindowAdapter

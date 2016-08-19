@@ -1,4 +1,4 @@
-from trypnv.test.spec import MockNvimSpec
+from ribosome.test.spec import MockNvimSpec
 
 import myo.test
 from myo.test.spec import TmuxSpec

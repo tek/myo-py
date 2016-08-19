@@ -1,9 +1,9 @@
 import re
 from psutil import Process
 
-from tryp import List, _, Maybe, __
-from tryp.test import later
-from tryp.test.path import fixture_path, base_dir
+from amino import List, _, Maybe, __
+from amino.test import later
+from amino.test.path import fixture_path, base_dir
 
 from myo.output import ParseResult, OutputEvent, OutputEntry
 

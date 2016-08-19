@@ -2,7 +2,7 @@ from myo.dispatch import Dispatcher
 from myo.command import VimCommand
 from myo.plugins.core.message import RunVimCommand
 
-from trypnv.nvim import HasNvim
+from ribosome.nvim import HasNvim
 
 
 class VimDispatcher(Dispatcher, HasNvim):

@@ -1,8 +1,8 @@
 from numbers import Number
 
-from trypnv.record import maybe_field, field
+from ribosome.record import maybe_field, field
 
-from tryp import Just, L, List, _
+from amino import Just, L, List, _
 
 from myo.record import Named
 

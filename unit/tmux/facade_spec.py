@@ -2,7 +2,7 @@ from myo.ui.tmux.facade import LayoutFacade
 
 from unit._support.spec import TmuxUnitSpec
 
-from tryp import Empty, List, Just
+from amino import Empty, List, Just
 
 
 class LayoutFacadeSpec(TmuxUnitSpec):

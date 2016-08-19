@@ -1,13 +1,14 @@
 import asyncio
+from pathlib import Path
 
 from psutil import Process
 
-from trypnv.record import list_field, bool_field, field
-from trypnv.machine import may_handle, handle, Transitions, message, RunTask
-from trypnv import StateMachine
+from ribosome.record import list_field, bool_field, field, maybe_field
+from ribosome.machine import may_handle, handle, Transitions, message, RunTask
+from ribosome import StateMachine
 
-from tryp import Empty, Try, __, List, L, _
-from tryp.task import Task
+from amino import Empty, Try, __, List, L, _
+from amino.task import Task
 
 from myo.record import Record
 from myo.plugins.tmux.message import WatchCommand
@@ -26,11 +27,13 @@ class WatcherState(Record):
 class WatchedCommand(Record):
     command = field(Command)
     pane = field(Pane)
+    # log = maybe_field(Path)
 
 
 Start = message('Start')
 Stop = message('Stop')
 Tick = message('Tick')
+Tail = message('Tail', 'pane')
 Terminated = message('Terminated', 'command', 'pane')
 
 
@@ -43,8 +46,10 @@ class WatcherTransitions(Transitions):
 
     @may_handle(WatchCommand)
     def watch_command(self):
-        wc = WatchedCommand(command=self.msg.command, pane=self.msg.pane)
-        return self.data.append1.commands(wc), Start()
+        pane = self.msg.pane
+        wc = WatchedCommand(command=self.msg.command, pane=pane)
+        f = pane.log_path
+        return self.data.append1.commands(wc), Tail(pane), Start()
 
     @handle(Start)
     def start_rec(self):
@@ -58,6 +63,10 @@ class WatcherTransitions(Transitions):
     @handle(Tick)
     def tick(self):
         return self.data.watching.maybe_call(self._tick)
+
+    @may_handle(Tail)
+    def tail(self):
+        return
 
     def _tick(self):
         restart = List(self._sleep, Tick().pub)
@@ -78,9 +87,13 @@ class Watcher(StateMachine):
     Transitions = WatcherTransitions
 
     def __init__(self, machine, interval: float) -> None:
-        super().__init__('tmux watcher', List(), machine)
+        super().__init__(List(), parent=machine)
         self.machine = machine
         self.interval = interval
+
+    @property
+    def title(self):
+        return 'tmux watcher'
 
     @property
     def init(self):

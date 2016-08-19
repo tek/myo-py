@@ -1,4 +1,4 @@
-from tryp import List
+from amino import List
 
 
 class View():

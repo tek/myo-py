@@ -4,9 +4,9 @@ from myo.logging import Logging
 from myo.ui.tmux.session import SessionAdapter
 from myo.ui.tmux.pane import PaneData
 
-from tryp import _, List, __, Map
-from tryp.task import task
-from tryp.lazy import lazy
+from amino import _, List, __, Map
+from amino.task import task
+from amino.lazy import lazy
 
 
 class Server(Logging):

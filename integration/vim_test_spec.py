@@ -1,5 +1,5 @@
-from tryp.test.path import fixture_path, base_dir
-from tryp import List
+from amino.test.path import fixture_path, base_dir
+from amino import List
 
 from myo.plugins.command.util import assemble_vim_test_line
 

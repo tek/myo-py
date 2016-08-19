@@ -2,9 +2,9 @@ import re
 from uuid import UUID
 from typing import Union
 
-from tryp import List, Maybe, Empty, L, _
+from amino import List, Maybe, Empty, L, _
 
-from trypnv.record import field
+from ribosome.record import field
 
 from myo.util import parse_id
 

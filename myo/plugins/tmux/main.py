@@ -4,14 +4,14 @@ import libtmux
 
 from lenses import lens
 
-from tryp import List, _, __, Just, Maybe, Map, Right, Empty
-from tryp.lazy import lazy
-from tryp.task import Task
-from tryp.anon import L
+from amino import List, _, __, Just, Maybe, Map, Right, Empty
+from amino.lazy import lazy
+from amino.task import Task
+from amino.anon import L
 
-from trypnv.machine import (may_handle, handle, DataTask, either_msg, Quit,
+from ribosome.machine import (may_handle, handle, DataTask, either_msg, Quit,
                             RunTask)
-from trypnv.record import field, list_field, Record
+from ribosome.record import field, list_field, Record
 
 from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.tmux.message import (TmuxOpenPane, TmuxRunCommand,

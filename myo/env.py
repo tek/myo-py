@@ -3,9 +3,9 @@ from pathlib import Path
 
 from lenses import lens
 
-from tryp import Map, _, __
+from amino import Map, _, __
 
-from trypnv.data import field, Data
+from ribosome.data import field, Data
 
 from myo.command import Commands, Command
 from myo.view import Views, View

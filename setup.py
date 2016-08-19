@@ -10,7 +10,7 @@ setup(
     url='https://github.com/tek/myo',
     packages=find_packages(exclude=['unit', 'unit.*']),
     install_requires=[
-        'tryp-nvim',
+        'ribosome>=8.0.0',
         'libtmux',
         'psutil',
     ]

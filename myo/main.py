@@ -2,9 +2,9 @@ from pathlib import Path
 
 from toolz.itertoolz import cons
 
-from tryp import List
+from amino import List
 
-from trypnv import NvimFacade
+from ribosome import NvimFacade
 
 from myo.env import Env
 from myo.state import MyoState

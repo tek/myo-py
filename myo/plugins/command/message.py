@@ -1,4 +1,4 @@
-from trypnv.machine import message, json_message
+from ribosome.machine import message, json_message
 
 Run = json_message('Run', 'command')
 ShellRun = json_message('ShellRun', 'shell')

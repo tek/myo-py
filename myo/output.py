@@ -1,11 +1,11 @@
 import abc
 from typing import Callable
 
-from tryp import List, _
-from tryp.task import Task
+from amino import List, _
+from amino.task import Task
 
-from trypnv.record import list_field, field
-from trypnv import NvimFacade
+from ribosome.record import list_field, field
+from ribosome import NvimFacade
 
 from myo.record import Record
 from myo.logging import Logging

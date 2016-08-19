@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from trypnv.record import Record as RecordBase, uuid_field, field
+from ribosome.record import Record as RecordBase, uuid_field, field
 
 from myo.ui.tmux.util import Ident
 

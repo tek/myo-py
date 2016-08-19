@@ -1,8 +1,8 @@
 from abc import ABCMeta, abstractmethod
 
-from tryp import __, Left, _, Map
-from trypnv.machine import Message
-from trypnv.record import list_field, Record
+from amino import __, Left, _, Map
+from ribosome.machine import Message
+from ribosome.record import list_field, Record
 
 from myo.command import Command
 from myo.logging import Logging

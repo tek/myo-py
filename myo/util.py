@@ -1,6 +1,6 @@
 import re
 
-from tryp import Right, Left, Map, List, Maybe, __, F, Empty, Either
+from amino import Right, Left, Map, List, Maybe, __, F, Empty, Either
 
 
 def parse_int(i):

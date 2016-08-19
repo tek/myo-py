@@ -3,13 +3,13 @@ from pathlib import Path
 import tempfile
 import os
 
-from tryp.task import task
+from amino.task import task
 
 from psutil import Process
-from tryp import __, List, Boolean, Maybe, _, Map, Just
-from tryp.lazy import lazy
+from amino import __, List, Boolean, Maybe, _, Map, Just
+from amino.lazy import lazy
 
-from trypnv.record import maybe_field, either_field
+from ribosome.record import maybe_field, either_field
 
 from myo.ui.tmux.view import View
 from myo.ui.tmux.adapter import Adapter

@@ -1,5 +1,5 @@
 from functools import wraps
-from tryp import env
+from amino import env
 
 
 def vimtest(f):

@@ -1,7 +1,7 @@
-from tryp import List, __
-from tryp.lazy import lazy
+from amino import List, __
+from amino.lazy import lazy
 
-from trypnv.record import Record, field, maybe_field
+from ribosome.record import Record, field, maybe_field
 
 from myo.ui.tmux.adapter import Adapter
 from myo.ui.tmux.pane import PaneAdapter

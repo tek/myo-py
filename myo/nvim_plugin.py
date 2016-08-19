@@ -2,9 +2,9 @@ from pathlib import Path
 
 import neovim
 
-from tryp import List, L, _, I
+from amino import List, L, _, I
 
-from trypnv import command, NvimStatePlugin, msg_command, json_msg_command
+from ribosome import command, NvimStatePlugin, msg_command, json_msg_command
 
 from myo.plugins.core.main import StageI
 from myo.main import Myo

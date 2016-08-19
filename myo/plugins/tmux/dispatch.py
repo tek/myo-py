@@ -1,6 +1,6 @@
 from functools import singledispatch  # type: ignore
 
-from trypnv.machine import Error
+from ribosome.machine import Error
 
 from myo.dispatch import Dispatcher
 from myo.command import ShellCommand, Shell

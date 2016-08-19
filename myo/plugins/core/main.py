@@ -1,7 +1,7 @@
-from trypnv.machine import may_handle, io, Error, RunTask, handle
+from ribosome.machine import may_handle, io, Error, RunTask, handle
 
-import tryp
-from tryp import __, F, L, _
+import amino
+from amino import __, F, L, _
 
 from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.core.dispatch import VimDispatcher
@@ -26,7 +26,7 @@ class CoreTransitions(MyoTransitions):
     def error(self):
         m = self.msg.message
         handler = (F(self.log.caught_exception, 'transition') if
-                   tryp.development and isinstance(m, Exception) else
+                   amino.development and isinstance(m, Exception) else
                    self.log.error)
         handler(m)
 

@@ -1,10 +1,10 @@
 from collections import namedtuple
 
-from trypnv.machine import may_handle, handle, Nop
+from ribosome.machine import may_handle, handle, Nop, either_msg, either_handle
 
 from myo.state import MyoComponent, MyoTransitions
 
-from tryp import L, _, List, Try, __, Maybe, curried
+from amino import L, _, List, Try, __, Maybe, curried
 from myo.command import Command, VimCommand, ShellCommand, Shell
 from myo.util import optional_params, parse_callback_spec
 from myo.plugins.core.message import Parse, ParseOutput
@@ -129,11 +129,13 @@ class Plugin(MyoComponent):
                 self._run_test_line(opt - 'ctor')
             )
 
-        @handle(RunVimTest)
+        @either_handle(RunVimTest)
         def run_vim_test(self):
-            return (assemble_vim_test_line(self.vim) //
-                    _.head /
-                    self._run_test_line(self.msg.options))
+            return (
+                assemble_vim_test_line(self.vim) //
+                __.head.to_either('vim-test failed') /
+                self._run_test_line(self.msg.options)
+            )
 
         def _latest_command(self):
             return self.data.commands.history.head // self.data.command
