@@ -1,4 +1,5 @@
-from ribosome.machine import may_handle, io, Error, RunTask, handle
+from ribosome.machine import may_handle, Error, RunTask, handle
+from ribosome.machine.base import io
 
 import amino
 from amino import __, F, L, _
