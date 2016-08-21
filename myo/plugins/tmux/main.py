@@ -4,14 +4,14 @@ import libtmux
 
 from lenses import lens
 
-from amino import List, _, __, Just, Maybe, Map, Right, Empty
+from amino import List, _, __, Just, Maybe, Map, Right, Empty, Either
 from amino.lazy import lazy
 from amino.task import Task
 from amino.anon import L
 
-from ribosome.machine import (may_handle, handle, DataTask, either_msg, Quit,
-                              RunTask)
+from ribosome.machine import may_handle, handle, Quit, RunTask
 from ribosome.record import field, list_field, Record
+from ribosome.machine.base import DataEitherTask
 
 from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.tmux.message import (TmuxOpenPane, TmuxRunCommand,
@@ -28,7 +28,7 @@ from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
 from myo.ui.tmux.session import Session
 from myo.ui.tmux.server import Server
 from myo.util import parse_int, view_params
-from myo.ui.tmux.window import VimWindow
+from myo.ui.tmux.window import VimWindow, Window
 from myo.ui.tmux.facade import LayoutFacade, PaneFacade
 from myo.ui.tmux.view import View
 from myo.plugins.core.message import AddDispatcher
@@ -286,13 +286,15 @@ class TmuxTransitions(MyoTransitions):
             cmd = data.command_lens(self.msg.cmd_ident)
             res = cmd / (lambda c: c.modify(__.set(log_path=log_path)))
             return res.to_either('command not found')
-        return DataTask(_ / set_log / either_msg)
+        # NOTE Must run this as a task so it is executed after the cmd runner
+        return DataEitherTask(_ / set_log)
 
     @may_handle(TmuxPack)
     def pack(self):
-        return DataTask(
-            _ // L(self._wrap_window)(_, self.layouts.pack_window) / either_msg
-        )
+        return self._window_task(self.layouts.pack_window)
+
+    def _window_task(self, f: Callable[[Window], Task[Either[str, Window]]]):
+        return DataEitherTask(_ // L(self._wrap_window)(_, f))
 
     def _wrap_window(self, data, callback):
         state = self._state(data)
@@ -301,7 +303,7 @@ class TmuxTransitions(MyoTransitions):
         return win // callback / update
 
     def _run_ppm(self, ppm):
-        return DataTask(_ // L(self._wrap_window)(_, ppm.run) / either_msg)
+        return self._window_task(ppm.run)
 
     def _open_pane_ppm(self, name: Ident):
         # cannot reference self.layouts.pack_path directly, because panes
@@ -342,7 +344,7 @@ class TmuxTransitions(MyoTransitions):
                 Task.call(self.machine.watcher.send, msg)
                 .replace(Right(path))
             )
-        opener = (
+        runner = (
             (self._open_pane_ppm(pane_ident) + check_running) /
             pipe /
             run /
@@ -351,7 +353,7 @@ class TmuxTransitions(MyoTransitions):
         )
         set_log = command.transient.no.maybe(
             SetCommandLog(command.uuid, pane_ident))
-        return set_log.to_list.cons(opener)
+        return set_log.to_list.cons(runner)
 
     def _open_pane(self, w):
         return self.layouts.open_pane(w)
