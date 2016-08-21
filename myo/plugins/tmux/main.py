@@ -10,7 +10,7 @@ from amino.task import Task
 from amino.anon import L
 
 from ribosome.machine import (may_handle, handle, DataTask, either_msg, Quit,
-                            RunTask)
+                              RunTask)
 from ribosome.record import field, list_field, Record
 
 from myo.state import MyoComponent, MyoTransitions
@@ -20,7 +20,8 @@ from myo.plugins.tmux.message import (TmuxOpenPane, TmuxRunCommand,
                                       TmuxFindVim, TmuxInfo, TmuxLoadDefaults,
                                       TmuxClosePane, TmuxRunShell,
                                       TmuxRunLineInShell, StartWatcher,
-                                      WatchCommand, QuitWatcher, SetCommandLog)
+                                      WatchCommand, QuitWatcher, SetCommandLog,
+                                      TmuxPack)
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
@@ -287,6 +288,12 @@ class TmuxTransitions(MyoTransitions):
             return res.to_either('command not found')
         return DataTask(_ / set_log / either_msg)
 
+    @may_handle(TmuxPack)
+    def pack(self):
+        return DataTask(
+            _ // L(self._wrap_window)(_, self.layouts.pack_window) / either_msg
+        )
+
     def _wrap_window(self, data, callback):
         state = self._state(data)
         win = Task.from_maybe(state.vim_window, 'no vim window')
@@ -352,8 +359,8 @@ class TmuxTransitions(MyoTransitions):
     def _close_pane(self, w):
         return self.layouts.close_pane_path(w)
 
-    def _pack_path(self, w):
-        return self.layouts.pack_path(w)
+    def _pack_path(self, path):
+        return self.layouts.pack_path(path)
 
     def _layout_lens_bound(self, name):
         def sub(a):

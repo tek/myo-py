@@ -104,13 +104,17 @@ class LayoutFacade(Logging):
     def pack_path(self, path: PanePath):
         return self.pack_window(path.window) / __.replace(path)
 
-    def pack_window(self, window: Window):
+    def pack_window(self, window: Window) -> Task[Either[str, Window]]:
         t = (
             Task.call(window.id.flat_map, self.server.window) //
             L(Task.from_maybe)(_, 'window not found: {}'.format(window)) /
             _.size
         )
-        return t.flat_map2(L(self._pack_layout)(window.root, _, _)) / Right
+        return (
+            t.flat_map2(L(self._pack_layout)(window.root, _, _)) /
+            Right /
+            __.replace(window)
+        )
 
     def _pack_layout(self, l, w, h):
         horizontal = l.horizontal
