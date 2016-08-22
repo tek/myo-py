@@ -2,20 +2,30 @@ from pathlib import Path
 
 from amino import List, Right
 
-from ribosome.test import VimIntegrationSpec, PluginIntegrationSpec
+from ribosome.test import PluginIntegrationSpec
+from ribosome.test.integration import ExternalIntegrationSpec
 
 from myo.test.spec import Spec, TmuxSpec
 from myo.logging import Logging
 from myo.nvim_plugin import MyoNvimPlugin
 
 
-class MyoIntegrationSpec(VimIntegrationSpec):
+class IntegrationCommon:
+
+    @property
+    def plugin_class(self):
+        return Right(MyoNvimPlugin)
+
+
+class MyoIntegrationSpec(IntegrationCommon, ExternalIntegrationSpec):
     pass
 
 
-class MyoPluginIntegrationSpec(PluginIntegrationSpec, Spec, Logging):
+class MyoPluginIntegrationSpec(IntegrationCommon, PluginIntegrationSpec, Spec,
+                               Logging):
 
     def _pre_start(self):
+        super()._pre_start()
         self.vim.cmd_sync('MyoStart')
         self._wait_for(lambda: self.vim.pvar('started').is_just)
         self.vim.cmd('MyoPostStartup')
@@ -31,10 +41,6 @@ class MyoPluginIntegrationSpec(PluginIntegrationSpec, Spec, Logging):
     def _set_vars(self):
         self.vim.set_pvar('config_path', str(self._config_path))
         self.vim.set_pvar('plugins', self._plugins)
-
-    @property
-    def plugin_class(self):
-        return Right(MyoNvimPlugin)
 
     @property
     def _plugins(self):
