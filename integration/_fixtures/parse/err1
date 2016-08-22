@@ -1,0 +1,5 @@
+In /path/to/file:1
+  foo.bar(1)
+In /path/to/other/file:2
+  foo.baz(1, 2, 3)
+SomeError: bad things happened

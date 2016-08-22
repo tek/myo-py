@@ -115,7 +115,7 @@ class Plugin(MyoComponent):
                     Try(l.read_text) /
                     __.splitlines() /
                     List.wrap /
-                    L(ParseOutput)(c, _, self.msg.options) /
+                    L(ParseOutput)(c, _, l, self.msg.options) /
                     _.pub
                 )
             return (cmd & log_path).flat_map2(parse)

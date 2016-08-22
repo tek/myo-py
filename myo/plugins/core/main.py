@@ -2,7 +2,7 @@ from ribosome.machine import may_handle, Error, RunTask, handle
 from ribosome.machine.base import io
 
 import amino
-from amino import __, F, L, _
+from amino import __, F, L, _, may, Right
 
 from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.core.dispatch import VimDispatcher
@@ -33,17 +33,23 @@ class CoreTransitions(MyoTransitions):
 
     @handle(ParseOutput)
     def parse_output(self):
-        return self._error_handler(self.msg.command) / (
+        return self._error_handler(self.msg.command).join / (
             lambda parser:
-            RunTask(parser.parse(self.msg.output) // parser.display)
+            RunTask(
+                parser.parse(self.msg.output, self.msg.path) // parser.display)
         )
 
     def _error_handler(self, cmd):
-        return (
-            (cmd.parser // parse_callback_spec) / (
-                _ / L(CustomOutputHandler)(self.vim, _) | VimCompiler(self.vim)
-            )
+        return cmd.parser.flat_map(self._special_error_handler).or_else(
+            cmd.parser //
+            parse_callback_spec /
+            __.map(L(CustomOutputHandler)(self.vim, _))
         )
+
+    @may
+    def _special_error_handler(self, spec: str):
+        if spec == 'compiler':
+            return Right(VimCompiler(self.vim))
 
 
 class Plugin(MyoComponent):

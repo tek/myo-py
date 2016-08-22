@@ -1,7 +1,7 @@
 import abc
 from typing import Callable
 
-from amino import List, _
+from amino import List, _, Path
 from amino.task import Task
 
 from ribosome.record import list_field, field
@@ -40,7 +40,7 @@ class ParseResult(Record):
 class OutputHandler(Logging, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def parse(self, output: List[str]) -> Task[ParseResult]:
+    def parse(self, output: List[str], errfile: Path) -> Task[ParseResult]:
         ...
 
     @abc.abstractmethod
@@ -55,7 +55,7 @@ class CustomOutputHandler(OutputHandler):
         self.vim = vim
         self.handler = handler
 
-    def parse(self, output: List[str]):
+    def parse(self, output: List[str], errfile: Path):
         return Task.call(self.handler, output)
 
     def display(self, result):
@@ -70,9 +70,9 @@ class VimCompiler(OutputHandler):
     def __init__(self, vim: NvimFacade) -> None:
         self.vim = vim
 
-    def parse(self, output: List[str]):
+    def parse(self, output: List[str], errfile: Path):
         r = ParseResult(head='errorformat')
-        return (Task.call(self.vim.cmd_sync, 'cgetexpr', output.join_lines)
+        return (Task.call(self.vim.cmd_sync, 'cgetfile {}'.format(errfile))
                 .replace(r))
 
     def display(self, result):
