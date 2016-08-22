@@ -1,4 +1,4 @@
-import subprocess
+from subprocess import Popen, PIPE, STDOUT
 
 import libtmux
 from libtmux.exc import LibTmuxException
@@ -7,6 +7,7 @@ import amino.test
 from amino.test.path import fixture_path
 from amino import List, _
 from amino.test import later
+from amino.lazy import lazy
 
 from myo.ui.tmux.server import Server
 
@@ -22,6 +23,10 @@ class TmuxSpecBase(Spec):
         self.win_height = 40
         super().setup()
 
+    @property
+    def socket(self):
+        return 'myo_spec'
+
     def _find_server(self):
         if self.native_server is None:
             try:
@@ -36,15 +41,29 @@ class TmuxSpecBase(Spec):
         except LibTmuxException:
             pass
 
-    def _setup_server(self):
-        conf = fixture_path('conf', 'tmux.conf')
-        self.socket = 'myo_spec'
+    @property
+    def external_terminal(self):
+        return True
+
+    @property
+    def _terminal_args(self):
         geom = '{}x{}'.format(self.win_width + 1, self.win_height + 1)
-        args = ['urxvt', '-geometry', geom, '-e', 'tmux', '-L',
-                self.socket, '-f', str(conf)]
-        self.term = subprocess.Popen(args, stdout=subprocess.PIPE,
-                                     stderr=subprocess.STDOUT)
+        return ['urxvt', '-geometry', geom, '-e']
+
+    @property
+    def _tmux_args(self):
+        conf = fixture_path('conf', 'tmux.conf')
+        return ['tmux', '-L', self.socket, '-f', str(conf)]
+
+    @lazy
+    def term(self):
+        t = self._terminal_args if self.external_terminal else []
+        args = t + self._tmux_args
+        return Popen(args, stdout=PIPE, stderr=STDOUT)
+
+    def _setup_server(self):
         self.native_server = None
+        self.term
         self._wait_for(self._find_server)
         self._wait_for(self._find_session)
 

@@ -1,6 +1,6 @@
 import re
 
-from amino import Maybe, List, __, _
+from amino import Maybe, List, __
 from amino.test import later
 from amino.test.path import fixture_path, base_dir
 
