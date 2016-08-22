@@ -29,4 +29,15 @@ class ParseSpec(MyoIntegrationSpec):
         qf = self.vim.call('getqflist') | []
         qf.should_not.be.empty
 
+    @property
+    def _mk_trace(self):
+        frame = lambda i: List('  File "/path/{}"'.format(i), 'call()')
+        t = List.range(3) // frame
+        err = 'AttributeError: butt'
+        return t.cat(err)
+
+    def python(self):
+        trace1 = self._mk_trace
+        trace2 = self._mk_trace
+
 __all__ = ('ParseSpec',)
