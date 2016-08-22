@@ -30,6 +30,7 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
     def name(self):
         return 'myo'
 
+    @property
     def state(self):
         return self.myo
 
