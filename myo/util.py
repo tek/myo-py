@@ -1,6 +1,6 @@
 import re
 
-from amino import Right, Left, Map, List, Maybe, __, F, Empty, Either
+from amino import Right, Left, Map, Maybe, __, F, Either, List
 
 
 def parse_int(i):
@@ -36,17 +36,10 @@ def _cb_err(data):
 
 
 def parse_python_callback(data: str):
-    def parse_path(path):
-        return (
-            List.wrap(path.rsplit('.', 1))
-            .lift_all(0, 1)
-            .to_either('invalid module path: {}'.format(path))
-            .flat_map2(Either.import_name)
-        )
     return (
         Maybe(_py_callback_re.match(data)) /
         __.group(1) /
-        parse_path
+        Either.import_path
     ).to_either(_cb_err(data))
 
 
