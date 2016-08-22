@@ -9,6 +9,7 @@ from myo.output import ParseResult, OutputEvent, OutputEntry
 
 from integration._support.base import TmuxIntegrationSpec
 from integration._support.vimtest import vimtest
+from integration._support.command import CmdSpec
 
 
 class _TmuxSpec(TmuxIntegrationSpec):
@@ -16,7 +17,7 @@ class _TmuxSpec(TmuxIntegrationSpec):
     @property
     def _plugins(self):
         self._debug = True
-        return List('myo.plugins.tmux')
+        return super()._plugins.cons('myo.plugins.tmux')
 
 
 class CutSizeSpec(_TmuxSpec):
@@ -103,11 +104,7 @@ class ClosePaneSpec(_DefaultLayoutSpec):
         self._check(1)
 
 
-class _CmdSpec(_TmuxSpec):
-
-    @property
-    def _plugins(self):
-        return super()._plugins.cat('myo.plugins.command')
+class _TmuxCmdSpec(_TmuxSpec, CmdSpec):
 
     def _set_vars(self):
         super()._set_vars()
@@ -116,7 +113,7 @@ class _CmdSpec(_TmuxSpec):
         self.vim.set_pvar('tmux_watcher_interval', 0.1)
 
 
-class DispatchSpec(_CmdSpec):
+class DispatchSpec(_TmuxCmdSpec):
 
     def simple(self):
         s = 'cmd test'
@@ -182,9 +179,9 @@ def _parse_echo(data):
     return ParseResult(head=_parse_head, events=List(event))
 
 
-class ParseSpec(_CmdSpec):
+class ParseSpec(_TmuxCmdSpec):
 
-    def parse(self):
+    def custom(self):
         l1 = 'line 1'
         lines = List(l1, 'line 2', 'line 3')
         s = lines.mk_string('\\n')
@@ -211,7 +208,7 @@ def _test_ctor():
     return 'echo \'{}\''.format(_test_line)
 
 
-class TestSpec(_CmdSpec):
+class VimTestSpec(_TmuxCmdSpec):
 
     def simple(self):
         self.json_cmd('MyoTest', ctor='py:integration.tmux_spec._test_ctor')
@@ -231,4 +228,4 @@ class TestSpec(_CmdSpec):
         later(check)
 
 __all__ = ('CutSizeSpec', 'DistributeSizeSpec', 'DispatchSpec', 'ParseSpec',
-           'ShowSpec', 'ClosePaneSpec', 'DistributeSize2Spec')
+           'ShowSpec', 'ClosePaneSpec', 'DistributeSize2Spec', 'VimTestSpec')
