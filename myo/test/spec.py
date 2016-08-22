@@ -5,6 +5,8 @@ from libtmux.exc import LibTmuxException
 
 import amino.test
 from amino.test.path import fixture_path
+from amino import List, _
+from amino.test import later
 
 from myo.ui.tmux.server import Server
 
@@ -13,7 +15,7 @@ class Spec(amino.test.Spec):
     pass
 
 
-class TmuxSpec(Spec):
+class TmuxSpecBase(Spec):
 
     def setup(self):
         self.win_width = 100
@@ -62,4 +64,15 @@ class TmuxSpec(Spec):
     def sessions(self):
         return self.server.sessions
 
-__all__ = ('Spec', 'TmuxSpec')
+    @property
+    def _panes(self):
+        return self.sessions.head // _.windows.head / _.panes | List()
+
+    @property
+    def _output(self):
+        return self._panes // _.capture
+
+    def _output_contains(self, target):
+        later(lambda: self._output.should.contain(target))
+
+__all__ = ('Spec', 'TmuxSpecBase')

@@ -5,7 +5,7 @@ from amino import List, Right
 from ribosome.test import PluginIntegrationSpec
 from ribosome.test.integration import ExternalIntegrationSpec
 
-from myo.test.spec import Spec, TmuxSpec
+from myo.test.spec import Spec
 from myo.logging import Logging
 from myo.nvim_plugin import MyoNvimPlugin
 
@@ -50,24 +50,4 @@ class MyoPluginIntegrationSpec(IntegrationCommon, PluginIntegrationSpec, Spec,
     def _config_path(self):
         return Path('/dev/null')
 
-
-class TmuxIntegrationSpec(MyoPluginIntegrationSpec, TmuxSpec):
-
-    def _pre_start_neovim(self):
-        super()._pre_start_neovim()
-        self._setup_server()
-
-    def _post_start_neovim(self):
-        super()._post_start_neovim()
-        self.vim.set_pvar('tmux_socket', self.socket)
-        id = self.session.windows[0].panes[0].id_i | -1
-        wid = self.session.windows[0].id_i | -1
-        self.vim.set_pvar('tmux_force_vim_pane_id', id)
-        self.vim.set_pvar('tmux_force_vim_win_id', wid)
-
-    def teardown(self):
-        super().teardown()
-        self._teardown_server()
-
-__all__ = ('TmuxIntegrationSpec', 'MyoIntegrationSpec',
-           'MyoPluginIntegrationSpec')
+__all__ = ('MyoIntegrationSpec', 'MyoPluginIntegrationSpec')

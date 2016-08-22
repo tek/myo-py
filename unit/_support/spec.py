@@ -1,7 +1,7 @@
 from ribosome.test.spec import MockNvimSpec
 
 import myo.test
-from myo.test.spec import TmuxSpec
+from myo.test.spec import TmuxSpecBase
 
 
 class UnitSpec(MockNvimSpec, myo.test.Spec):
@@ -13,7 +13,7 @@ class UnitSpec(MockNvimSpec, myo.test.Spec):
         super().setup()
 
 
-class TmuxUnitSpec(UnitSpec, TmuxSpec):
+class TmuxUnitSpec(UnitSpec, TmuxSpecBase):
 
     def setup(self):
         super().setup()

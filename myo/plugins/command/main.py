@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-from ribosome.machine import may_handle, handle, Nop, either_msg, either_handle
+from ribosome.machine import may_handle, handle, Nop, either_handle
 
 from myo.state import MyoComponent, MyoTransitions
 
