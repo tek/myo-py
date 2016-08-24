@@ -1,4 +1,4 @@
-amino-nvim
+ribosome
 git+git://github.com/ingolemo/python-lenses.git
 libtmux
 psutil
