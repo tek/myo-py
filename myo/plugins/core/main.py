@@ -2,12 +2,12 @@ from ribosome.machine import may_handle, Error, RunTask, handle
 from ribosome.machine.base import io
 
 import amino
-from amino import __, F, L, _, may, Right
+from amino import __, F, L, _, may, Right, Just
 
 from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.core.dispatch import VimDispatcher
 from myo.plugins.core.message import StageI, Initialized, ParseOutput
-from myo.output import VimCompiler, CustomOutputHandler
+from myo.output import VimCompiler, CustomOutputHandler, Parsing
 from myo.util import parse_callback_spec
 
 
@@ -40,16 +40,23 @@ class CoreTransitions(MyoTransitions):
         )
 
     def _error_handler(self, cmd):
-        return cmd.parser.flat_map(self._special_error_handler).or_else(
-            cmd.parser //
-            parse_callback_spec /
-            __.map(L(CustomOutputHandler)(self.vim, _))
+        return (
+            (cmd.parser // self._special_error_handler)
+            .or_else(
+                cmd.parser //
+                parse_callback_spec /
+                __.map(L(CustomOutputHandler)(self.vim, _))
+            ).or_else(self._langs_parsing(cmd.langs))
         )
 
     @may
     def _special_error_handler(self, spec: str):
         if spec == 'compiler':
             return Right(VimCompiler(self.vim))
+
+    def _langs_parsing(self, langs):
+        return langs.empty.no.either('command has no langs',
+                                     Just(Parsing(self.vim, langs)))
 
 
 class Plugin(MyoComponent):

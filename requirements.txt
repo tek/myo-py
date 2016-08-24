@@ -2,3 +2,4 @@ amino-nvim
 git+git://github.com/ingolemo/python-lenses.git
 libtmux
 psutil
+networkx

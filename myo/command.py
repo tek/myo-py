@@ -11,6 +11,7 @@ class Command(Named):
     log_path = maybe_field(Path)
     parser = maybe_field(str)
     transient = bool_field()
+    langs = list_field()
 
 
 class VimCommand(Command):

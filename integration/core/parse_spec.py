@@ -31,7 +31,9 @@ class ParseSpec(MyoIntegrationSpec):
 
     @property
     def _mk_trace(self):
-        frame = lambda i: List('  File "/path/{}"'.format(i), 'call()')
+        r = lambda: List.random_string(4)
+        tmpl = '  File "/path/{}", line 10, in {}'
+        frame = lambda i: List(tmpl.format(i, r()), '    {}()'.format(r()))
         t = List.range(3) // frame
         err = 'AttributeError: butt'
         return t.cat(err)
@@ -39,5 +41,12 @@ class ParseSpec(MyoIntegrationSpec):
     def python(self):
         trace1 = self._mk_trace
         trace2 = self._mk_trace
+        output = trace1 + trace2
+        cmd = Command(name='a', line='a', langs=List('python'))
+        msg = ParseOutput(cmd, output, None, Map())
+        self.plugin.myo_start()
+        self.root.send(msg)
+        self._await()
+        self.vim.buffer.content.should.contain(output[-1])
 
 __all__ = ('ParseSpec',)

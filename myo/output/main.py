@@ -1,40 +1,14 @@
 import abc
 from typing import Callable
 
-from amino import List, _, Path
+from amino import List, Path, Either, __
 from amino.task import Task
+from amino.lazy import lazy
 
-from ribosome.record import list_field, field
 from ribosome import NvimFacade
 
-from myo.record import Record
 from myo.logging import Logging
-
-
-class OutputEntry(Record):
-    text = field(str)
-
-    @property
-    def formatted(self):
-        return self.text
-
-
-class OutputEvent(Record):
-    head = field(str)
-    entries = list_field(OutputEntry)
-
-    @property
-    def display_lines(self):
-        return (self.entries / _.formatted).cons(self.head)
-
-
-class ParseResult(Record):
-    head = field(str)
-    events = list_field(OutputEvent)
-
-    @property
-    def display_lines(self):
-        return (self.events // _.display_lines).cons(self.head)
+from myo.output.data import ParseResult
 
 
 class OutputHandler(Logging, metaclass=abc.ABCMeta):
@@ -78,4 +52,23 @@ class VimCompiler(OutputHandler):
     def display(self, result):
         return Task.call(self.vim.cmd_sync, 'cfirst')
 
-__all__ = ('CustomOutputHandler', 'VimCompiler')
+
+class Parsing(CustomOutputHandler):
+
+    def __init__(self, vim: NvimFacade, langs: List[str]) -> None:
+        self.vim = vim
+        self.langs = langs
+
+    @lazy
+    def parsers(self):
+        mod = 'myo.output.parser'
+        def create(lang):
+            return Either.import_name('{}.{}'.format(mod, lang),
+                                      'Parser').to_list
+        return self.langs // create / (lambda a: a(self.vim))
+
+    def parse(self, output: List[str], errfile: Path):
+        events = self.parsers // __.events(output)
+        return Task.now(ParseResult(head='parsed', events=events))
+
+__all__ = ('CustomOutputHandler', 'VimCompiler', 'Parsing')
