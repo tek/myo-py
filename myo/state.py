@@ -8,8 +8,8 @@ from myo.env import Env
 
 class MyoComponent(ModularMachine, HasNvim, Logging):
 
-    def __init__(self, vim: NvimFacade, parent=None) -> None:
-        Machine.__init__(self, parent)
+    def __init__(self, vim: NvimFacade, parent=None, title=None) -> None:
+        Machine.__init__(self, parent, title=title)
         HasNvim.__init__(self, vim)
 
 

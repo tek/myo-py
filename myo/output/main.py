@@ -1,14 +1,16 @@
 import abc
 from typing import Callable
 
-from amino import List, Path, Either, __
+from amino import List, Path, Either, __, L, _
 from amino.task import Task
 from amino.lazy import lazy
 
 from ribosome import NvimFacade
+from ribosome.machine.state import ScratchMachine
 
 from myo.logging import Logging
 from myo.output.data import ParseResult
+from myo.output.machine import OutputMachine, OutputInit
 
 
 class OutputHandler(Logging, metaclass=abc.ABCMeta):
@@ -33,10 +35,11 @@ class CustomOutputHandler(OutputHandler):
         return Task.call(self.handler, output)
 
     def display(self, result):
-        open_tab = Task(self.vim.tabnew)
-        set_buffer = Task(
-            lambda: self.vim.tab.buffer.set_content(result.display_lines))
-        return open_tab + set_buffer
+        ctor = L(OutputMachine)(self.vim, _, result, _)
+        return (
+            Task.now(ScratchMachine(ctor, False)) /
+            (lambda a: (a.pub, OutputInit().pub))
+        )
 
 
 class VimCompiler(OutputHandler):

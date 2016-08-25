@@ -48,5 +48,6 @@ class ParseSpec(MyoIntegrationSpec):
         self.root.send(msg)
         self._await()
         self.vim.buffer.content.should.contain(output[-1])
+        self.vim.buffer.option('modifiable').should.contain(False)
 
 __all__ = ('ParseSpec',)
