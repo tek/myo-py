@@ -5,13 +5,13 @@ from myo.logging import Logging
 from myo.output.data import OutputEvent, OutputEntry
 from myo.record import Record
 
-from amino import List, Maybe, Try, curried, Just
+from amino import List, Maybe, Try, curried, Just, L
 
 from ribosome import NvimFacade
 from ribosome.record import re_field, field
 
 
-class ParserBase(Logging):
+class ParserBase(Logging, metaclass=abc.ABCMeta):
 
     def __init__(self, vim: NvimFacade) -> None:
         self.vim = vim
@@ -33,11 +33,14 @@ def cons(entry, match):
     return Try(entry, text=match.string, **match.groupdict()).to_maybe
 
 
-class SimpleParser(ParserBase):
+class SimpleParser(ParserBase, metaclass=abc.ABCMeta):
 
-    @property
+    @abc.abstractproperty
     def graph(self):
         ...
+
+    def event(self, entries: List[OutputEntry]):
+        return Just(OutputEvent(head='traceback', entries=entries))
 
     def edges(self, node):
         e = (Step(t, d['data']) for f, t, d in self.graph.edges(node,
@@ -47,9 +50,8 @@ class SimpleParser(ParserBase):
     def _process(self, node: str, output: List[str], result: List[OutputEvent],
                  current: List[OutputEntry]) -> List[OutputEvent]:
         def add_event():
-            ev = OutputEvent(head='traceback', entries=current)
-            new = current.empty.no.maybe(ev).to_list
-            return result + new
+            new = current.empty.no.flat_maybe_call(L(self.event)(current))
+            return result + new.to_list
         def parse_line(line: str, rest: List[str]):
             def match(step: Step):
                 return (
