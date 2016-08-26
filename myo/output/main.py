@@ -6,7 +6,7 @@ from amino.task import Task
 from amino.lazy import lazy
 
 from ribosome import NvimFacade
-from ribosome.machine.state import ScratchMachine
+from ribosome.machine.state import RunScratchMachine
 
 from myo.logging import Logging
 from myo.output.data import ParseResult
@@ -37,7 +37,7 @@ class CustomOutputHandler(OutputHandler):
     def display(self, result):
         ctor = L(OutputMachine)(self.vim, _, result, _)
         return (
-            Task.now(ScratchMachine(ctor, False)) /
+            Task.now(RunScratchMachine(ctor, False)) /
             (lambda a: (a.pub, OutputInit().pub))
         )
 

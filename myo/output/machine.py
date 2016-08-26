@@ -1,10 +1,12 @@
 from ribosome.machine import message, may_handle, Machine
 from ribosome.nvim import ScratchBuffer, NvimFacade
+from ribosome.machine.scratch import ScratchMachine
 
 from amino.task import Task
 
 from myo.output.data import ParseResult
-from myo.state import MyoTransitions, MyoComponent
+from myo.state import MyoTransitions
+from myo.logging import Logging
 
 OutputInit = message('OutputInit')
 
@@ -31,13 +33,13 @@ class OutputMachineTransitions(MyoTransitions):
         )
 
 
-class OutputMachine(MyoComponent):
+
+class OutputMachine(ScratchMachine, Logging):
     Transitions = OutputMachineTransitions
 
     def __init__(self, vim: NvimFacade, scratch: ScratchBuffer,
                  result: ParseResult, parent: Machine) -> None:
-        super().__init__(vim, parent=parent, title='output')
-        self.scratch = scratch
+        super().__init__(vim, scratch, parent=parent, title='output')
         self.result = result
 
 __all__ = ('OutputMachine',)
