@@ -4,7 +4,7 @@ from amino import Maybe, List, __
 from amino.test import later
 from amino.test.path import fixture_path, base_dir
 
-from myo.output import OutputEntry, OutputEvent, ParseResult
+from myo.output.data import OutputEntry, OutputEvent, ParseResult
 
 from integration._support.tmux import TmuxCmdSpec
 from integration._support.vimtest import vimtest
