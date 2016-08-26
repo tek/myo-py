@@ -3,12 +3,14 @@ from ribosome.nvim import ScratchBuffer, NvimFacade
 from ribosome.machine.scratch import ScratchMachine
 
 from amino.task import Task
+from amino import Map, _
 
 from myo.output.data import ParseResult
 from myo.state import MyoTransitions
 from myo.logging import Logging
 
 OutputInit = message('OutputInit')
+Jump = message('Jump')
 
 
 class OutputMachineTransitions(MyoTransitions):
@@ -32,6 +34,9 @@ class OutputMachineTransitions(MyoTransitions):
             (lambda a: Task.call(self.buffer.set_modifiable, False))
         )
 
+    @may_handle(Jump)
+    def jump(self):
+        entry = self.vim.window.line / (_ - 1) // self.result.target_for_line
 
 
 class OutputMachine(ScratchMachine, Logging):
@@ -41,5 +46,12 @@ class OutputMachine(ScratchMachine, Logging):
                  result: ParseResult, parent: Machine) -> None:
         super().__init__(vim, scratch, parent=parent, title='output')
         self.result = result
+
+    @property
+    def mappings(self):
+        special = {
+            '%cr%': Jump,
+        }
+        return Map(**special)
 
 __all__ = ('OutputMachine',)

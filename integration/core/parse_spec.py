@@ -4,6 +4,7 @@ from amino.test.path import fixture_path
 from amino import Map, Just, List
 
 from ribosome.test.integration import main_looped
+from ribosome.machine.scratch import Mapping
 
 from myo.command import Command
 from myo.plugins.core.message import ParseOutput
@@ -45,8 +46,10 @@ class ParseSpec(MyoIntegrationSpec):
         cmd = Command(name='a', line='a', langs=List('python'))
         msg = ParseOutput(cmd, output, None, Map())
         self.plugin.myo_start()
-        self.root.send(msg)
-        self._await()
+        self.root.send_sync(msg)
+        output_machine = self.root.sub[-1]
+        self.vim.window.set_cursor(4).attempt()
+        self.root.send_sync(Mapping(output_machine.uuid, '%cr%'))
         self.vim.buffer.content.should.contain(output[-1])
         self.vim.buffer.option('modifiable').should.contain(False)
 

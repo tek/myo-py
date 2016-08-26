@@ -152,4 +152,8 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
     def vim_leave(self):
         self.myo_quit()
 
+    @neovim.function('MyoMapping', sync=False)
+    def myo_mapping(self, args):
+        return self.myo.send(Mapping(args))
+
 __all__ = ('MyoNvimPlugin',)
