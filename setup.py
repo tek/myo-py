@@ -13,5 +13,6 @@ setup(
         'ribosome>=8.0.0',
         'libtmux',
         'psutil',
+        'networkx',
     ]
 )
