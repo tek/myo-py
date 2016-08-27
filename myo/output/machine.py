@@ -1,9 +1,11 @@
-from ribosome.machine import message, may_handle, Machine
+from operator import add
+
+from ribosome.machine import message, may_handle, Machine, handle
 from ribosome.nvim import ScratchBuffer, NvimFacade
 from ribosome.machine.scratch import ScratchMachine
 
 from amino.task import Task
-from amino import Map, _
+from amino import Map, _, L, Left, __
 
 from myo.output.data import ParseResult
 from myo.state import MyoTransitions
@@ -34,9 +36,29 @@ class OutputMachineTransitions(MyoTransitions):
             (lambda a: Task.call(self.buffer.set_modifiable, False))
         )
 
-    @may_handle(Jump)
+    @handle(Jump)
     def jump(self):
-        entry = self.vim.window.line / (_ - 1) // self.result.target_for_line
+        target = self.vim.window.line / (_ - 1) // self.result.target_for_line
+        open_file = target / L(self._open_file)(_.path)
+        set_line = (target / _.line /
+                    (lambda a: Task(lambda: self.vim.window.set_cursor(a))))
+        return (open_file & set_line).map2(add)
+
+    def _open_file(self, path):
+        def split():
+            # TODO
+            pass
+        if not path.is_file():
+            return Task.now(Left('not a file: {}'.format(path)))
+        else:
+            win = (
+                self.vim.windows.find(__.buffer.modifiable.contains(True))
+                .or_else(split)
+                .task('could not get a window') /
+                __.focus()
+            )
+            edit = Task.call(self.vim.edit, path) / __.run_sync()
+            return win + edit
 
 
 class OutputMachine(ScratchMachine, Logging):
