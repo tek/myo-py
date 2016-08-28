@@ -5,6 +5,8 @@ from myo.logging import Logging
 from myo.output.data import OutputEvent, OutputEntry
 from myo.record import Record
 
+from fn.recur import tco
+
 from amino import List, Maybe, Try, curried, Just, L
 
 from ribosome.record import re_field, field
@@ -43,8 +45,28 @@ class SimpleParser(ParserBase, metaclass=abc.ABCMeta):
                                                                 data=True))
         return List.wrap(e)
 
+    @tco
     def _process(self, node: str, output: List[str], result: List[OutputEvent],
                  current: List[OutputEntry]) -> List[OutputEvent]:
+        '''
+        Parse a list of output lines. Uses a trampoline for tail call
+        elimination.
+        The algorithm starts at the graph node 'start'
+        1. detach the first output line into *line* and *rest* and call
+           *parse_line*
+        2. find an edge that matches to current line
+        a) if a match was found
+            3. construct an *OutputEntry*
+            4. set the current node to the target node of the edge
+            5. add the entry to the list *current*
+            6. recurse with *rest* as new *output*
+        b) if no match was found
+            7. construct an *OutputEvent* from *current*
+            8. if the current node is 'start', set *output* to *rest*
+               else, keep *output* to try again with 'start'
+            9. recurse with 'start'
+        10. add the last event and exit the recursion
+        '''
         def add_event():
             new = current.empty.no.flat_maybe_call(L(self.event)(current))
             return result + new.to_list
@@ -55,15 +77,16 @@ class SimpleParser(ParserBase, metaclass=abc.ABCMeta):
                     cons(step.data.entry)
                 ) & Just(step.node)
             def cont(entry: OutputEntry, next_node: str):
-                return self._process(next_node, rest, result,
-                                     current.cat(entry))
+                return True, (self, next_node, rest, result,
+                              current.cat(entry))
             def next_event():
                 new_output = rest if node == 'start' else output
-                return self._process('start', new_output, add_event(), List())
+                return True, (self, 'start', new_output, add_event(), List())
             return self.edges(node).find_map(match).map2(cont) | next_event
-        return output.detach_head.map2(parse_line) | add_event()
+        quit = lambda: (False, add_event())
+        return output.detach_head.map2(parse_line) | quit
 
     def events(self, output):
-        return self._process('start', output, List(), List())
+        return self._process(self, 'start', output, List(), List())
 
 __all__ = ('ParserBase',)
