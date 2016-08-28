@@ -57,7 +57,6 @@ class CommandTransitions(MyoTransitions):
 
     @handle(AddShellCommand)
     def add_shell_command(self):
-        self.log.verbose(self.msg)
         return self._add(ShellCommand, List('line'),
                          self._cmd_opt.cat('shell'), name=self.msg.name)
 
