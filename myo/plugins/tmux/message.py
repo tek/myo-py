@@ -1,20 +1,20 @@
-from ribosome.machine import message
+from ribosome.machine import message, json_message
 
-TmuxRunCommand = message('TmuxRunCommand', 'command', 'options')
-TmuxRunShell = message('TmuxRunShell', 'shell', 'options')
+TmuxRunCommand = json_message('TmuxRunCommand', 'command')
+TmuxRunShell = json_message('TmuxRunShell', 'shell')
 TmuxRunCommandInShell = message('TmuxRunCommandInShell', 'shell', 'command',
                                 'options')
-TmuxRunLineInShell = message('TmuxRunLineInShell', 'shell', 'options')
-TmuxCreateSession = message('TmuxCreateSession', 'options')
+TmuxRunLineInShell = json_message('TmuxRunLineInShell', 'shell')
+TmuxCreateSession = json_message('TmuxCreateSession')
 TmuxSpawnSession = message('TmuxSpawnSession', 'id')
-TmuxCreateLayout = message('TmuxCreateLayout', 'name', 'options')
-TmuxCreatePane = message('TmuxCreatePane', 'name', 'options')
-TmuxOpenPane = message('TmuxOpenPane', 'name', 'options')
+TmuxCreateLayout = json_message('TmuxCreateLayout', 'name')
+TmuxCreatePane = json_message('TmuxCreatePane', 'name')
+TmuxOpenPane = json_message('TmuxOpenPane', 'name')
 TmuxClosePane = message('TmuxClosePane', 'name')
 TmuxFindVim = message('TmuxFindVim')
 TmuxLoadDefaults = message('TmuxLoadDefaults')
 TmuxInfo = message('TmuxInfo')
-TmuxParse = message('TmuxParse', 'options')
+TmuxParse = json_message('TmuxParse')
 TmuxPack = message('TmuxPack')
 SetCommandLog = message('SetCommandLog', 'cmd_ident', 'pane_ident')
 
