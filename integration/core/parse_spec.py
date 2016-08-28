@@ -73,7 +73,7 @@ class ParseSpec(MyoIntegrationSpec):
         output_machine = self.root.sub[-1]
         self.vim.buffer.content.should.contain(output[-1])
         self.vim.buffer.option('modifiable').should.contain(False)
-        self.vim.window.set_cursor(4).attempt()
+        self.vim.window.set_cursor(4)
         self.root.send_sync(Mapping(output_machine.uuid, '%cr%'))
         self.vim.windows.should.have.length_of(2)
         self.vim.window.buffer.name.should.equal(str(self._python_file))
