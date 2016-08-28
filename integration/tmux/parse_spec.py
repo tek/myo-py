@@ -46,15 +46,7 @@ def _test_ctor():
     return 'echo \'{}\''.format(_test_line)
 
 
-def _test_ctor_py():
-    return 'python '
-
-
 class VimTestSpec(TmuxCmdSpec):
-
-    def simple(self):
-        self.json_cmd('MyoTest', ctor='py:integration.tmux_spec._test_ctor')
-        self._wait(2)
 
     @vimtest
     def vimtest(self):
