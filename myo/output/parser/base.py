@@ -7,14 +7,10 @@ from myo.record import Record
 
 from amino import List, Maybe, Try, curried, Just, L
 
-from ribosome import NvimFacade
 from ribosome.record import re_field, field
 
 
 class ParserBase(Logging, metaclass=abc.ABCMeta):
-
-    def __init__(self, vim: NvimFacade) -> None:
-        self.vim = vim
 
     @abc.abstractmethod
     def events(self, output: List[str]) -> List[OutputEvent]:

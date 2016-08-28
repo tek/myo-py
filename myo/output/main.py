@@ -68,7 +68,7 @@ class Parsing(CustomOutputHandler):
         def create(lang):
             return Either.import_name('{}.{}'.format(mod, lang),
                                       'Parser').to_list
-        return self.langs // create / (lambda a: a(self.vim))
+        return self.langs // create / (lambda a: a())
 
     def parse(self, output: List[str], errfile: Path):
         events = self.parsers // __.events(output)
