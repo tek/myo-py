@@ -9,9 +9,9 @@ from amino.lazy import lazy
 from amino.task import Task
 from amino.anon import L
 
-from ribosome.machine import may_handle, handle, Quit, RunTask
+from ribosome.machine import may_handle, handle, Quit
 from ribosome.record import field, list_field, Record
-from ribosome.machine.base import DataEitherTask
+from ribosome.machine.base import DataEitherTask, UnitTask
 
 from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.tmux.message import (TmuxOpenPane, TmuxRunCommand,
@@ -186,7 +186,7 @@ class TmuxTransitions(MyoTransitions):
 
     @may_handle(StartWatcher)
     def start_watcher(self):
-        return RunTask(Task(self.machine.watcher.start))
+        return UnitTask(Task(self.machine.watcher.start))
 
     @handle(TmuxCreateSession)
     def create_session(self):
@@ -265,11 +265,11 @@ class TmuxTransitions(MyoTransitions):
     @may_handle(Quit)
     def quit(self):
         t = self.state.possibly_open_panes // _.id / self.panes.close_id
-        return QuitWatcher(), RunTask(t.sequence(Task))
+        return QuitWatcher(), UnitTask(t.sequence(Task))
 
     @may_handle(QuitWatcher)
     def quit_watcher(self):
-        return RunTask(Task(self.machine.watcher.stop))
+        return UnitTask(Task(self.machine.watcher.stop))
 
     @may_handle(TmuxInfo)
     def info(self):
