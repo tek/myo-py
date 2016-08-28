@@ -4,7 +4,7 @@ from ribosome.machine import may_handle, handle, Nop, either_handle
 
 from myo.state import MyoComponent, MyoTransitions
 
-from amino import L, _, List, Try, __, Maybe, curried, Map, Just, Right
+from amino import L, _, List, Try, __, Maybe, curried, Map, Right
 from myo.command import Command, VimCommand, ShellCommand, Shell
 from myo.util import optional_params, parse_callback_spec
 from myo.plugins.core.message import Parse, ParseOutput, StageI
@@ -18,6 +18,7 @@ RunInShell = namedtuple('RunInShell', ['shell'])
 
 
 class CommandTransitions(MyoTransitions):
+    _test_cmd_name = '<test>'
 
     @property
     def _cmd_opt(self):
@@ -42,7 +43,7 @@ class CommandTransitions(MyoTransitions):
 
     @may_handle(StageI)
     def stage_i(self):
-        return AddShellCommand(name='test', options=Map(line=''))
+        return AddShellCommand(name=self._test_cmd_name, options=Map(line=''))
 
     @handle(AddCommand)
     def add_command(self):
@@ -56,6 +57,7 @@ class CommandTransitions(MyoTransitions):
 
     @handle(AddShellCommand)
     def add_shell_command(self):
+        self.log.verbose(self.msg)
         return self._add(ShellCommand, List('line'),
                          self._cmd_opt.cat('shell'), name=self.msg.name)
 
@@ -150,10 +152,10 @@ class CommandTransitions(MyoTransitions):
     def _run_test_line(self, options, line):
         langs = options.get('langs') | List()
         def dispatch(data):
-            return Right(data) & (data.command('test') /
-                                 L(Dispatch)(_, options))
+            return Right(data) & (data.command(self._test_cmd_name) /
+                                  L(Dispatch)(_, options))
         return (
-            self.data.command_lens('test')
+            self.data.command_lens(self._test_cmd_name)
             .to_either('no test command') /
             __.modify(__.set(line=line, langs=langs)) //
             dispatch
