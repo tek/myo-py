@@ -46,6 +46,10 @@ def _test_ctor():
     return 'echo \'{}\''.format(_test_line)
 
 
+def _test_ctor_py():
+    return 'python '
+
+
 class VimTestSpec(TmuxCmdSpec):
 
     def simple(self):
@@ -54,13 +58,22 @@ class VimTestSpec(TmuxCmdSpec):
 
     @vimtest
     def vimtest(self):
+        self.vim.set_var('test#python#runner', 'nose')
         fname = fixture_path('tmux', 'vim_test', 'test.py')
         target = str(fname.relative_to(base_dir().parent))
-        def check():
+        def check1():
             self._output.exists(lambda a: target in a).should.be.true
         self.vim.cmd_sync('noswapfile edit {}'.format(fname))
-        self.vim.cursor(5, 0)
+        self.vim.cursor(5, 1)
         self.json_cmd('MyoVimTest')
-        later(check)
+        later(check1)
+        target2 = 'RuntimeError: supernova'
+        check2 = lambda: self.vim.buffer.content.last.should.contain(target2)
+        self.json_cmd_sync('MyoParse', langs=['python'])
+        later(check2)
+        self.vim.cursor(6, 1)
+        self.vim.cmd_sync('call feedkeys("\\<cr>")')
+        check3 = lambda: self.vim.buffer.name.should.equal(str(fname))
+        later(check3)
 
 __all__ = ('ParseSpec',)

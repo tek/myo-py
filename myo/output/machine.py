@@ -10,6 +10,7 @@ from amino import Map, _, L, Left, __
 from myo.output.data import ParseResult
 from myo.state import MyoTransitions
 from myo.logging import Logging
+from myo.output.parser.python import FileEntry
 
 OutputInit = message('OutputInit')
 Jump = message('Jump')
@@ -38,7 +39,11 @@ class OutputMachineTransitions(MyoTransitions):
 
     @handle(Jump)
     def jump(self):
-        target = self.vim.window.line / (_ - 1) // self.result.target_for_line
+        target = (
+            self.vim.window.line /
+            (_ - 1) //
+            self.result.target_for_line
+        ).filter_type(FileEntry).to_either('not a file entry')
         open_file = target / L(self._open_file)(_.path)
         set_line = (target / _.line /
                     (lambda a: Task(lambda: self.vim.window.set_cursor(a))))
@@ -57,7 +62,7 @@ class OutputMachineTransitions(MyoTransitions):
                 .task('could not get a window') /
                 __.focus()
             )
-            edit = Task.call(self.vim.edit, path) / __.run_sync()
+            edit = Task.call(self.vim.edit, path) / __.run_async()
             return win + edit
 
 
@@ -68,6 +73,10 @@ class OutputMachine(ScratchMachine, Logging):
                  result: ParseResult, parent: Machine) -> None:
         super().__init__(vim, scratch, parent=parent, title='output')
         self.result = result
+
+    @property
+    def prefix(self):
+        return 'Myo'
 
     @property
     def mappings(self):

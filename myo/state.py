@@ -18,7 +18,7 @@ class MyoState(RootMachine, Logging):
 
     @property
     def title(self):
-        'myo'
+        return 'myo'
 
 
 class MyoTransitions(Transitions, HasNvim):

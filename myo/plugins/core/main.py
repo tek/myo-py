@@ -2,7 +2,7 @@ from ribosome.machine import may_handle, Error, RunTask, handle
 from ribosome.machine.base import io
 
 import amino
-from amino import __, F, L, _, may, Right, Just
+from amino import __, F, L, _, may, Right, Just, List
 
 from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.core.dispatch import VimDispatcher
@@ -40,13 +40,14 @@ class CoreTransitions(MyoTransitions):
         )
 
     def _error_handler(self, cmd):
+        langs = self.msg.options.get('langs') / List.wrap | cmd.langs
         return (
             (cmd.parser // self._special_error_handler)
             .or_else(
                 cmd.parser //
                 parse_callback_spec /
                 __.map(L(CustomOutputHandler)(self.vim, _))
-            ).or_else(self._langs_parsing(cmd.langs))
+            ).or_else(self._langs_parsing(langs))
         )
 
     @may

@@ -4,10 +4,10 @@ from ribosome.machine import may_handle, handle, Nop, either_handle
 
 from myo.state import MyoComponent, MyoTransitions
 
-from amino import L, _, List, Try, __, Maybe, curried
+from amino import L, _, List, Try, __, Maybe, curried, Map, Just, Right
 from myo.command import Command, VimCommand, ShellCommand, Shell
 from myo.util import optional_params, parse_callback_spec
-from myo.plugins.core.message import Parse, ParseOutput
+from myo.plugins.core.message import Parse, ParseOutput, StageI
 from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
                                          AddShellCommand, AddShell,
                                          AddVimCommand, SetShellTarget,
@@ -27,8 +27,9 @@ class CommandTransitions(MyoTransitions):
                 **strict):
         o = self.msg.options
         opt = optional_params(o, *opt_keys)
-        missing = lambda: mand_keys.filter(o.has_key)
-        err = lambda: 'cannot create {} without params: {}'.format(missing)
+        missing = lambda: mand_keys.filter_not(o.has_key)
+        err = lambda: 'cannot create {} without params: {}'.format(tpe,
+                                                                   missing())
         mand = o.get_all_map(*mand_keys).to_either(err)
         return mand / (lambda a: tpe(**a, **opt, **strict))
 
@@ -38,6 +39,10 @@ class CommandTransitions(MyoTransitions):
             self._create(tpe, mand_keys, opt_keys, **strict) /
             self.data.cat
         )
+
+    @may_handle(StageI)
+    def stage_i(self):
+        return AddShellCommand(name='test', options=Map(line=''))
 
     @handle(AddCommand)
     def add_command(self):
@@ -131,7 +136,7 @@ class CommandTransitions(MyoTransitions):
     def run_vim_test(self):
         return (
             assemble_vim_test_line(self.vim) //
-            __.head.to_either('vim-test failed') /
+            __.head.to_either('vim-test failed') //
             self._run_test_line(self.msg.options)
         )
 
@@ -143,8 +148,16 @@ class CommandTransitions(MyoTransitions):
 
     @curried
     def _run_test_line(self, options, line):
-        cmd = ShellCommand(name='test', line=line, transient=True)
-        return Dispatch(cmd, options)
+        langs = options.get('langs') | List()
+        def dispatch(data):
+            return Right(data) & (data.command('test') /
+                                 L(Dispatch)(_, options))
+        return (
+            self.data.command_lens('test')
+            .to_either('no test command') /
+            __.modify(__.set(line=line, langs=langs)) //
+            dispatch
+        )
 
 
 class Plugin(MyoComponent):

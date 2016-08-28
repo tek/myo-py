@@ -5,6 +5,8 @@ import neovim
 from amino import List, L, _, I
 
 from ribosome import command, NvimStatePlugin, msg_command, json_msg_command
+from ribosome.machine.scratch import Mapping
+from ribosome.request import msg_function
 
 from myo.plugins.core.main import StageI
 from myo.main import Myo
@@ -152,8 +154,8 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
     def vim_leave(self):
         self.myo_quit()
 
-    @neovim.function('MyoMapping', sync=False)
-    def myo_mapping(self, args):
-        return self.myo.send(Mapping(args))
+    @msg_function(Mapping)
+    def myo_mapping(self):
+        pass
 
 __all__ = ('MyoNvimPlugin',)

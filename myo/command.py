@@ -34,7 +34,10 @@ class Commands(Record):
         return self.append1.commands(command)
 
     def __getitem__(self, ident: Ident):
-        return self.commands.find(__.has_ident(ident))
+        return (
+            self.commands.find(__.has_ident(ident))
+            .to_either('no command with ident {}'.format(ident))
+        )
 
     def __str__(self):
         return '{}({})'.format(
