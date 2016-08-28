@@ -30,7 +30,7 @@ _file = EdgeData(
     entry=FileEntry
 )
 _expr = EdgeData(r='    (.+)', entry=ExprEntry)
-_error = EdgeData(r='(?P<error>\S+): (?P<msg>\S+)', entry=ErrorEntry)
+_error = EdgeData(r='(?P<error>\S+): (?P<msg>.+)', entry=ErrorEntry)
 
 
 class Parser(SimpleParser):
