@@ -54,7 +54,9 @@ class VimCompiler(OutputHandler):
                 .replace(r))
 
     def display(self, result):
-        return Task.call(self.vim.cmd_sync, 'cfirst')
+        copen = Task.call(self.vim.cmd_sync, 'copen')
+        cfirst = Task.call(self.vim.cmd_sync, 'cfirst')
+        return copen + cfirst
 
 
 class Parsing(CustomOutputHandler):
