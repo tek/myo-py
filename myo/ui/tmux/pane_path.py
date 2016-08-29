@@ -8,6 +8,7 @@ from amino.lens.tree import path_lens_unbound_pre
 
 from ribosome.record import Record, field, list_field
 from ribosome.machine import Message
+from ribosome.machine.transition import Error
 
 from myo.ui.tmux.window import Window
 from myo.logging import Logging
@@ -111,10 +112,15 @@ class PanePathMod(Logging, Message):
         sub = _.layouts
         pre = _.root
         return (
-            Task.from_maybe(path_lens_unbound_pre(window, sub, f, pre),
-                            'lens path failed for {}'.format(self.pred)) /
+            Task.from_maybe(
+                path_lens_unbound_pre(window, sub, f, pre),
+                Error('lens path failed for {}'.format(self.pred))
+            ) /
             PanePathLens.create
         )
 
 
-__all__ = ('PanePath', 'PanePathLens', 'PanePathMod')
+def ppm_id(path: PanePathMod):
+    return Task.now(Right(path))
+
+__all__ = ('PanePath', 'PanePathLens', 'PanePathMod', 'ppm_id')

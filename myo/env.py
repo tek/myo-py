@@ -47,4 +47,7 @@ class Env(Data):
     def command_lens(self, ident: Ident):
         return self._lens(_.commands, ident)
 
+    def transient_command(self, cmd: Command):
+        return self.mod('commands', __.transient_command(cmd))
+
 __all__ = ('Env')

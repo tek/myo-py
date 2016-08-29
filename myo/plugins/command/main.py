@@ -81,6 +81,11 @@ class CommandTransitions(MyoTransitions):
     @handle(ShellRun)
     def run_in_shell(self):
         line = self.msg.options.get('line') | ''
+        def send(cmd):
+            return (
+                self.data.transient_command(cmd),
+                Dispatch(cmd, self.msg.options)
+            )
         # double Maybe is necessary - the outer indicates success, the
         # inner is the type of the ShellCommand field
         return (
@@ -89,7 +94,7 @@ class CommandTransitions(MyoTransitions):
             Maybe /
             (lambda a: ShellCommand(name='shell_run', shell=a, line=line,
                                     transient=True)) /
-            L(Dispatch)(_, self.msg.options)
+            send
         )
 
     @handle(Dispatch)
@@ -110,10 +115,15 @@ class CommandTransitions(MyoTransitions):
     def parse(self):
         cmd = (
             self.msg.options.get('command')
-            .cata(self.data.command, self._latest_command)
+            .cata(self.data.command, self.data.commands.latest_command)
             .to_either('invalid command name or empty history')
         )
-        log_path = cmd // __.log_path.to_either('command has no log')
+        def find_log(c):
+            return (
+                (c.shell // self.data.shell | c)
+                .log_path.to_either('command has no log')
+            )
+        log_path = cmd // find_log
         def parse(c, l):
             return (
                 Try(l.read_text) /
@@ -140,9 +150,6 @@ class CommandTransitions(MyoTransitions):
             __.head.to_either('vim-test failed') //
             self._run_test_line(self.msg.options)
         )
-
-    def _latest_command(self):
-        return self.data.commands.history.head // self.data.command
 
     def _assemble(self, ctor):
         return parse_callback_spec(ctor).join / (lambda a: a())

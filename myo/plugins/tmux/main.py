@@ -4,7 +4,7 @@ import libtmux
 
 from lenses import lens
 
-from amino import List, _, __, Just, Maybe, Map, Right, Empty, Either
+from amino import List, _, __, Just, Maybe, Map, Right, Empty, Either, Boolean
 from amino.lazy import lazy
 from amino.task import Task
 from amino.anon import L
@@ -34,7 +34,7 @@ from myo.ui.tmux.view import View
 from myo.plugins.core.message import AddDispatcher
 from myo.plugins.tmux.dispatch import TmuxDispatcher
 from myo.ui.tmux.util import format_state, Ident
-from myo.ui.tmux.pane_path import PanePathMod
+from myo.ui.tmux.pane_path import PanePathMod, ppm_id
 from myo.plugins.command.message import SetShellTarget
 from myo.command import Command, Shell
 from myo.plugins.tmux.watcher import Watcher, Terminated
@@ -314,7 +314,7 @@ class TmuxTransitions(MyoTransitions):
         return _ident_ppm(name) / self._close_pane / self._pack_path
 
     def _run_command_ppm(self, command, opt: Map):
-        in_shell = 'shell' in opt
+        in_shell = Boolean('shell' in opt)
         pane_ident = opt.get('pane') | self._default_pane_name
         def check_running(path):
             return Task.now(Right(path)) if in_shell else (
@@ -346,7 +346,7 @@ class TmuxTransitions(MyoTransitions):
             )
         runner = (
             (self._open_pane_ppm(pane_ident) + check_running) /
-            pipe /
+            in_shell.no.maybe(pipe).get_or_else(lambda: ppm_id) /
             run /
             pid /
             watch

@@ -41,10 +41,11 @@ class CoreTransitions(MyoTransitions):
 
     def _error_handler(self, cmd):
         langs = self.msg.options.get('langs') / List.wrap | cmd.langs
+        parser = self.msg.options.get('parser').or_else(cmd.parser)
         return (
-            (cmd.parser // self._special_error_handler)
+            (parser // self._special_error_handler)
             .or_else(
-                cmd.parser //
+                parser //
                 parse_callback_spec /
                 __.map(L(CustomOutputHandler)(self.vim, _))
             ).or_else(self._langs_parsing(langs))

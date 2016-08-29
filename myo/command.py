@@ -1,4 +1,4 @@
-from amino import Path, __
+from amino import Path, __, Just
 
 from ribosome.record import list_field, field, maybe_field, bool_field
 
@@ -29,6 +29,7 @@ class Shell(ShellCommand):
 class Commands(Record):
     commands = list_field()
     history = list_field()
+    transient_cmd = maybe_field(Command)
 
     def __add__(self, command: Command):
         return self.append1.commands(command)
@@ -51,5 +52,16 @@ class Commands(Record):
 
     def add_history(self, uuid):
         return self.append1.history(uuid)
+
+    def transient_command(self, cmd):
+        return self.set(transient_cmd=Just(cmd))
+
+    def latest_command(self):
+        def fetch(ident):
+            return (
+                self.transient_cmd.filter(__.has_ident(ident))
+                .or_else(lambda: self[ident])
+            )
+        return self.history.head // fetch
 
 __all__ = ('Commands', 'Command')
