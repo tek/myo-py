@@ -1,7 +1,7 @@
 import abc
 from typing import Callable
 
-from amino import List, Path, Either, __, L, _
+from amino import List, Path, Either, __, L, _, Just
 from amino.task import Task
 from amino.lazy import lazy
 
@@ -36,8 +36,9 @@ class CustomOutputHandler(OutputHandler):
 
     def display(self, result):
         ctor = L(OutputMachine)(self.vim, _, result, _)
+        size = self.vim.pvar('scratch_size') | 10
         return (
-            Task.now(RunScratchMachine(ctor, False)) /
+            Task.now(RunScratchMachine(ctor, False, size=Just(size))) /
             (lambda a: (a.pub, OutputInit().pub))
         )
 
