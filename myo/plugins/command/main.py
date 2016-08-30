@@ -1,17 +1,18 @@
 from collections import namedtuple
 
-from ribosome.machine import may_handle, handle, Nop, either_handle
+from ribosome.machine import may_handle, handle, either_handle
 
 from myo.state import MyoComponent, MyoTransitions
 
-from amino import L, _, List, Try, __, Maybe, curried, Map, Right
+from amino import L, _, List, Try, __, Maybe, curried, Map, Right, I
 from myo.command import Command, VimCommand, ShellCommand, Shell
 from myo.util import optional_params, parse_callback_spec
 from myo.plugins.core.message import Parse, ParseOutput, StageI
 from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
                                          AddShellCommand, AddShell,
                                          AddVimCommand, SetShellTarget,
-                                         CommandExecuted, RunTest, RunVimTest)
+                                         CommandExecuted, RunTest, RunVimTest,
+                                         CommandAdded)
 from myo.plugins.command.util import assemble_vim_test_line
 
 RunInShell = namedtuple('RunInShell', ['shell'])
@@ -38,7 +39,12 @@ class CommandTransitions(MyoTransitions):
              **strict):
         return (
             self._create(tpe, mand_keys, opt_keys, **strict) /
-            self.data.cat
+            self._add_command
+        )
+
+    def _add_command(self, cmd: Command):
+        return List(
+            self.data.cat(cmd), CommandAdded(cmd, options=self.msg.options)
         )
 
     @may_handle(StageI)
@@ -66,10 +72,15 @@ class CommandTransitions(MyoTransitions):
         opt = List('target')
         return self._create(Shell, mand, opt, name=self.msg.name) / (
             lambda shell: (
-                self.data + shell,
-                shell.target / L(SetShellTarget)(shell, _) / _.pub | Nop
+                self._add_command(shell) +
+                (shell.target / L(SetShellTarget)(shell, _) / _.pub).to_list
             )
         )
+
+    @may_handle(CommandAdded)
+    def command_added(self):
+        if self.msg.options.get('start').exists(I):
+            return Run(self.msg.command.uuid)
 
     @handle(Run)
     def run(self):

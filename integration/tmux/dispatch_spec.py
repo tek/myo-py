@@ -41,4 +41,15 @@ class DispatchSpec(TmuxCmdSpec):
         Process(pid()).kill()
         later(lambda: pid().should.equal(-1))
 
+    def nostart(self):
+        self.json_cmd('MyoTmuxCreatePane py', parent='main')
+        self.json_cmd('MyoShell py', line='python', target='py', start=False)
+        self._wait(0.2)
+        self._panes.should.have.length_of(1)
+
+    def start(self):
+        self.json_cmd('MyoTmuxCreatePane py', parent='main')
+        self.json_cmd('MyoShell py', line='python', target='py', start=True)
+        later(lambda: self._panes.should.have.length_of(2))
+
 __all__ = ('DispatchSpec',)

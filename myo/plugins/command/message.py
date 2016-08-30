@@ -10,8 +10,9 @@ AddShellCommand = json_message('AddShellCommand', 'name')
 AddShell = json_message('AddShell', 'name')
 AddVimCommand = json_message('AddVimCommand', 'name')
 SetShellTarget = message('SetShellTarget', 'shell', 'target')
+CommandAdded = json_message('CommandAdded', 'command')
 CommandExecuted = message('CommandExecuted', 'command')
 
 __all__ = ('Run', 'ShellRun', 'Dispatch', 'AddCommand', 'AddShellCommand',
            'AddShell', 'AddVimCommand', 'SetShellTarget', 'CommandExecuted',
-           'RunTest', 'RunVimTest')
+           'RunTest', 'RunVimTest', 'CommandAdded')
