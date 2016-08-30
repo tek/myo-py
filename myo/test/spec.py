@@ -88,6 +88,10 @@ class TmuxSpecBase(Spec):
         return self.sessions.head // _.windows.head / _.panes | List()
 
     @property
+    def _sizes(self):
+        return self._panes / _.size
+
+    @property
     def _output(self):
         return self._panes // _.capture
 

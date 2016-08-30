@@ -1,4 +1,4 @@
-from amino import List, _
+from amino import List, __
 from amino.test import later
 
 from integration._support.tmux import TmuxIntegrationSpec, DefaultLayoutSpec
@@ -8,8 +8,7 @@ class CutSizeSpec(TmuxIntegrationSpec):
 
     def cut_size(self):
         def check():
-            panes = self.sessions.head // _.windows.head / _.panes | List()
-            panes.should.have.length_of(2)
+            self._panes.should.have.length_of(2)
         self.json_cmd('MyoTmuxCreatePane pan', parent='root', min_size=0.5,
                       weight=0.1)
         self.json_cmd('MyoTmuxOpenPane pan')
@@ -21,8 +20,7 @@ class DistributeSizeSpec(TmuxIntegrationSpec):
     def distribute(self):
         h1 = 7
         def check():
-            panes = self.sessions.head // _.windows.head / _.panes | List()
-            sizes = panes[1:] / _.size / _[1]
+            sizes = self._sizes[1:] / __[1]
             sizes.head.should.contain(h1)
         self.json_cmd('MyoTmuxCreateLayout test', parent='root')
         self.json_cmd('MyoTmuxCreatePane pan1', parent='test', min_size=5,
@@ -46,7 +44,7 @@ class DefaultLayoutDistributeSizeSpec(DefaultLayoutSpec):
 
     def distribute(self):
         def check():
-            widths = self.sessions.head // _.windows // _.panes / _.size[0]
+            widths = self._sizes / __[0]
             target = List(self.vim_width, self.win_width - self.vim_width)
             widths.should.equal(target)
         self.json_cmd('MyoTmuxOpenPane make')
