@@ -16,6 +16,16 @@ from myo.command import ShellCommand
 from myo.ui.tmux.pane_path import PanePath
 
 
+def _pos(a):
+    return max(a, 0)
+
+
+def _reverse_weights(weights):
+    r = weights / (1 - _)
+    norm = sum(r)
+    return r / (_ / norm)
+
+
 class LayoutFacade(Logging):
 
     def __init__(self, server: Server) -> None:
@@ -149,31 +159,55 @@ class LayoutFacade(Logging):
         min_s = self.actual_min_sizes(views) / calc
         max_s = self.actual_max_sizes(views) / calc
         weights = self.weights(views)
-        return (self._cut_sizes(min_s, weights, total) if sum(min_s) > total
-                else self._distribute_sizes(min_s, max_s, weights, total))
+        return self._balance_sizes(min_s, max_s, weights, total)
+
+    def _balance_sizes(self, min_s, max_s, weights, total):
+        return self._rectify_sizes(
+            self._cut_sizes(min_s, weights, total) if sum(min_s) > total
+            else self._distribute_sizes(min_s, max_s, weights, total)
+        )
 
     def _cut_sizes(self, min_s, weights, total):
+        self.log.debug('cut sizes: min {}, weights {}, total {}'.format(
+            min_s, weights, total))
         surplus = sum(min_s) - total
-        dist = weights / (1 - _) / (surplus * _)
-        return (min_s & dist).map2(sub)
+        dist = _reverse_weights(weights) / (surplus * _)
+        cut = (min_s.zip(dist)).map2(sub)
+        neg = (cut / (lambda a: a if a < 0 else 0))
+        neg_total = sum(neg)
+        neg_count = neg.filter(_ < 0).length
+        dist2 = neg_total / (min_s.length - neg_count)
+        return cut / (lambda a: 0 if a < 0 else a + dist2)
 
     def _distribute_sizes(self, min_s, max_s, weights, total):
+        self.log.debug(
+            'distribute sizes: min {}, max {}, weights {}, total {}'.format(
+                min_s, max_s, weights, total
+            ))
         count = max_s.length
         surplus = total - sum(min_s)
         sizes1 = min_s.zip(max_s, weights).map3(
             lambda l, h, w: min(l + w * surplus, h))
         rest = total - sum(sizes1)
-        unsat = (max_s & sizes1).map2(ne) / Boolean
+        unsat = (max_s.zip(sizes1)).map2(ne) / Boolean
         unsat_left = count - sum(unsat / _.value) > 0
         def trim_weights():
-            w1 = (unsat & weights).map2(lambda s, w: s.maybe(w))
+            w1 = (unsat.zip(weights)).map2(lambda s, w: s.maybe(w))
             return self._normalize_weights(w1)
         def dist_rest():
             rest_w = trim_weights() if unsat_left else weights
-            return (sizes1 & rest_w).map2(lambda a, w: a + w * rest)
+            return (sizes1.zip(rest_w)).map2(lambda a, w: a + w * rest)
         return sizes1 if rest <= 0 else dist_rest()
 
+    def _rectify_sizes(self, sizes: List[int]):
+        pos = sizes / _pos
+        pos_count = sizes.filter(_ >= 2).length
+        unders = pos / (lambda a: 2 - a if a < 2 else 0)
+        sub = sum(unders) / pos_count
+        return pos / (lambda a: 2 if a < 2 else max(2, a - sub))
+
     def _apply_size(self, pane, size, horizontal):
+        self.log.debug('resize {!r} to {} ({})'.format(pane, size, horizontal))
         return (
             Task.call(self.panes.find, pane) //
             L(Task.from_maybe)(_, 'pane not found: {}'.format(pane)) //
