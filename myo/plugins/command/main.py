@@ -12,7 +12,7 @@ from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
                                          AddShellCommand, AddShell,
                                          AddVimCommand, SetShellTarget,
                                          CommandExecuted, RunTest, RunVimTest,
-                                         CommandAdded)
+                                         CommandAdded, CommandShow)
 from myo.plugins.command.util import assemble_vim_test_line
 
 RunInShell = namedtuple('RunInShell', ['shell'])
@@ -25,15 +25,21 @@ class CommandTransitions(MyoTransitions):
     def _cmd_opt(self):
         return List('parser')
 
+    @property
+    def _cmd_list_opt(self):
+        return List('langs')
+
     def _create(self, tpe: type, mand_keys: List[str], opt_keys: List[str],
                 **strict):
         o = self.msg.options
-        opt = optional_params(o, *opt_keys)
+        opt = optional_params(o, *opt_keys + self._cmd_opt)
+        opt_list = (optional_params(o, *self._cmd_list_opt)
+                    .valmap(_ / List.wrap | List()))
         missing = lambda: mand_keys.filter_not(o.has_key)
         err = lambda: 'cannot create {} without params: {}'.format(tpe,
                                                                    missing())
         mand = o.get_all_map(*mand_keys).to_either(err)
-        return mand / (lambda a: tpe(**a, **opt, **strict))
+        return mand / (lambda a: tpe(**a, **opt, **opt_list, **strict))
 
     def _add(self, tpe: type, mand_keys: List[str], opt_keys: List[str],
              **strict):
@@ -53,7 +59,7 @@ class CommandTransitions(MyoTransitions):
 
     @handle(AddCommand)
     def add_command(self):
-        return self._add(Command, List('line'), self._cmd_opt,
+        return self._add(Command, List('line'), List(),
                          name=self.msg.name)
 
     @may_handle(AddVimCommand)
@@ -161,6 +167,11 @@ class CommandTransitions(MyoTransitions):
             __.head.to_either('vim-test failed') //
             self._run_test_line(self.msg.options)
         )
+
+    @may_handle(CommandShow)
+    def show(self):
+        msg = self.data.commands.commands / _.desc
+        self.log.info(msg.join_lines)
 
     def _assemble(self, ctor):
         return parse_callback_spec(ctor).join / (lambda a: a())
