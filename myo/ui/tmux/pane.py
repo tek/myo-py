@@ -213,4 +213,7 @@ class PaneAdapter(Adapter, PaneI):
         self.cmd('pipe-pane', '{} > {}'.format(self._pipe_filter, fname))
         return Just(Path(fname))
 
+    def __eq__(self, other):
+        return isinstance(other, PaneAdapter) and self.id == other.id
+
 __all__ = ('Pane', 'VimPane', 'PaneAdapter')
