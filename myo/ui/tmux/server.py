@@ -1,4 +1,5 @@
 import libtmux
+import libtmux.formats
 
 from myo.logging import Logging
 from myo.ui.tmux.session import SessionAdapter
@@ -7,6 +8,11 @@ from myo.ui.tmux.pane import PaneData
 from amino import _, List, __, Map
 from amino.task import task
 from amino.lazy import lazy
+
+libtmux.formats.PANE_FORMATS += [
+    'pane_left',
+    'pane_top',
+]
 
 
 class Server(Logging):

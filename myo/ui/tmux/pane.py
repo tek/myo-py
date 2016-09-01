@@ -213,6 +213,15 @@ class PaneAdapter(Adapter, PaneI):
         self.cmd('pipe-pane', '{} > {}'.format(self._pipe_filter, fname))
         return Just(Path(fname))
 
+    def move_above(self, other: 'PaneAdapter'):
+        self.cmd('move-pane', '-b', '-s', other.id)
+
+    def move_below(self, other: 'PaneAdapter'):
+        self.cmd('move-pane', '-s', other.id)
+
+    def swap(self, other: 'PaneAdapter'):
+        self.cmd('swap-pane', '-s', other.id)
+
     def __eq__(self, other):
         return isinstance(other, PaneAdapter) and self.id == other.id
 
