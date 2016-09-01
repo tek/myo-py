@@ -1,15 +1,15 @@
 from myo.ui.tmux.facade import LayoutFacade
 
-from unit._support.spec import TmuxUnitSpec
+from unit._support.spec import UnitSpec
 
 from amino import Empty, List, Just
 
 
-class LayoutFacadeSpec(TmuxUnitSpec):
+class LayoutFacadeSpec(UnitSpec):
 
     def setup(self):
         super().setup()
-        self.f = LayoutFacade(self.server)
+        self.f = LayoutFacade(None)
 
     def distribute(self):
         min_s = List(10, 0)
