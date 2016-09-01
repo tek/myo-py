@@ -143,8 +143,28 @@ class PaneAdapter(Adapter, PaneI):
         return self.native.split_window(vertical=not horizontal)
 
     @lazy
+    def width(self):
+        return int(self.native.width)
+
+    @lazy
+    def height(self):
+        return int(self.native.height)
+
+    @lazy
     def size(self):
-        return int(self.native.width), int(self.native.height)
+        return self.width, self.height
+
+    @lazy
+    def left(self):
+        return int(self.native.left)
+
+    @lazy
+    def top(self):
+        return int(self.native.top)
+
+    @lazy
+    def position(self):
+        return self.left, self.top
 
     def send_keys(self, cmd, enter=True, suppress_history=True):
         return self.native.send_keys(cmd, enter=enter,
@@ -171,7 +191,7 @@ class PaneAdapter(Adapter, PaneI):
         return parse_window_id(self.window_id)
 
     def __repr__(self):
-        return 'PA({})'.format(self.id, self.size)
+        return 'PA({}, {}, {})'.format(self.id, self.size, self.position)
 
     @lazy
     def running(self) -> Boolean:
