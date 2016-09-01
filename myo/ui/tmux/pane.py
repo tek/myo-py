@@ -112,6 +112,11 @@ class PaneData(PaneI):
 
 class PaneAdapter(Adapter, PaneI):
 
+    def cmd(self, *a):
+        c = self.native.cmd(*a)
+        if c.stderr:
+            self.log.error(List.wrap(c.stderr).join_lines)
+
     @lazy
     def id(self):
         return self.native.id
@@ -132,7 +137,7 @@ class PaneAdapter(Adapter, PaneI):
     @property  # type: ignore
     @task
     def kill(self):
-        return self.native.cmd('kill-pane')
+        return self.cmd('kill-pane')
 
     def split(self, horizontal):
         return self.native.split_window(vertical=not horizontal)
@@ -147,7 +152,7 @@ class PaneAdapter(Adapter, PaneI):
 
     @property
     def capture(self):
-        return List.wrap(self.native.cmd('capture-pane', '-p').stdout)
+        return List.wrap(self.cmd('capture-pane', '-p').stdout)
 
     @property
     def session_id(self):
@@ -185,8 +190,7 @@ class PaneAdapter(Adapter, PaneI):
         tmpdir = Path(tempfile.gettempdir()) / 'myo-{}'.format(uid) / base
         tmpdir.mkdir(exist_ok=True, parents=True)
         (fh, fname) = tempfile.mkstemp(prefix='pane-', dir=str(tmpdir))
-        self.native.cmd('pipe-pane', '{} > {}'.format(self._pipe_filter,
-                                                      fname))
+        self.cmd('pipe-pane', '{} > {}'.format(self._pipe_filter, fname))
         return Just(Path(fname))
 
 __all__ = ('Pane', 'VimPane', 'PaneAdapter')
