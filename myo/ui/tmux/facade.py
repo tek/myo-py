@@ -64,7 +64,7 @@ class LayoutFacade(Logging):
         )
 
     def _split_pane(self, layout, pane) -> Task[Pane]:
-        return self._ref_pane(layout) / (
+        return self._ref_pane_fatal(layout) / (
             lambda a:
             self.panes.find(a) /
             __.split(layout.horizontal) /
@@ -73,16 +73,19 @@ class LayoutFacade(Logging):
             pane
         )
 
-    def _ref_pane(self, layout) -> Task[Pane]:
+    def _ref_pane_fatal(self, layout) -> Task[Pane]:
         ''' A pane in the layout to be used to open a pane.
         Uses the first open pane available.
         Failure if no panes are open.
         '''
-        def go(l):
-            return (self._opened_panes(l.panes).head
-                    .or_else(l.layouts.find_map(go)))
-        return (Task.call(go, layout) //
+        return (Task.call(self._ref_pane, layout) //
                 L(Task.from_maybe)(_, "no ref pane for {}".format(layout)))
+
+    def _ref_pane(self, layout) -> Maybe[Pane]:
+        return (
+            self._opened_panes(layout.panes).sort_by(_.position | 0).last
+            .or_else(layout.layouts.find_map(self._ref_pane))
+        )
 
     def open_pane_path(self, path: PanePath) -> Task[Either[str, PanePath]]:
         ''' legacy version
@@ -141,7 +144,7 @@ class LayoutFacade(Logging):
             return (
                 self._pack_layout(v, *sub_size)
                 .flat_replace(
-                    self._ref_pane(v) //
+                    self._ref_pane_fatal(v) //
                     L(self._apply_size)(_, size, horizontal)
                 )
             )
@@ -150,7 +153,10 @@ class LayoutFacade(Logging):
         if count > 0:
             # each pane spacer takes up one cell
             m = self._measure_layout(views, total - count + 1)
-            return views.zip(m).map2(recurse).sequence(Task)
+            return (
+                self._apply_positions(views, horizontal) +
+                views.zip(m).map2(recurse).sequence(Task)
+            )
         else:
             return Task.now(List())
 
@@ -209,10 +215,44 @@ class LayoutFacade(Logging):
     def _apply_size(self, pane, size, horizontal):
         self.log.debug('resize {!r} to {} ({})'.format(pane, size, horizontal))
         return (
-            Task.call(self.panes.find, pane) //
-            L(Task.from_maybe)(_, 'pane not found: {}'.format(pane)) //
+            self.panes.find_task(pane) //
             __.resize(size, horizontal)
         )
+
+    def _apply_positions(self, views, horizontal):
+        if views.exists(_.position.is_just):
+            quantity = _.left if horizontal else _.top
+            ordered = views.sort_by(_.position | 0).reversed
+            adapters = self._ref_adapters(ordered)
+            current = adapters.sort_by(lambda a: quantity(a) | 0)
+            def setpos(current, correct):
+                def rec(head, tail):
+                    def swap(last, init):
+                        if last != head:
+                            last.swap(head)
+                            return setpos(init.replace_item(head, last), tail)
+                        else:
+                            return setpos(init, tail)
+                    return current.detach_last.map2(swap)
+                return correct.detach_head.map2(rec)
+            return Task.call(setpos, current, adapters)
+        else:
+            return Task.now(None)
+
+    def _ref_adapters(self, views):
+        return views // self._ref_adapter
+
+    def _ref_adapter(self, view):
+        @singledispatch
+        def adapter(v):
+            pass
+        @adapter.register(Pane)
+        def pane(v):
+            return self.panes.find(v)
+        @adapter.register(Layout)
+        def layout(v):
+            return self._ref_pane(v) // self.panes.find
+        return adapter(view)
 
     def actual_min_sizes(self, views):
         return views / (lambda a: a.fixed_size.or_else(a.min_size) | 0)
@@ -280,10 +320,10 @@ class PaneFacade(Logging):
             )
         return pane.id // find_by_id
 
-    def _find_task(self, pane: Pane) -> Task[PaneAdapter]:
+    def find_task(self, pane: Pane) -> Task[PaneAdapter]:
         return (
             Task.call(self.find, pane) //
-            L(Task.from_maybe)(_, 'pane not found')
+            L(Task.from_maybe)(_, 'pane not found: {!r}'.format(pane))
         )
 
     def run_command(self, pane: Pane, command: ShellCommand):
@@ -291,12 +331,12 @@ class PaneFacade(Logging):
 
     def run_command_line(self, pane: Pane, line: str):
         return (
-            self._find_task(pane) /
+            self.find_task(pane) /
             __.send_keys(line, suppress_history=False)
         )
 
     def command_pid(self, pane: Pane):
-        return self._find_task(pane) / _.command_pid
+        return self.find_task(pane) / _.command_pid
 
     def close(self, pane: Pane):
         err = 'cannot close pane {}: not found'.format(pane)
@@ -308,7 +348,7 @@ class PaneFacade(Logging):
 
     def ensure_not_running(self, pane: Pane):
         return (
-            self._find_task(pane) /
+            self.find_task(pane) /
             __.not_running.either('command already running', True)
         )
 
