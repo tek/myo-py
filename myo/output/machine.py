@@ -7,10 +7,9 @@ from ribosome.machine.scratch import ScratchMachine
 from amino.task import Task
 from amino import Map, _, L, Left, __
 
-from myo.output.data import ParseResult
+from myo.output.data import ParseResult, Location
 from myo.state import MyoTransitions
 from myo.logging import Logging
-from myo.output.parser.python import FileEntry
 
 OutputInit = message('OutputInit')
 Jump = message('Jump')
@@ -43,10 +42,12 @@ class OutputMachineTransitions(MyoTransitions):
             self.vim.window.line /
             (_ - 1) //
             self.result.target_for_line
-        ).filter_type(FileEntry).to_either('not a file entry')
-        open_file = target / L(self._open_file)(_.path)
-        set_line = (target / _.line /
-                    (lambda a: Task(lambda: self.vim.window.set_cursor(a))))
+        ).filter_type(Location).to_either('not a location')
+        open_file = target / L(self._open_file)(_.file_path)
+        set_line = (
+            (target / _.coords)
+            .map2(lambda a, b: Task(lambda: self.vim.window.set_cursor(a, b)))
+        )
         return (open_file & set_line).map2(add)
 
     def _open_file(self, path):
