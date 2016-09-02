@@ -7,6 +7,8 @@ from amino.anon import L
 from amino import _, __, List, Left, F, Boolean, Right, Empty, Either, Maybe
 from amino.lazy import lazy
 
+from ribosome.machine.transition import Fatal, NothingToDo
+
 from myo.logging import Logging
 from myo.ui.tmux.server import Server
 from myo.ui.tmux.window import Window
@@ -55,10 +57,11 @@ class LayoutFacade(Logging):
         pane = path.pane
         def find_layout():
             return (path.layouts.reversed.find(self.layout_open)
-                    .to_either('no open layout when trying to open pane'))
+                    .to_either(
+                        Fatal('no open layout when trying to open pane')))
         return Task.now(
             self.panes.is_open(pane).no.flat_either_call(
-                'pane {} already open'.format(pane),
+                NothingToDo('pane {} already open'.format(pane)),
                 find_layout,
             )
         )
