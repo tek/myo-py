@@ -31,9 +31,11 @@ class PythonParseSpec(UnitSpec):
         parser = Parser()
         e = parser.events(List.lines(trace))
         e.should.have.length_of(2)
-        (e.head / _.entries.length).should.contain(3)
-        (e.head / __.entries.map(type)).should.contain(
+        en = e.head / _.entries
+        (en / _.length).should.contain(3)
+        (en / __.map(type)).should.contain(
             List(FileEntry, FileEntry, PyErrorEntry))
-        (e.head // _.entries.last / _.error).should.contain(_errmsg)
+        (en // _.last / _.error).should.contain(_errmsg)
+        (e.head // __.lines.lift(2) / _.target).should.equal(en // _.head)
 
 __all__ = ('PythonParseSpec',)

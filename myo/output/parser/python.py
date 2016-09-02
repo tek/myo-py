@@ -8,7 +8,7 @@ from amino import List, Empty, Just, Maybe, __, L, _
 from ribosome.record import field, maybe_field
 
 from myo.output.data import (PositionEntry, ErrorEntry, OutputEntry,
-                             OutputEvent, OutputLine)
+                             OutputEvent, OutputLine, MultiEvent)
 from myo.output.parser.base import EdgeData, SimpleParser
 
 
@@ -60,6 +60,6 @@ class Parser(SimpleParser):
             return res + add.to_list, new
         grouped, rest = entries.fold_left((List(), Empty()))(folder)
         complete = grouped + rest.to_list
-        return Just(OutputEvent(head='traceback', entries=complete))
+        return Just(MultiEvent(head='traceback', entries=complete))
 
 __all__ = ('Parser',)
