@@ -7,7 +7,7 @@ from myo.record import Record
 
 from fn.recur import tco
 
-from amino import List, Maybe, Try, curried, Just, L
+from amino import List, Maybe, Try, curried, Just, L, _
 
 from ribosome.record import re_field, field
 
@@ -23,7 +23,7 @@ class EdgeData(Record):
     r = re_field()
     entry = field(type)
 
-Step = namedtuple('Step', ['node', 'data'])
+Step = namedtuple('Step', ['node', 'data', 'weight'])
 
 
 @curried
@@ -41,9 +41,16 @@ class SimpleParser(ParserBase, metaclass=abc.ABCMeta):
         return Just(OutputEvent(head='traceback', entries=entries))
 
     def edges(self, node):
-        e = (Step(t, d['data']) for f, t, d in self.graph.edges(node,
-                                                                data=True))
+        e = (Step(t, d['data'], d.get('weight', 0))
+             for f, t, d in self.graph.edges(node, data=True))
         return List.wrap(e)
+
+    def match_edge(self, node, match):
+        return (
+            self.edges(node)
+            .sort_by(_.weight, reverse=True)
+            .find_map(match)
+        )
 
     @tco
     def _process(self, node: str, output: List[str], result: List[OutputEvent],
@@ -80,9 +87,10 @@ class SimpleParser(ParserBase, metaclass=abc.ABCMeta):
                 return True, (self, next_node, rest, result,
                               current.cat(entry))
             def next_event():
-                new_output = rest if node == 'start' else output
+                new_output = (rest if node == 'start' and current.empty else
+                              output)
                 return True, (self, 'start', new_output, add_event(), List())
-            return self.edges(node).find_map(match).map2(cont) | next_event
+            return self.match_edge(node, match).map2(cont) | next_event
         quit = lambda: (False, add_event())
         return output.detach_head.map2(parse_line) | quit
 

@@ -16,21 +16,24 @@ class FileEntry(PositionEntry):
     fun = field(str)
     expr = maybe_field(str)
 
-    @property
-    def output_lines(self):
+    def output_lines(self, event: OutputEvent):
         x = self.expr / L(OutputLine.create)(_, self)
-        return super().output_lines + x.to_list
+        return super().output_lines(event) + x.to_list
 
 
 class ExprEntry(OutputEntry):
     pass
+
+
+class PyErrorEntry(ErrorEntry):
+    exc = field(str)
 
 _file = EdgeData(
     r='  File "(?P<path>.+)", line (?P<line>\d+), in (?P<fun>\S+)',
     entry=FileEntry
 )
 _expr = EdgeData(r='    (.+)', entry=ExprEntry)
-_error = EdgeData(r='(?P<error>\S+): (?P<msg>.+)', entry=ErrorEntry)
+_error = EdgeData(r='(?P<exc>\S+): (?P<error>.+)', entry=PyErrorEntry)
 
 
 class Parser(SimpleParser):

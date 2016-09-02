@@ -1,5 +1,4 @@
-from myo.output.parser.python import Parser, FileEntry
-from myo.output.data import ErrorEntry
+from myo.output.parser.python import Parser, FileEntry, PyErrorEntry
 
 from unit._support.spec import UnitSpec
 
@@ -26,15 +25,15 @@ trailing garbage
 '''.format(err=_errmsg)
 
 
-class ParseSpec(UnitSpec):
+class PythonParseSpec(UnitSpec):
 
-    def python(self):
+    def parse(self):
         parser = Parser()
         e = parser.events(List.lines(trace))
         e.should.have.length_of(2)
         (e.head / _.entries.length).should.contain(3)
         (e.head / __.entries.map(type)).should.contain(
-            List(FileEntry, FileEntry, ErrorEntry))
-        (e.head // _.entries.last / _.msg).should.contain(_errmsg)
+            List(FileEntry, FileEntry, PyErrorEntry))
+        (e.head // _.entries.last / _.error).should.contain(_errmsg)
 
-__all__ = ('ParseSpec',)
+__all__ = ('PythonParseSpec',)

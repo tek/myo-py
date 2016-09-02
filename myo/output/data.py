@@ -1,7 +1,10 @@
-from amino import _, Path, List
+import abc
+from typing import Tuple
+
+from amino import _, Path, List, __
 from amino.lazy import lazy
 
-from ribosome.record import field, list_field, dfield, any_field
+from ribosome.record import field, list_field, dfield, any_field, RecordMeta
 
 from myo.record import Record
 from myo.util import parse_int
@@ -10,8 +13,7 @@ from myo.util import parse_int
 class OutputEntry(Record):
     text = field(str)
 
-    @property
-    def output_lines(self):
+    def output_lines(self, event):
         return List(OutputLine.create(self.text, self))
 
 
@@ -26,17 +28,37 @@ class OutputLine(Record):
 
 class ErrorEntry(OutputEntry):
     error = field(str)
-    msg = field(str)
 
 
 def _parse_line(data):
     return data if isinstance(data, int) else parse_int(data) | 0
 
 
-class PositionEntry(OutputEntry):
+class LocationMeta(abc.ABCMeta, RecordMeta):
+    pass
+
+
+class Location:
+
+    def file_path(self) -> Path:
+        ...
+
+    def coords(self) -> Tuple[int, int]:
+        ...
+
+
+class PositionEntry(OutputEntry, Location):
     path = field(Path, factory=Path)
     line = field(int, factory=_parse_line)
     col = dfield(0)
+
+    @property
+    def file_path(self):
+        return self.path
+
+    @property
+    def coords(self):
+        return (self.line, self.col)
 
 
 class OutputEvent(Record):
@@ -46,7 +68,7 @@ class OutputEvent(Record):
     @property
     def lines(self):
         return (
-            (self.entries // _.output_lines)
+            (self.entries // __.output_lines(self))
             .cons(OutputLine.create(self.head, self))
         )
 
