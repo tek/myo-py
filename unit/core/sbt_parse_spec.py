@@ -1,17 +1,19 @@
 from myo.output.parser.sbt import Parser, FileEntry, ColEntry
-from myo.output.data import ErrorEntry
+from myo.output.data import ErrorEntry, ParseResult
 
 from unit._support.spec import UnitSpec
 
 from amino import List, _, __
 
 _errmsg = 'error 23'
+_line = 23
+_col = 7
 
 trace = '''
 [info] Compiling 1 Scala source to /path/to/file...
-[error] /path/to/file.scala:69: not found: value codeLine
+[error] /path/to/file.scala:{line}: not found: value codeLine
 [error]     codeLine
-[error]     ^
+[error]{col}^
 [error] path/to/file.scala:71: {err};
 [error]  found   : WrongType
 [error]     (which expands to)  ReallyWrongType
@@ -22,7 +24,7 @@ trace = '''
 [error] (compile:compileIncremental) Compilation failed
 [error] Total time: 0 s, completed Jan 1, 1900 00:00:00 AM
 >
-'''.format(err=_errmsg)
+'''.format(err=_errmsg, line=_line, col=' ' * _col)
 
 
 class SbtParseSpec(UnitSpec):
@@ -35,5 +37,8 @@ class SbtParseSpec(UnitSpec):
         (e.head / __.entries.map(type)).should.contain(
             List(FileEntry, ErrorEntry, ColEntry))
         (e.last // _.entries.head / _.error).should.contain(_errmsg)
+        res = ParseResult(head='head', events=e)
+        (res.lines.lift(1) / _.target).should.equal(e.head)
+        (e.head / _.coords).should.contain((_line, _col))
 
 __all__ = ('SbtParseSpec',)

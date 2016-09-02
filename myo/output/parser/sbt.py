@@ -3,7 +3,7 @@ import operator
 from networkx import DiGraph
 
 from amino.lazy import lazy
-from amino import List
+from amino import List, _
 
 from ribosome.record import field, maybe_field
 
@@ -17,19 +17,16 @@ class FileEntry(PositionEntry):
 
 
 class ColEntry(OutputEntry):
+    ws = field(str)
 
     @property
     def col(self):
-        return (
-            (self.msg.index_of('^') & self.msg.index_of(']')) /
-            operator.sub |
-            1
-        )
+        return len(self.ws)
 
 
-_msg_type = '\[\w+\]\s*'
+_msg_type = '\[\w+\]'
 _file = EdgeData(
-    r='^{}(?P<path>[^:]+):(?P<line>\d+):\s*(?P<error>.*?);?$'
+    r='^{}\s*(?P<path>[^:]+):(?P<line>\d+):\s*(?P<error>.*?);?$'
     .format(_msg_type),
     entry=FileEntry
 )
@@ -38,7 +35,7 @@ _error = EdgeData(
     entry=ErrorEntry
 )
 _col = EdgeData(
-    r='^{}\s*\^\s*'.format(_msg_type),
+    r='^{}(?P<ws>\s*)\^\s*'.format(_msg_type),
     entry=ColEntry
 )
 
@@ -53,7 +50,7 @@ class SbtOutputEvent(OutputEvent, Location):
 
     @property
     def coords(self):
-        return self.file.line, self.col | 1
+        return self.file.line, self.col / _.col | 1
 
 
 class Parser(SimpleParser):
