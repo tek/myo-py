@@ -2,7 +2,7 @@ from operator import add
 
 from ribosome.machine import message, may_handle, Machine, handle
 from ribosome.nvim import ScratchBuffer, NvimFacade
-from ribosome.machine.scratch import ScratchMachine
+from ribosome.machine.scratch import ScratchMachine, Quit
 
 from amino.task import Task
 from amino import Map, _, L, Left, __
@@ -83,6 +83,7 @@ class OutputMachine(ScratchMachine, Logging):
     def mappings(self):
         special = {
             '%cr%': Jump,
+            'q': Quit,
         }
         return Map(**special)
 

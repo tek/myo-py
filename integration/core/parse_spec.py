@@ -12,7 +12,13 @@ from myo.command import Command
 from myo.plugins.core.message import ParseOutput
 
 
-class ParseSpec(MyoIntegrationSpec):
+class ParseHelpers:
+
+    def _modifiable(self, val):
+        self.vim.buffer.option('modifiable').should.contain(val)
+
+
+class ParseSpec(MyoIntegrationSpec, ParseHelpers):
 
     @main_looped
     def native(self):
@@ -31,6 +37,18 @@ class ParseSpec(MyoIntegrationSpec):
         self._await()
         qf = self.vim.call('getqflist') | []
         qf.should_not.be.empty
+
+    def twice(self):
+        cmd = Command(name='a', line='a', langs=List('python'))
+        msg = ParseOutput(cmd, List(), None, Map())
+        self.plugin.myo_start()
+        self.root.send_sync(msg)
+        output_machine = self.root.sub[-1]
+        self._modifiable(False)
+        self.root.send_sync(Mapping(output_machine.uuid, 'q'))
+        self._modifiable(True)
+        self.root.send_sync(msg)
+        self._modifiable(False)
 
 
 class PythonParseSpec(MyoIntegrationSpec):
