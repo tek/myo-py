@@ -1,7 +1,7 @@
 from integration._support.base import MyoIntegrationSpec
 
 from amino.test.path import fixture_path
-from amino import Map, Just, List, _
+from amino import Map, Just, List
 from amino.test import temp_file
 from amino.lazy import lazy
 

@@ -25,7 +25,7 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
 
     def __init__(self, vim: neovim.Nvim) -> None:
         super().__init__(vim)
-        self.myo = None  # type: Myo
+        self.myo = None
         self._post_initialized = False
 
     @property

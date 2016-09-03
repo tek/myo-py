@@ -7,6 +7,7 @@ from amino.lazy import lazy
 
 from ribosome import NvimFacade
 from ribosome.machine.state import RunScratchMachine
+from ribosome.machine import Nop, Message
 
 from myo.logging import Logging
 from myo.output.data import ParseResult
@@ -20,7 +21,7 @@ class OutputHandler(Logging, metaclass=abc.ABCMeta):
         ...
 
     @abc.abstractmethod
-    def display(self, result: ParseResult) -> Task:
+    def display(self, result: ParseResult) -> Task[Message]:
         ...
 
 
@@ -56,7 +57,7 @@ class VimCompiler(OutputHandler):
     def display(self, result):
         copen = Task.call(self.vim.cmd_sync, 'copen')
         cfirst = Task.call(self.vim.cmd_sync, 'cfirst')
-        return copen + cfirst
+        return (copen + cfirst).replace(Nop())
 
 
 class Parsing(CustomOutputHandler):
