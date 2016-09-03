@@ -229,8 +229,8 @@ class TmuxTransitions(MyoTransitions):
     @may_handle(TmuxRunCommand)
     def run_command(self):
         command = self.msg.command
-        shell = command.shell // self.data.shell
         options = self.msg.options
+        shell = options.get('shell').or_else(command.shell) // self.data.shell
         return shell.cata(
             L(self._run_in_shell)(command, _, options),
             L(self._run_command)(command, options)
