@@ -116,6 +116,7 @@ class PaneAdapter(Adapter, PaneI):
         c = self.native.cmd(*a)
         if c.stderr:
             self.log.error(List.wrap(c.stderr).join_lines)
+        return c.stdout
 
     @lazy
     def id(self):
@@ -172,7 +173,7 @@ class PaneAdapter(Adapter, PaneI):
 
     @property
     def capture(self):
-        return List.wrap(self.cmd('capture-pane', '-p').stdout)
+        return List.wrap(self.cmd('capture-pane', '-p'))
 
     @property
     def session_id(self):
