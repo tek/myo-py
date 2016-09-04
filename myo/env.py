@@ -17,7 +17,6 @@ class Env(Data):
     config_path = field(Path)
     initialized = field(bool, initial=False)
     commands = field(Commands, initial=Commands())
-    views = field(Views, initial=Views())
     dispatchers = field(Dispatchers, initial=Dispatchers())
 
     def cat(self, item: Union[Command, View, Dispatcher]):
@@ -50,4 +49,9 @@ class Env(Data):
     def transient_command(self, cmd: Command):
         return self.mod('commands', __.transient_command(cmd))
 
-__all__ = ('Env')
+    def __repr__(self):
+        return 'Env()'
+
+    __str__ = __repr__
+
+__all__ = ('Env',)
