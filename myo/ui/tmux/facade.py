@@ -61,7 +61,7 @@ class LayoutFacade(Logging):
                         Fatal('no open layout when trying to open pane')))
         return Task.now(
             self.panes.is_open(pane).no.flat_either_call(
-                NothingToDo('pane {} already open'.format(pane)),
+                Left(NothingToDo('{!r} already open'.format(pane))),
                 find_layout,
             )
         )

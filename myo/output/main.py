@@ -40,7 +40,7 @@ class CustomOutputHandler(OutputHandler):
         size = self.vim.pvar('scratch_size') | 10
         return (
             Task.now(RunScratchMachine(ctor, False, size=Just(size))) /
-            (lambda a: (a.pub, OutputInit().pub))
+            (lambda a: Just(List(a.pub, OutputInit().pub)))
         )
 
 
@@ -57,7 +57,7 @@ class VimCompiler(OutputHandler):
     def display(self, result):
         copen = Task.call(self.vim.cmd_sync, 'copen')
         cfirst = Task.call(self.vim.cmd_sync, 'cfirst')
-        return (copen + cfirst).replace(Nop())
+        return (copen + cfirst).replace(Just(Nop()))
 
 
 class Parsing(CustomOutputHandler):

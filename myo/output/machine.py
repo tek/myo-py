@@ -3,6 +3,7 @@ from operator import add
 from ribosome.machine import message, may_handle, Machine, handle
 from ribosome.nvim import ScratchBuffer, NvimFacade
 from ribosome.machine.scratch import ScratchMachine, Quit
+from ribosome.machine.base import UnitTask
 
 from amino.task import Task
 from amino import Map, _, L, Left, __
@@ -31,7 +32,7 @@ class OutputMachineTransitions(MyoTransitions):
 
     @may_handle(OutputInit)
     def output_init(self):
-        return (
+        return UnitTask(
             Task.call(self.buffer.set_content, self.result.display_lines) //
             (lambda a: Task.call(self.buffer.set_modifiable, False))
         )
@@ -48,7 +49,7 @@ class OutputMachineTransitions(MyoTransitions):
             (target / _.coords)
             .map2(lambda a, b: Task(lambda: self.vim.window.set_cursor(a, b)))
         )
-        return (open_file & set_line).map2(add)
+        return (open_file & set_line).map2(add) / UnitTask
 
     def _open_file(self, path):
         def split():
@@ -81,10 +82,9 @@ class OutputMachine(ScratchMachine, Logging):
 
     @property
     def mappings(self):
-        special = {
+        return Map({
             '%cr%': Jump,
             'q': Quit,
-        }
-        return Map(**special)
+        })
 
 __all__ = ('OutputMachine',)

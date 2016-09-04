@@ -287,14 +287,14 @@ class TmuxTransitions(MyoTransitions):
             res = cmd / (lambda c: c.modify(__.set(log_path=log_path)))
             return res.to_either('command not found')
         # NOTE Must run this as a task so it is executed after the cmd runner
-        return DataEitherTask(_ / set_log)
+        return DataTask(_ / set_log)
 
     @may_handle(TmuxPack)
     def pack(self):
         return self._window_task(self.layouts.pack_window)
 
     def _window_task(self, f: Callable[[Window], Task[Either[str, Window]]]):
-        return DataEitherTask(_ // L(self._wrap_window)(_, f))
+        return DataTask(_ // L(self._wrap_window)(_, f))
 
     def _wrap_window(self, data, callback):
         state = self._state(data)
