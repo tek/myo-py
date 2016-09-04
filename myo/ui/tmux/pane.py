@@ -9,7 +9,7 @@ from psutil import Process
 from amino import __, List, Boolean, Maybe, _, Map, Just
 from amino.lazy import lazy
 
-from ribosome.record import maybe_field, either_field
+from ribosome.record import maybe_field, either_field, bool_field
 
 from myo.ui.tmux.view import View
 from myo.ui.tmux.adapter import Adapter
@@ -24,6 +24,7 @@ class Pane(View):
     window_id = either_field(int)
     session_id = either_field(int)
     log_path = maybe_field(Path)
+    pin = bool_field(False)
 
     @property
     def id_s(self):

@@ -36,4 +36,18 @@ class ShowSpec(TmuxIntegrationSpec):
         self.vim.cmd('MyoTmuxShow')
         later(check)
 
+
+class PinSpec(TmuxIntegrationSpec):
+
+    def open(self):
+        check = lambda: self._panes.length.should.equal(3)
+        self.json_cmd('MyoTmuxCreateLayout test', parent='root')
+        self.json_cmd('MyoTmuxCreatePane pan1', parent='test', pin=True)
+        self._wait(.1)
+        self.json_cmd('MyoTmuxCreatePane pan2', parent='test')
+        self._wait(.1)
+        self.json_cmd('MyoTmuxOpenPane pan2')
+        self._wait(.1)
+        later(check)
+
 __all__ = ('ClosePaneSpec', 'ShowSpec')

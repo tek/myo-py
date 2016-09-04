@@ -4,14 +4,15 @@ import libtmux
 
 from lenses import lens
 
-from amino import List, _, __, Just, Maybe, Map, Right, Empty, Either, Boolean
+from amino import (List, _, __, Just, Maybe, Map, Right, Empty, Either,
+                   Boolean, I)
 from amino.lazy import lazy
 from amino.task import Task
 from amino.anon import L
 
-from ribosome.machine import may_handle, handle, Quit
+from ribosome.machine import may_handle, handle, Quit, Nop
 from ribosome.record import field, list_field, Record
-from ribosome.machine.base import DataEitherTask, UnitTask
+from ribosome.machine.base import UnitTask, DataTask
 
 from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.tmux.message import (TmuxOpenPane, TmuxRunCommand,
@@ -21,13 +22,13 @@ from myo.plugins.tmux.message import (TmuxOpenPane, TmuxRunCommand,
                                       TmuxClosePane, TmuxRunShell,
                                       TmuxRunLineInShell, StartWatcher,
                                       WatchCommand, QuitWatcher, SetCommandLog,
-                                      TmuxPack)
+                                      TmuxPack, TmuxOpenPinned)
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
 from myo.ui.tmux.session import Session
 from myo.ui.tmux.server import Server
-from myo.util import parse_int, view_params
+from myo.util import parse_int, view_params, pane_params
 from myo.ui.tmux.window import VimWindow, Window
 from myo.ui.tmux.facade import LayoutFacade, PaneFacade
 from myo.ui.tmux.view import View
@@ -181,7 +182,7 @@ class TmuxTransitions(MyoTransitions):
     @may_handle(TmuxLoadDefaults)
     def load_defaults(self):
         main = TmuxCreateLayout('main', options=Map(parent='root'))
-        make = TmuxCreatePane('make', options=Map(parent='main'))
+        make = TmuxCreatePane('make', options=Map(parent='main', pin=True))
         return main, make
 
     @may_handle(StartWatcher)
@@ -215,12 +216,24 @@ class TmuxTransitions(MyoTransitions):
     @handle(TmuxCreatePane)
     def create_pane(self):
         opts = self.msg.options
-        pane = Pane(name=self.msg.name, **view_params(opts))
+        pane = Pane(name=self.msg.name, **pane_params(opts))
         return self._add_to_layout(opts.get('parent'), _.panes, pane)
 
     @may_handle(TmuxOpenPane)
     def open(self):
-        return self._open_pane_ppm(self.msg.name)
+        name = self.msg.name
+        pinned = self.msg.options.get('pinned').exists(I)
+        return (
+            self._open_pane_ppm(name),
+            (Nop() if pinned else TmuxOpenPinned(name))
+        )
+
+    @may_handle(TmuxOpenPinned)
+    def open_pinned(self):
+        return (
+            self._pinned_panes(self.msg.ident) /
+            L(TmuxOpenPane)(_, Map(pinned=True))
+        ).cat(TmuxPack().at(1))
 
     @may_handle(TmuxClosePane)
     def close(self):
@@ -308,7 +321,7 @@ class TmuxTransitions(MyoTransitions):
     def _open_pane_ppm(self, name: Ident):
         # cannot reference self.layouts.pack_path directly, because panes
         # are cached
-        return _ident_ppm(name) / self._open_pane / self._pack_path
+        return _ident_ppm(name) / self._open_pane
 
     def _close_pane_ppm(self, name: Ident):
         return _ident_ppm(name) / self._close_pane / self._pack_path
@@ -353,7 +366,7 @@ class TmuxTransitions(MyoTransitions):
         )
         set_log = command.transient.no.maybe(
             SetCommandLog(command.uuid, pane_ident))
-        return set_log.to_list.cons(runner)
+        return set_log.to_list.cons(runner).cat(TmuxPack().at(1))
 
     def _open_pane(self, w):
         return self.layouts.open_pane(w)
@@ -364,11 +377,9 @@ class TmuxTransitions(MyoTransitions):
     def _pack_path(self, path):
         return self.layouts.pack_path(path)
 
-    def _layout_lens_bound(self, name):
-        def sub(a):
-            return a.layouts.find_lens(ll) / lens().layouts.add_lens
-        def ll(l):
-            return Just(lens()) if l.name == name else sub(l)
+    def _layout_lens_bound(self, ident):
+        ll = lambda l: Just(lens()) if l.has_ident(ident) else sub(l)
+        sub = __.layouts.find_lens(ll).map(lens().layouts.add_lens)
         return (
             self.state.windows
             .find_lens(lambda a: ll(a.root) / lens().root.add_lens) /
@@ -417,6 +428,15 @@ class TmuxTransitions(MyoTransitions):
         cmd_runner = self._run_command(command, opt)
         shell_runner = TmuxRunShell(shell, Map())
         return cmd_runner.cons(shell_runner)
+
+    def _pinned_panes(self, ident):
+        def layout(l):
+            target = l.panes.find(__.has_ident(ident))
+            sub = (l.layouts // layout)
+            add = (List() if sub.empty and target.empty else
+                   l.panes.filter(_.pin))
+            return sub + add
+        return (self.state.windows / _.root // layout) / _.ident
 
 
 class Plugin(MyoComponent):

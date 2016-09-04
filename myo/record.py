@@ -11,6 +11,10 @@ class Record(RecordBase):
     def __str__(self):
         return super().__repr__()
 
+    @property
+    def ident(self):
+        return self.uuid
+
 
 class Named(Record):
     name = field(str)
