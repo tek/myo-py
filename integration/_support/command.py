@@ -2,7 +2,6 @@ from integration._support.base import MyoPluginIntegrationSpec
 
 
 class CmdSpec(MyoPluginIntegrationSpec):
-    pass
 
     @property
     def _plugins(self):

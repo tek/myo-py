@@ -16,7 +16,8 @@ TmuxLoadDefaults = message('TmuxLoadDefaults')
 TmuxInfo = message('TmuxInfo')
 TmuxParse = json_message('TmuxParse')
 TmuxPack = message('TmuxPack')
-TmuxOpenPinned = message('TmuxOpenPinned', 'ident')
+TmuxPostOpen = json_message('TmuxPostOpen', 'ident')
+TmuxSetFocus = message('TmuxSetFocus', 'ident', 'focus')
 SetCommandLog = message('SetCommandLog', 'cmd_ident', 'pane_ident')
 
 StartWatcher = message('StartWatcher')
@@ -28,4 +29,5 @@ __all__ = ('TmuxRunCommand', 'TmuxOpenPane', 'TmuxCreatePane',
            'TmuxSpawnSession', 'TmuxFindVim', 'TmuxLoadDefaults',
            'TmuxClosePane', 'TmuxRunCommandInShell', 'TmuxRunLineInShell',
            'TmuxRunShell', 'StartWatcher', 'WatchCommand', 'QuitWatcher',
-           'TmuxParse', 'SetCommandLog', 'TmuxPack', 'TmuxOpenPinned')
+           'TmuxParse', 'SetCommandLog', 'TmuxPack', 'TmuxPostOpen',
+           'TmuxSetFocus')

@@ -1,12 +1,13 @@
 from collections import namedtuple
 
-from ribosome.machine import may_handle, handle, either_handle
+from ribosome.machine import may_handle, handle
+from ribosome.machine.transition import Fatal
 
 from myo.state import MyoComponent, MyoTransitions
 
 from amino import L, _, List, Try, __, Maybe, curried, Map, Right, I
 from myo.command import Command, VimCommand, ShellCommand, Shell
-from myo.util import optional_params, parse_callback_spec
+from myo.util import optional_params, parse_callback_spec, amend_options
 from myo.plugins.core.message import Parse, ParseOutput, StageI
 from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
                                          AddShellCommand, AddShell,
@@ -155,12 +156,12 @@ class CommandTransitions(MyoTransitions):
     def run_test(self):
         opt = self.msg.options
         return (
-            opt.get('ctor') //
-            self._assemble /
+            opt.get('ctor').to_either(Fatal('no test ctor specified')) //
+            self._assemble //
             self._run_test_line(opt - 'ctor')
-        )
+        ).lmap(Fatal)
 
-    @either_handle(RunVimTest)
+    @handle(RunVimTest)
     def run_vim_test(self):
         return (
             assemble_vim_test_line(self.vim) //
@@ -179,9 +180,13 @@ class CommandTransitions(MyoTransitions):
     @curried
     def _run_test_line(self, options, line):
         langs = options.get('langs') | List()
+        shell = self.vim.buffer.pvar('test_shell')
+        pane = self.vim.buffer.pvar('test_pane')
+        opt = amend_options(options, 'shell', shell)
+        opt2 = amend_options(opt, 'pane', pane)
         def dispatch(data):
             return Right(data) & (data.command(self._test_cmd_name) /
-                                  L(Dispatch)(_, options))
+                                  L(Dispatch)(_, opt2))
         return (
             self.data.command_lens(self._test_cmd_name)
             .to_either('no test command') /

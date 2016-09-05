@@ -24,7 +24,7 @@ class Pane(View):
     window_id = either_field(int)
     session_id = either_field(int)
     log_path = maybe_field(Path)
-    pin = bool_field(False)
+    pin = bool_field()
 
     @property
     def id_s(self):

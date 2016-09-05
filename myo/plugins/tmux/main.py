@@ -22,13 +22,13 @@ from myo.plugins.tmux.message import (TmuxOpenPane, TmuxRunCommand,
                                       TmuxClosePane, TmuxRunShell,
                                       TmuxRunLineInShell, StartWatcher,
                                       WatchCommand, QuitWatcher, SetCommandLog,
-                                      TmuxPack, TmuxOpenPinned)
+                                      TmuxPack, TmuxPostOpen, TmuxSetFocus)
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
 from myo.ui.tmux.session import Session
 from myo.ui.tmux.server import Server
-from myo.util import parse_int, view_params, pane_params
+from myo.util import parse_int, view_params, pane_params, pane_bool_params
 from myo.ui.tmux.window import VimWindow, Window
 from myo.ui.tmux.facade import LayoutFacade, PaneFacade
 from myo.ui.tmux.view import View
@@ -216,24 +216,31 @@ class TmuxTransitions(MyoTransitions):
     @handle(TmuxCreatePane)
     def create_pane(self):
         opts = self.msg.options
-        pane = Pane(name=self.msg.name, **pane_params(opts))
+        pane = Pane(name=self.msg.name, **pane_params(opts),
+                    **pane_bool_params(opts))
         return self._add_to_layout(opts.get('parent'), _.panes, pane)
 
     @may_handle(TmuxOpenPane)
     def open(self):
         name = self.msg.name
-        pinned = self.msg.options.get('pinned').exists(I)
+        opt = self.msg.options
+        pinned = opt.get('pinned').exists(I)
         return (
             self._open_pane_ppm(name),
-            (Nop() if pinned else TmuxOpenPinned(name))
+            (Nop() if pinned else TmuxPostOpen(name, opt - 'pinned'))
         )
 
-    @may_handle(TmuxOpenPinned)
+    @may_handle(TmuxPostOpen)
     def open_pinned(self):
+        focus = self.msg.options.get('focus') | False
         return (
             self._pinned_panes(self.msg.ident) /
             L(TmuxOpenPane)(_, Map(pinned=True))
-        ).cat(TmuxPack().at(1))
+        ) + List(TmuxPack().at(1), TmuxSetFocus(self.msg.ident, focus))
+
+    @may_handle(TmuxSetFocus)
+    def set_focus(self):
+        pass
 
     @may_handle(TmuxClosePane)
     def close(self):
@@ -366,7 +373,7 @@ class TmuxTransitions(MyoTransitions):
         )
         set_log = command.transient.no.maybe(
             SetCommandLog(command.uuid, pane_ident))
-        return set_log.to_list.cons(runner).cat(TmuxPack().at(1))
+        return set_log.to_list.cons(runner).cat(TmuxPostOpen(pane_ident, opt))
 
     def _open_pane(self, w):
         return self.layouts.open_pane(w)

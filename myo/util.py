@@ -23,13 +23,21 @@ def optional_params(m: Map, *keys: str):
     return Map(List.wrap(keys) / (lambda a: (a, m.get(a))))
 
 
+def bool_params(m, *keys):
+    return Map(List.wrap(keys) // (lambda a: m.get(a) / (lambda b: (a, b))))
+
+
 def view_params(m: Map, *extra):
     return optional_params(m, 'min_size', 'max_size', 'fixed_size', 'position',
                            'weight', *extra)
 
 
 def pane_params(m: Map):
-    return view_params(m, 'pin')
+    return view_params(m)
+
+
+def pane_bool_params(m: Map):
+    return bool_params(m, 'pin', 'focus')
 
 _py_callback_re = re.compile('^py:(.+)')
 _vim_callback_re = re.compile('^vim:(.+)')
@@ -53,6 +61,10 @@ def parse_vim_callback(data: str):
 
 def parse_callback_spec(data: str):
     return parse_python_callback(data).or_else(F(parse_vim_callback, data))
+
+
+def amend_options(opt: Map, key: str, value: Maybe):
+    return value / (lambda a: opt + (key, a)) | opt
 
 __all__ = ('parse_int', 'optional_params', 'view_params', 'parse_id',
            'parse_callback_spec', 'pane_params')
