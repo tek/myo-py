@@ -25,6 +25,7 @@ class Pane(View):
     session_id = either_field(int)
     log_path = maybe_field(Path)
     pin = bool_field()
+    focus = bool_field()
 
     @property
     def id_s(self):
@@ -226,5 +227,12 @@ class PaneAdapter(Adapter, PaneI):
 
     def __eq__(self, other):
         return isinstance(other, PaneAdapter) and self.id == other.id
+
+    @property
+    def active(self):
+        return self.native.active == '1'
+
+    def focus(self):
+        self.native.select_pane()
 
 __all__ = ('Pane', 'VimPane', 'PaneAdapter')

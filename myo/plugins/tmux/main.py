@@ -230,17 +230,24 @@ class TmuxTransitions(MyoTransitions):
             (Nop() if pinned else TmuxPostOpen(name, opt - 'pinned'))
         )
 
-    @may_handle(TmuxPostOpen)
+    @handle(TmuxPostOpen)
     def open_pinned(self):
-        focus = self.msg.options.get('focus') | False
-        return (
-            self._pinned_panes(self.msg.ident) /
-            L(TmuxOpenPane)(_, Map(pinned=True))
-        ) + List(TmuxPack().at(1), TmuxSetFocus(self.msg.ident, focus))
+        def go(pane):
+            return (
+                self._pinned_panes(self.msg.ident) /
+                L(TmuxOpenPane)(_, Map(pinned=True))
+            ) + List(TmuxPack().at(1), TmuxSetFocus(pane))
+        return self._pane(self.msg.ident) / go
 
-    @may_handle(TmuxSetFocus)
+    @handle(TmuxSetFocus)
     def set_focus(self):
-        pass
+        pane = self.msg.pane
+        return (
+            pane.focus.flat_maybe_call(self.panes.find, pane) /
+            _.focus /
+            Task /
+            UnitTask
+        )
 
     @may_handle(TmuxClosePane)
     def close(self):

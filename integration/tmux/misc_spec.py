@@ -2,6 +2,7 @@ from integration._support.tmux import DefaultLayoutSpec, TmuxIntegrationSpec
 from integration._support.command import CmdSpec
 
 from amino.test import later
+from amino import _
 
 
 class ClosePaneSpec(DefaultLayoutSpec):
@@ -63,5 +64,24 @@ class RunTestSpec(DefaultLayoutSpec, CmdSpec):
         self.json_cmd_sync('MyoTest',
                            ctor='py:integration.tmux.misc_spec._test_ctor')
         later(lambda: self._panes.should.have.length_of(3))
+
+
+class FocusSpec(TmuxIntegrationSpec):
+
+    def no_focus(self):
+        def check():
+            (self._panes.head / _.active).should.contain(True)
+        self.json_cmd('MyoTmuxCreatePane pan1')
+        self.json_cmd_sync('MyoTmuxOpenPane pan1')
+        later(lambda: self._panes.should.have.length_of(2))
+        self._wait(.5)
+        later(check)
+
+    def focus(self):
+        def check():
+            (self._panes.lift(1) / _.active).should.contain(True)
+        self.json_cmd('MyoTmuxCreatePane pan1', focus=True)
+        self.json_cmd('MyoTmuxOpenPane pan1')
+        later(check)
 
 __all__ = ('ClosePaneSpec', 'ShowSpec')

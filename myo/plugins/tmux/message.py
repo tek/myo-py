@@ -17,7 +17,7 @@ TmuxInfo = message('TmuxInfo')
 TmuxParse = json_message('TmuxParse')
 TmuxPack = message('TmuxPack')
 TmuxPostOpen = json_message('TmuxPostOpen', 'ident')
-TmuxSetFocus = message('TmuxSetFocus', 'ident', 'focus')
+TmuxSetFocus = message('TmuxSetFocus', 'pane')
 SetCommandLog = message('SetCommandLog', 'cmd_ident', 'pane_ident')
 
 StartWatcher = message('StartWatcher')
