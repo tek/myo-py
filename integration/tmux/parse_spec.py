@@ -39,12 +39,6 @@ class ParseSpec(TmuxCmdSpec):
         self.json_cmd('MyoParse')
         later(check2)
 
-_test_line = 'this is a test'
-
-
-def _test_ctor():
-    return 'echo \'{}\''.format(_test_line)
-
 
 class VimTestSpec(TmuxCmdSpec):
 

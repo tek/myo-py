@@ -53,7 +53,6 @@ class DistributeSizeSpec(TmuxIntegrationSpec):
         self._wait(.1)
         self.json_cmd('MyoTmuxOpenPane pan3')
         later(check)
-        self._wait(1)
 
     def move(self):
         sz1, sz2 = 5, 10
@@ -93,7 +92,6 @@ class DefaultLayoutDistributeSizeSpec(DefaultLayoutSpec):
             widths.should.equal(target)
         self.json_cmd('MyoTmuxOpenPane make')
         later(check)
-        self._wait(1)
 
 __all__ = ('CutSizeSpec', 'DistributeSizeSpec',
            'DefaultLayoutDistributeSizeSpec')
