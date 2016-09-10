@@ -29,7 +29,7 @@ def bool_params(m, *keys):
 
 def view_params(m: Map, *extra):
     return optional_params(m, 'min_size', 'max_size', 'fixed_size', 'position',
-                           'weight', *extra)
+                           'weight', 'minimized_size', *extra)
 
 
 def pane_params(m: Map):

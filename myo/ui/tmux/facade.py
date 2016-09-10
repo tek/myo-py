@@ -258,10 +258,12 @@ class LayoutFacade(Logging):
         return adapter(view)
 
     def actual_min_sizes(self, views):
-        return views / (lambda a: a.fixed_size.or_else(a.min_size) | 0)
+        return views / (lambda a: a.effective_fixed_size.or_else(a.min_size) |
+                        0)
 
     def actual_max_sizes(self, views):
-        return views / (lambda a: a.fixed_size.or_else(a.max_size) | 999)
+        return views / (lambda a: a.effective_fixed_size.or_else(a.max_size) |
+                        999)
 
     def weights(self, views):
         return self._normalize_weights(views / _.effective_weight)

@@ -22,7 +22,8 @@ from myo.plugins.tmux.message import (TmuxOpenPane, TmuxRunCommand,
                                       TmuxClosePane, TmuxRunShell,
                                       TmuxRunLineInShell, StartWatcher,
                                       WatchCommand, QuitWatcher, SetCommandLog,
-                                      TmuxPack, TmuxPostOpen, TmuxSetFocus)
+                                      TmuxPack, TmuxPostOpen, TmuxSetFocus,
+                                      TmuxMinimize, TmuxRestore, TmuxToggle)
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
@@ -319,6 +320,21 @@ class TmuxTransitions(MyoTransitions):
     @may_handle(TmuxPack)
     def pack(self):
         return self._window_task(self.layouts.pack_window)
+
+    @may_handle(TmuxMinimize)
+    def minimize(self):
+        return self._minimize(__.set(minimized=True))
+
+    @may_handle(TmuxRestore)
+    def restore(self):
+        return self._minimize(__.set(minimized=False))
+
+    @may_handle(TmuxToggle)
+    def toggle(self):
+        return self._minimize(lambda a: a.set(minimized=not a.minimized))
+
+    def _minimize(self, f):
+        return self._pane_mod(self.msg.pane, f), TmuxPack().at(1)
 
     def _window_task(self, f: Callable[[Window], Task[Either[str, Window]]]):
         return DataTask(_ // L(self._wrap_window)(_, f))

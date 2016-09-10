@@ -23,7 +23,7 @@ class DistributeSizeSpec(TmuxIntegrationSpec):
         self.json_cmd('MyoTmuxCreatePane pan1', parent='test', min_size=5,
                       max_size=h1, weight=1)
         self.json_cmd('MyoTmuxCreatePane pan2', parent='test', min_size=10,
-                      max_size=40, weight=9)
+                      max_size=40, weight=h1 + 1)
         self.json_cmd('MyoTmuxOpenPane pan1')
         self._wait(.1)
         self.json_cmd('MyoTmuxOpenPane pan2')
@@ -85,6 +85,29 @@ class DefaultLayoutDistributeSizeSpec(DefaultLayoutSpec):
             widths.should.equal(target)
         self.json_cmd('MyoTmuxOpenPane make')
         later(check)
+
+
+class MinimizeSpec(TmuxIntegrationSpec):
+
+    def minimize(self):
+        def check(size):
+            later(lambda: self._panes.find(__.id_i.contains(1))
+                  .map(_.height)
+                  .should.contain(size))
+        self.json_cmd('MyoTmuxCreateLayout test', parent='root')
+        self._create_pane('pan1', minimized_size=5, fixed_size=10,
+                          parent='test')
+        self._create_pane('pan2', fixed_size=10, parent='test')
+        self._create_pane('pan3', parent='test')
+        self._open_pane('pan1')
+        self._open_pane('pan2')
+        self._open_pane('pan3')
+        self._pane_count(4)
+        check(10)
+        self.json_cmd_sync('MyoTmuxMinimize pan1')
+        check(5)
+        self.json_cmd_sync('MyoTmuxRestore pan1')
+        check(10)
 
 __all__ = ('CutSizeSpec', 'DistributeSizeSpec',
            'DefaultLayoutDistributeSizeSpec')

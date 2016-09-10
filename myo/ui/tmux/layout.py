@@ -74,11 +74,13 @@ class Layout(View):
 
     @lazy
     def actual_min_sizes(self):
-        return self.views / (lambda a: a.fixed_size.or_else(a.min_size) | 0)
+        return self.views / (lambda a:
+                             a.effective_fixed_size.or_else(a.min_size) | 0)
 
     @lazy
     def actual_max_sizes(self):
-        return self.views / (lambda a: a.fixed_size.or_else(a.max_size) | 999)
+        return self.views / (lambda a:
+                             a.effective_fixed_size.or_else(a.max_size) | 999)
 
     @property
     def desc(self):

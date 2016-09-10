@@ -16,7 +16,8 @@ from myo.plugins.command.message import (AddVimCommand, Run, AddShellCommand,
                                          RunVimTest, CommandShow)
 from myo.plugins.tmux.message import (TmuxCreatePane, TmuxCreateSession,
                                       TmuxCreateLayout, TmuxSpawnSession,
-                                      TmuxInfo, TmuxClosePane, TmuxPack)
+                                      TmuxInfo, TmuxClosePane, TmuxPack,
+                                      TmuxMinimize, TmuxRestore, TmuxToggle)
 from myo.plugins.tmux import TmuxOpenPane
 from myo.plugins.core.message import Parse
 
@@ -108,6 +109,18 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
 
     @msg_command(TmuxPack)
     def myo_tmux_pack(self):
+        pass
+
+    @json_msg_command(TmuxMinimize)
+    def myo_tmux_minimize(self):
+        pass
+
+    @json_msg_command(TmuxRestore)
+    def myo_tmux_restore(self):
+        pass
+
+    @json_msg_command(TmuxToggle)
+    def myo_tmux_toggle(self):
         pass
 
     @json_msg_command(Run)
