@@ -59,7 +59,7 @@ class DispatchSpec(TmuxCmdSpec):
         self.json_cmd_sync('MyoTmuxCreatePane test', parent='main')
         self.json_cmd_sync('MyoTest',
                            ctor='py:integration.tmux.dispatch_spec._test_ctor')
-        later(lambda: self._panes.should.have.length_of(3))
+        self._pane_count(3)
 
     def pvar_test_shell(self):
         self.vim.buffer.set_pvar('test_shell', 'py')
@@ -72,11 +72,11 @@ class DispatchSpec(TmuxCmdSpec):
         self.json_cmd('MyoTmuxCreatePane py', parent='main')
         self.json_cmd('MyoShell py', line='python', target='py', start=False)
         self._wait(0.2)
-        self._panes.should.have.length_of(1)
+        self._pane_count(1)
 
     def start(self):
         self.json_cmd('MyoTmuxCreatePane py', parent='main')
         self.json_cmd('MyoShell py', line='python', target='py', start=True)
-        later(lambda: self._panes.should.have.length_of(2))
+        self._pane_count(2)
 
 __all__ = ('DispatchSpec',)

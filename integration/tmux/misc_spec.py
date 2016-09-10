@@ -6,21 +6,18 @@ from amino import _
 
 class ClosePaneSpec(DefaultLayoutSpec):
 
-    def _check(self, length: int):
-        return later(lambda: self._panes.should.have.length_of(length))
-
     def close(self):
         self.json_cmd('MyoTmuxOpenPane make')
-        self._check(2)
+        self._pane_count(2)
         self.vim.cmd('MyoTmuxClosePane make')
-        self._check(1)
+        self._pane_count(1)
         self.vim.cmd('MyoTmuxClosePane make')
         self._wait(0.1)
-        self._check(1)
+        self._pane_count(1)
         self.json_cmd('MyoTmuxOpenPane make')
-        self._check(2)
+        self._pane_count(2)
         self.vim.cmd('MyoTmuxClosePane make')
-        self._check(1)
+        self._pane_count(1)
 
     def auto_close(self):
         self.json_cmd('MyoTmuxOpenPane make')
@@ -56,7 +53,7 @@ class FocusSpec(TmuxIntegrationSpec):
             (self._panes.head / _.active).should.contain(True)
         self.json_cmd('MyoTmuxCreatePane pan1')
         self.json_cmd_sync('MyoTmuxOpenPane pan1')
-        later(lambda: self._panes.should.have.length_of(2))
+        self._pane_count(2)
         self._wait(.5)
         later(check)
 

@@ -8,12 +8,10 @@ from integration._support.tmux import TmuxIntegrationSpec, DefaultLayoutSpec
 class CutSizeSpec(TmuxIntegrationSpec):
 
     def cut_size(self):
-        def check():
-            self._panes.should.have.length_of(2)
         self.json_cmd('MyoTmuxCreatePane pan', parent='root', min_size=0.5,
                       weight=0.1)
         self.json_cmd('MyoTmuxOpenPane pan')
-        later(check)
+        self._pane_count(2)
 
 
 class DistributeSizeSpec(TmuxIntegrationSpec):
@@ -64,17 +62,12 @@ class DistributeSizeSpec(TmuxIntegrationSpec):
             .should.equal(List(sz1, sz2))
         )
         self.json_cmd('MyoTmuxCreateLayout test', parent='root')
-        self.json_cmd('MyoTmuxCreatePane pan1', parent='test', position=1,
-                      weight=1)
-        self.json_cmd('MyoTmuxCreatePane pan2', parent='test', position=0.5,
-                      fixed_size=sz1)
-        self.json_cmd('MyoTmuxCreatePane pan3', parent='test', position=0.7,
-                      fixed_size=sz2)
-        self.json_cmd('MyoTmuxOpenPane pan1')
-        self._wait(.1)
-        self.json_cmd('MyoTmuxOpenPane pan2')
-        self._wait(.1)
-        self.json_cmd('MyoTmuxOpenPane pan3')
+        self._create_pane('pan1', parent='test', position=1, weight=1)
+        self._create_pane('pan2', parent='test', position=0.5, fixed_size=sz1)
+        self._create_pane('pan3', parent='test', position=0.7, fixed_size=sz2)
+        self._open_pane('pan1')
+        self._open_pane('pan2')
+        self._open_pane('pan3')
         later(check)
 
 

@@ -1,6 +1,8 @@
 from integration._support.base import MyoPluginIntegrationSpec
 from integration._support.command import CmdSpec
 
+from amino.test import later
+
 from myo.test.spec import TmuxSpecBase
 
 
@@ -26,6 +28,16 @@ class TmuxIntegrationSpec(MyoPluginIntegrationSpec, TmuxSpecBase):
     def _plugins(self):
         self._debug = True
         return super()._plugins.cons('myo.plugins.tmux')
+
+    def _create_pane(self, name, **kw):
+        self.json_cmd_sync('MyoTmuxCreatePane {}'.format(name), **kw)
+
+    def _open_pane(self, name, **kw):
+        self.json_cmd_sync('MyoTmuxOpenPane {}'.format(name), **kw)
+        self._wait(.1)
+
+    def _pane_count(self, count: int):
+        return later(lambda: self._panes.should.have.length_of(count))
 
 
 class DefaultLayoutSpec(TmuxIntegrationSpec):

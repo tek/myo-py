@@ -63,7 +63,6 @@ class VimTestSpec(TmuxCmdSpec):
         later(check3)
         self.vim.focus(1).run_sync()
         self.vim.cmd_sync('call feedkeys("q")')
-        check4 = lambda: self.vim.buffers.should.have.length_of(1)
-        later(check4)
+        self._pane_count(1)
 
 __all__ = ('ParseSpec',)
