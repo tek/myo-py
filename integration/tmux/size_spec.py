@@ -8,10 +8,18 @@ from integration._support.tmux import TmuxIntegrationSpec, DefaultLayoutSpec
 class CutSizeSpec(TmuxIntegrationSpec):
 
     def cut_size(self):
-        self.json_cmd('MyoTmuxCreatePane pan', parent='root', min_size=0.5,
-                      weight=0.1)
-        self.json_cmd('MyoTmuxOpenPane pan')
-        self._pane_count(2)
+        def check():
+            diff = (
+                (self._panes.lift(1) & self._panes.lift(2))
+                .map2(lambda a, b: abs(a.height - b.height)) |
+                10)
+            (diff <= 1).should.be.ok
+        self.json_cmd('MyoTmuxCreateLayout test', parent='root')
+        self._create_pane('pan1', parent='test', min_size=100)
+        self._create_pane('pan2', parent='test', min_size=100)
+        self._open_pane('pan1')
+        self._open_pane('pan2')
+        later(check)
 
 
 class DistributeSizeSpec(TmuxIntegrationSpec):

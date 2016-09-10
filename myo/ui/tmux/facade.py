@@ -25,7 +25,7 @@ def _pos(a):
 def _reverse_weights(weights):
     r = weights / (1 - _)
     norm = sum(r)
-    return r / (_ / norm)
+    return r / (_ / norm) if norm > 0 else r
 
 
 class LayoutFacade(Logging):
