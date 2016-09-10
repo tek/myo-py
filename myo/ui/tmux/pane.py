@@ -122,7 +122,7 @@ class PaneAdapter(Adapter, PaneI):
 
     @lazy
     def id(self):
-        return self.native.id
+        return self.native._pane_id
 
     @lazy
     def id_i(self):

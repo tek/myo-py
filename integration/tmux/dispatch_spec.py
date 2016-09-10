@@ -10,7 +10,7 @@ class DispatchSpec(TmuxCmdSpec):
         target = 'cmd test'
         self.json_cmd('MyoShellCommand test', line="echo '{}'".format(target))
         self.json_cmd('MyoTmuxOpenPane make')
-        self.json_cmd('MyoRun test', pane='make')
+        self.json_cmd('MyoRun test')
         self._output_contains(target)
 
     def _shell(self, create):

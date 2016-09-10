@@ -266,7 +266,7 @@ class TmuxTransitions(MyoTransitions):
     @may_handle(TmuxRunShell)
     def run_shell(self):
         shell = self.msg.shell
-        default = Map(shell.target.map(lambda a: ('pane', a)).to_list)
+        default = Map(shell.target.map(lambda a: ('target', a)).to_list)
         opts = default ** self.msg.options
         return TmuxRunCommand(command=shell, options=opts)
 
@@ -280,7 +280,7 @@ class TmuxTransitions(MyoTransitions):
     def run_line_in_shell(self):
         opt = self.msg.options
         return (
-            opt.get('line') /
+            opt.get('target') /
             (lambda a: Command(name='temp', line=a)) /
             L(self._run_in_shell)(_, self.msg.shell, opt)
         )
@@ -342,7 +342,7 @@ class TmuxTransitions(MyoTransitions):
 
     def _run_command_ppm(self, command, opt: Map):
         in_shell = Boolean('shell' in opt)
-        pane_ident = opt.get('pane') | self._default_pane_name
+        pane_ident = opt.get('target') | self._default_pane_name
         def check_running(path):
             return Task.now(Right(path)) if in_shell else (
                 self.panes.ensure_not_running(path.pane) /
@@ -438,7 +438,7 @@ class TmuxTransitions(MyoTransitions):
 
     def _run_in_shell(self, command: Command, shell: Shell, options: Map):
         ident = shell.target | self._default_pane_name
-        opt = options + ('pane', ident) + ('shell', shell)
+        opt = options + ('target', ident) + ('shell', shell)
         cmd_runner = self._run_command(command, opt)
         shell_runner = TmuxRunShell(shell, Map())
         return cmd_runner.cons(shell_runner)

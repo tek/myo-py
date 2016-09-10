@@ -58,8 +58,8 @@ def _test_ctor():
 
 class RunTestSpec(DefaultLayoutSpec, CmdSpec):
 
-    def shell(self):
-        self.vim.buffer.set_pvar('test_pane', 'test')
+    def target(self):
+        self.vim.buffer.set_pvar('test_target', 'test')
         self.json_cmd_sync('MyoTmuxCreatePane test', parent='main')
         self.json_cmd_sync('MyoTest',
                            ctor='py:integration.tmux.misc_spec._test_ctor')
