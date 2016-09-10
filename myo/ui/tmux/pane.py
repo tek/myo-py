@@ -35,7 +35,9 @@ class Pane(View):
     def desc(self):
         id = self.id / ' %{}'.format | ''
         pid = self.pid / ' | pid -> {}'.format | ''
-        return 'P{} \'{}\'{} {}'.format(id, self.name, pid, self.size_desc)
+        pin = ' !' if self.pin else ''
+        return 'P{} \'{}\'{}{} {}'.format(id, self.name, pin, pid,
+                                          self.size_desc)
 
     def open(self, pa: 'PaneAdapter'):
         return self.set(id=pa.id_i.to_maybe, shell_pid=pa.pid.to_maybe,
