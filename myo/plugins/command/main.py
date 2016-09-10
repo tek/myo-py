@@ -180,8 +180,8 @@ class CommandTransitions(MyoTransitions):
     @curried
     def _run_test_line(self, options, line):
         langs = options.get('langs') | List()
-        shell = self.vim.buffer.pvar('test_shell')
-        target = self.vim.buffer.pvar('test_target')
+        shell = self.vim.buffer.pvar_or_global('test_shell')
+        target = self.vim.buffer.pvar_or_global('test_target')
         opt = amend_options(options, 'shell', shell)
         opt2 = amend_options(opt, 'target', target)
         def dispatch(data):
