@@ -33,7 +33,7 @@ class ParseSpec(TmuxCmdSpec):
         self.json_cmd('MyoShellCommand test', line="echo '{}'".format(s),
                       target='make',
                       parser='py:integration.tmux.parse_spec._parse_echo')
-        self.json_cmd('MyoTmuxOpenPane make')
+        self._open_pane('make')
         self.json_cmd('MyoRun test')
         self._output_contains(l1)
         self.json_cmd('MyoParse')

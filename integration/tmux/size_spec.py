@@ -28,13 +28,13 @@ class DistributeSizeSpec(TmuxIntegrationSpec):
         h1 = 8
         check = lambda: (self._sizes / __[1]).last.should.contain(h1)
         self.json_cmd('MyoTmuxCreateLayout test', parent='root')
-        self.json_cmd('MyoTmuxCreatePane pan1', parent='test', min_size=5,
-                      max_size=h1, weight=1)
-        self.json_cmd('MyoTmuxCreatePane pan2', parent='test', min_size=10,
-                      max_size=40, weight=h1 + 1)
-        self.json_cmd('MyoTmuxOpenPane pan1')
+        self._create_pane('pan1', parent='test', min_size=5, max_size=h1,
+                          weight=1)
+        self._create_pane('pan2', parent='test', min_size=10, max_size=40,
+                          weight=h1 + 1)
+        self._open_pane('pan1')
         self._wait(.1)
-        self.json_cmd('MyoTmuxOpenPane pan2')
+        self._open_pane('pan2')
         later(check)
 
     def default_positions(self):
@@ -48,16 +48,16 @@ class DistributeSizeSpec(TmuxIntegrationSpec):
             .should.equal(List(sz1, sz2))
         )
         self.json_cmd('MyoTmuxCreateLayout test', parent='root')
-        self.json_cmd('MyoTmuxCreatePane pan1', parent='test', weight=1)
+        self._create_pane('pan1', parent='test', weight=1)
         self._wait(.1)
-        self.json_cmd('MyoTmuxCreatePane pan2', parent='test', fixed_size=sz1)
+        self._create_pane('pan2', parent='test', fixed_size=sz1)
         self._wait(.1)
-        self.json_cmd('MyoTmuxCreatePane pan3', parent='test', fixed_size=sz2)
-        self.json_cmd('MyoTmuxOpenPane pan1')
+        self._create_pane('pan3', parent='test', fixed_size=sz2)
+        self._open_pane('pan1')
         self._wait(.1)
-        self.json_cmd('MyoTmuxOpenPane pan2')
+        self._open_pane('pan2')
         self._wait(.1)
-        self.json_cmd('MyoTmuxOpenPane pan3')
+        self._open_pane('pan3')
         later(check)
 
     def move(self):
@@ -91,7 +91,7 @@ class DefaultLayoutDistributeSizeSpec(DefaultLayoutSpec):
             widths = self._sizes / __[0]
             target = List(self.vim_width, self.win_width - self.vim_width)
             widths.should.equal(target)
-        self.json_cmd('MyoTmuxOpenPane make')
+        self._open_pane('make')
         later(check)
 
 
