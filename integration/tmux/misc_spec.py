@@ -21,9 +21,9 @@ class ClosePaneSpec(DefaultLayoutSpec):
 
     def auto_close(self):
         self.json_cmd('MyoTmuxOpenPane make')
-        self._check(2)
+        self._pane_count(2)
         self.vim.doautocmd('VimLeave')
-        self._check(1)
+        self._pane_count(1)
 
 
 class ShowSpec(TmuxIntegrationSpec):
