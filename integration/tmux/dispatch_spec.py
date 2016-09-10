@@ -3,6 +3,12 @@ from integration._support.tmux import TmuxCmdSpec
 from psutil import Process
 from amino.test import later
 
+_test_line = 'this is a test'
+
+
+def _test_ctor():
+    return 'echo \'{}\''.format(_test_line)
+
 
 class DispatchSpec(TmuxCmdSpec):
 
@@ -40,6 +46,13 @@ class DispatchSpec(TmuxCmdSpec):
         later(lambda: pid().should.be.greater_than(0))
         Process(pid()).kill()
         later(lambda: pid().should.equal(-1))
+
+    def pvar_test_target(self):
+        self.vim.buffer.set_pvar('test_target', 'test')
+        self.json_cmd_sync('MyoTmuxCreatePane test', parent='main')
+        self.json_cmd_sync('MyoTest',
+                           ctor='py:integration.tmux.dispatch_spec._test_ctor')
+        later(lambda: self._panes.should.have.length_of(3))
 
     def nostart(self):
         self.json_cmd('MyoTmuxCreatePane py', parent='main')
