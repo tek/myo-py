@@ -183,7 +183,8 @@ class TmuxTransitions(MyoTransitions):
     @may_handle(TmuxLoadDefaults)
     def load_defaults(self):
         main = TmuxCreateLayout('main', options=Map(parent='root'))
-        make = TmuxCreatePane('make', options=Map(parent='main', pin=True))
+        make = TmuxCreatePane('make', options=Map(parent='main', pin=True,
+                                                  position=-1))
         return main, make
 
     @may_handle(StartWatcher)

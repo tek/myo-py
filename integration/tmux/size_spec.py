@@ -4,7 +4,6 @@ from amino.test import later
 from integration._support.tmux import TmuxIntegrationSpec, DefaultLayoutSpec
 
 
-# FIXME does nothing
 class CutSizeSpec(TmuxIntegrationSpec):
 
     def cut_size(self):
