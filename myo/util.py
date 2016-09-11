@@ -37,7 +37,7 @@ def pane_params(m: Map):
 
 
 def pane_bool_params(m: Map):
-    return bool_params(m, 'pin', 'focus')
+    return bool_params(m, 'pin', 'focus', 'kill')
 
 _py_callback_re = re.compile('^py:(.+)')
 _vim_callback_re = re.compile('^vim:(.+)')

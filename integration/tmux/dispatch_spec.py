@@ -95,4 +95,14 @@ class DispatchSpec(TmuxCmdSpec):
         copy_mode(False)
         self._output_contains(target)
 
+    def kill_process(self):
+        pid = lambda: self._panes.last // _.command_pid | 0
+        self.json_cmd('MyoShellCommand test', line='tee', kill=True)
+        self.vim.cmd_sync('MyoRun test')
+        later(lambda: pid().should.be.greater_than(0))
+        pid1 = pid()
+        self.vim.cmd_sync('MyoRun test')
+        later(lambda: pid().should.be.greater_than(0))
+        later(lambda: pid().should_not.equal(pid1))
+
 __all__ = ('DispatchSpec',)

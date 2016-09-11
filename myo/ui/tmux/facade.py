@@ -1,13 +1,18 @@
+import time
+import signal
 from typing import Tuple
 from functools import singledispatch  # type: ignore
 from operator import ne, sub
 
-from amino.task import Task
+from psutil import Process
+
+from amino.task import Task, task
 from amino.anon import L
 from amino import _, __, List, Left, F, Boolean, Right, Empty, Either, Maybe
 from amino.lazy import lazy
 
 from ribosome.machine.transition import Fatal, NothingToDo
+from ribosome.machine.state import Info
 
 from myo.logging import Logging
 from myo.ui.tmux.server import Server
@@ -351,11 +356,34 @@ class PaneFacade(Logging):
     def close_id(self, id: int):
         return self.server.cmd('kill-pane', '-t', '%{}'.format(id))
 
-    def ensure_not_running(self, pane: Pane):
+    @task
+    def kill_process(self, pane, adapter, signals=List('kill')):
+        def _wait_killed(timeout):
+            start = time.time()
+            while time.time() - start > timeout and adapter.running:
+                time.sleep(.1)
+        def kill(signame):
+            if adapter.running:
+                sig = getattr(signal, 'SIG{}'.format(signame.upper()),
+                              signal.SIGINT)
+                adapter.command_pid / Process / __.send_signal(sig)
+                _wait_killed(3)
+            return adapter.not_running
         return (
-            self.find_task(pane) /
-            __.not_running.either('command already running', True)
+            signals.find(kill) /
+            'process killed by signal {}'.format /
+            Info /
+            Right |
+            Left(Fatal('could not kill running process'))
         )
+
+    def ensure_not_running(self, pane: Pane, kill=False, signals=List('kill')):
+        def handle(pa):
+            return Task.now(Right(True)) if pa.not_running else (
+                self.kill_process(pane, pa) if kill else
+                Task.now(Left('command already running'))
+            )
+        return self.find_task(pane) // handle
 
     def pipe(self, pane: Pane, base: str):
         return (

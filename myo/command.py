@@ -12,6 +12,7 @@ class Command(Named):
     parser = maybe_field(str)
     transient = bool_field()
     langs = list_field()
+    kill = bool_field()
 
     @property
     def desc(self):

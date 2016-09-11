@@ -61,7 +61,7 @@ class PaneI(metaclass=abc.ABCMeta):
     def pid(self):
         return self._raw_pid // parse_int
 
-    @lazy
+    @property
     def command_pid(self) -> Maybe[int]:
         return (
             self.pid /
@@ -201,7 +201,7 @@ class PaneAdapter(Adapter, PaneI):
     def __repr__(self):
         return 'PA({}, {}, {})'.format(self.id, self.size, self.position)
 
-    @lazy
+    @property
     def running(self) -> Boolean:
         return self.command_pid.is_just
 

@@ -7,7 +7,8 @@ from myo.state import MyoComponent, MyoTransitions
 
 from amino import L, _, List, Try, __, Maybe, curried, Map, Right, I
 from myo.command import Command, VimCommand, ShellCommand, Shell
-from myo.util import optional_params, parse_callback_spec, amend_options
+from myo.util import (optional_params, parse_callback_spec, amend_options,
+                      bool_params)
 from myo.plugins.core.message import Parse, ParseOutput, StageI
 from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
                                          AddShellCommand, AddShell,
@@ -30,17 +31,23 @@ class CommandTransitions(MyoTransitions):
     def _cmd_list_opt(self):
         return List('langs')
 
+    @property
+    def _cmd_bool_opt(self):
+        return List('kill')
+
     def _create(self, tpe: type, mand_keys: List[str], opt_keys: List[str],
                 **strict):
         o = self.msg.options
         opt = optional_params(o, *opt_keys + self._cmd_opt)
         opt_list = (optional_params(o, *self._cmd_list_opt)
                     .valmap(_ / List.wrap | List()))
+        opt_bool = (bool_params(o, *self._cmd_bool_opt))
         missing = lambda: mand_keys.filter_not(o.has_key)
         err = lambda: 'cannot create {} without params: {}'.format(tpe,
                                                                    missing())
         mand = o.get_all_map(*mand_keys).to_either(err)
-        return mand / (lambda a: tpe(**a, **opt, **opt_list, **strict))
+        return mand / (lambda a: tpe(**a, **opt, **opt_list, **opt_bool,
+                                     **strict))
 
     def _add(self, tpe: type, mand_keys: List[str], opt_keys: List[str],
              **strict):
