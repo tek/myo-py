@@ -1,4 +1,4 @@
-from amino import List, __
+from amino import List, __, _
 from amino.lazy import lazy
 
 from ribosome.record import Record, field, maybe_field
@@ -50,5 +50,9 @@ class WindowAdapter(Adapter):
     @lazy
     def size(self):
         return int(self.native.width), int(self.native.height)
+
+    @property
+    def active_pane(self):
+        return self.panes.find(_.active)
 
 __all__ = ('WindowAdapter', 'Window')
