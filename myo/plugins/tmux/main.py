@@ -23,7 +23,8 @@ from myo.plugins.tmux.message import (TmuxOpenPane, TmuxRunCommand,
                                       TmuxRunLineInShell, StartWatcher,
                                       WatchCommand, QuitWatcher, SetCommandLog,
                                       TmuxPack, TmuxPostOpen, TmuxFixFocus,
-                                      TmuxMinimize, TmuxRestore, TmuxToggle)
+                                      TmuxMinimize, TmuxRestore, TmuxToggle,
+                                      TmuxFocus)
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
@@ -242,17 +243,21 @@ class TmuxTransitions(MyoTransitions):
         return self._pane(self.msg.ident) / go
 
     @handle(TmuxFixFocus)
-    def set_focus(self):
+    def fix_focus(self):
         return (
             self._pane(self.msg.pane) // (
                 lambda a:
                 a.focus.cata(Just(a), self._vim_pane) //
-                self.panes.find /
-                _.focus /
-                Task /
-                UnitTask
+                self._focus_pane
             )
         )
+
+    @handle(TmuxFocus)
+    def focus(self):
+        return self._pane(self.msg.pane) // self._focus_pane
+
+    def _focus_pane(self, pane: Pane):
+        return self.panes.find(pane) / _.focus / Task / UnitTask
 
     @may_handle(TmuxClosePane)
     def close(self):

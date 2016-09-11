@@ -51,15 +51,16 @@ class PinSpec(TmuxIntegrationSpec):
 
 class FocusSpec(TmuxIntegrationSpec):
 
-    def no_focus(self):
-        check = lambda: (self._panes.head / _.active).should.contain(True)
+    def open_no_focus(self):
+        check = lambda i: (self._panes.lift(i) / _.active).should.contain(True)
         self._create_pane('pan1')
         self._open_pane('pan1')
         self._pane_count(2)
-        self._wait(.5)
-        later(check)
+        later(check, 0)
+        self.vim.cmd_sync('MyoTmuxFocus pan1')
+        later(check, 1)
 
-    def focus(self):
+    def open_focus(self):
         check = lambda: (self._panes.lift(1) / _.active).should.contain(True)
         self._create_pane('pan1', focus=True)
         self._open_pane('pan1')
