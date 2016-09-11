@@ -13,6 +13,7 @@ class Command(Named):
     transient = bool_field()
     langs = list_field()
     kill = bool_field()
+    signals = list_field(str)
 
     @property
     def desc(self):

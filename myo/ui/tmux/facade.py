@@ -380,7 +380,7 @@ class PaneFacade(Logging):
     def ensure_not_running(self, pane: Pane, kill=False, signals=List('kill')):
         def handle(pa):
             return Task.now(Right(True)) if pa.not_running else (
-                self.kill_process(pane, pa) if kill else
+                self.kill_process(pane, pa, signals=signals) if kill else
                 Task.now(Left('command already running'))
             )
         return self.find_task(pane) // handle

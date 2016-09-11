@@ -369,9 +369,11 @@ class TmuxTransitions(MyoTransitions):
         in_shell = Boolean('shell' in opt)
         pane_ident = opt.get('target') | self._default_pane_name
         kill = opt.get('kill') | command.kill
+        signals = opt.get('signals') / List.wrap | command.signals
         def check_running(path):
             return Task.now(Right(path)) if in_shell else (
-                self.panes.ensure_not_running(path.pane, kill=kill) /
+                self.panes.ensure_not_running(path.pane, kill=kill,
+                                              signals=signals) /
                 __.replace(path)
             )
         def pipe(path):

@@ -29,7 +29,7 @@ class CommandTransitions(MyoTransitions):
 
     @property
     def _cmd_list_opt(self):
-        return List('langs')
+        return List('langs', 'signals')
 
     @property
     def _cmd_bool_opt(self):
