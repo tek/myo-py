@@ -14,6 +14,7 @@ class Dispatcher(Logging, metaclass=ABCMeta):
     def can_run(self, cmd: Command) -> bool:
         ...
 
+    @abstractmethod
     def message(self, cmd: Command, options: Map) -> Message:
         ...
 
