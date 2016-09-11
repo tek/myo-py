@@ -100,19 +100,6 @@ class TmuxState(Record):
 
 class TmuxTransitions(MyoTransitions):
 
-    def _state(self, data):
-        return data.sub_state(self.name, self.machine.new_state)
-
-    @property
-    def state(self):
-        return self._state(self.data)
-
-    def _with_sub(self, data, state):
-        return data.with_sub_state(self.name, state)
-
-    def with_sub(self, state):
-        return self._with_sub(self.data, state)
-
     def _with_root(self, data, state, root):
         l = state.vim_window_lens / _.root
         new_state = l / __.set(root) | state
@@ -486,7 +473,6 @@ class TmuxTransitions(MyoTransitions):
 
 
 class Plugin(MyoComponent):
-
     Transitions = TmuxTransitions
 
     @lazy

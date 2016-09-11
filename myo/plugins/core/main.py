@@ -64,4 +64,7 @@ class CoreTransitions(MyoTransitions):
 class Plugin(MyoComponent):
     Transitions = CoreTransitions
 
+    def new_state(self):
+        pass
+
 __all__ = ('Plugin',)

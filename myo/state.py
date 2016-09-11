@@ -1,12 +1,12 @@
 from ribosome import Machine, NvimFacade, RootMachine
 from ribosome.nvim import HasNvim
-from ribosome.machine import ModularMachine, Transitions
+from ribosome.machine.state import SubMachine, SubTransitions
 
 from myo.logging import Logging
 from myo.env import Env
 
 
-class MyoComponent(ModularMachine, HasNvim, Logging):
+class MyoComponent(SubMachine, HasNvim, Logging):
 
     def __init__(self, vim: NvimFacade, parent=None, title=None) -> None:
         Machine.__init__(self, parent, title=title)
@@ -21,10 +21,10 @@ class MyoState(RootMachine, Logging):
         return 'myo'
 
 
-class MyoTransitions(Transitions, HasNvim):
+class MyoTransitions(SubTransitions, HasNvim):
 
     def __init__(self, machine, *a, **kw):
-        Transitions.__init__(self, machine, *a, **kw)
+        SubTransitions.__init__(self, machine, *a, **kw)
         HasNvim.__init__(self, machine.vim)
 
 __all__ = ('MyoComponent', 'MyoState', 'MyoTransitions')

@@ -16,6 +16,10 @@ OutputInit = message('OutputInit')
 Jump = message('Jump')
 
 
+class OMState(Record):
+    result = field(ResultAdapter)
+
+
 class OutputMachineTransitions(MyoTransitions):
 
     @property
@@ -86,5 +90,8 @@ class OutputMachine(ScratchMachine, Logging):
             '%cr%': Jump,
             'q': Quit,
         })
+
+    def new_state(self):
+        return OMState(result=self.result)
 
 __all__ = ('OutputMachine',)

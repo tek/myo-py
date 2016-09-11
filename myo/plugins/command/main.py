@@ -214,5 +214,8 @@ class CommandTransitions(MyoTransitions):
 class Plugin(MyoComponent):
     Transitions = CommandTransitions
 
+    def new_state(self):
+        pass
+
 __all__ = ('Plugin', 'AddVimCommand', 'AddCommand', 'Run', 'AddShell',
            'AddShellCommand', 'SetShellTarget')
