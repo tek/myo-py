@@ -13,7 +13,7 @@ from myo.main import Myo
 from myo.logging import Logging
 from myo.plugins.command.message import (AddVimCommand, Run, AddShellCommand,
                                          AddShell, ShellRun, RunTest,
-                                         RunVimTest, CommandShow)
+                                         RunVimTest, CommandShow, RunLatest)
 from myo.plugins.tmux.message import (TmuxCreatePane, TmuxCreateSession,
                                       TmuxCreateLayout, TmuxSpawnSession,
                                       TmuxInfo, TmuxClosePane, TmuxPack,
@@ -134,6 +134,10 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
 
     @json_msg_command(ShellRun)
     def myo_run_in_shell(self):
+        pass
+
+    @msg_command(RunLatest)
+    def myo_run_latest(self):
         pass
 
     @msg_command(TmuxInfo)

@@ -2,6 +2,7 @@ from ribosome.machine import message, json_message
 
 Run = json_message('Run', 'command')
 ShellRun = json_message('ShellRun', 'shell')
+RunLatest = message('RunLatest')
 RunTest = json_message('RunTest')
 RunVimTest = json_message('RunVimTest')
 Dispatch = json_message('Dispatch', 'command')
@@ -16,4 +17,4 @@ CommandShow = message('CommandShow')
 
 __all__ = ('Run', 'ShellRun', 'Dispatch', 'AddCommand', 'AddShellCommand',
            'AddShell', 'AddVimCommand', 'SetShellTarget', 'CommandExecuted',
-           'RunTest', 'RunVimTest', 'CommandAdded', 'CommandShow')
+           'RunTest', 'RunVimTest', 'CommandAdded', 'CommandShow', 'RunLatest')

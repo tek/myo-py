@@ -13,7 +13,7 @@ from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
                                          AddShellCommand, AddShell,
                                          AddVimCommand, SetShellTarget,
                                          CommandExecuted, RunTest, RunVimTest,
-                                         CommandAdded, CommandShow)
+                                         CommandAdded, CommandShow, RunLatest)
 from myo.plugins.command.util import assemble_vim_test_line
 
 RunInShell = namedtuple('RunInShell', ['shell'])
@@ -115,6 +115,13 @@ class CommandTransitions(MyoTransitions):
             send
         )
 
+    @handle(RunLatest)
+    def run_latest(self):
+        return (
+            self.data.commands.latest_command /
+            Dispatch
+        )
+
     @handle(Dispatch)
     def dispatch(self):
         cmd = self.msg.command
@@ -135,7 +142,7 @@ class CommandTransitions(MyoTransitions):
     def parse(self):
         cmd = (
             self.msg.options.get('command')
-            .cata(self.data.command, self.data.commands.latest_command)
+            .cata(self.data.command, lambda: self.data.commands.latest_command)
             .to_either('invalid command name or empty history')
         )
         def find_log(c):

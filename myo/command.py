@@ -99,6 +99,7 @@ class Commands(Record):
     def transient_command(self, cmd):
         return self.set(transient_cmd=Just(cmd))
 
+    @property
     def latest_command(self):
         def fetch(ident):
             return (
