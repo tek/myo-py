@@ -118,6 +118,8 @@ class CommandTransitions(MyoTransitions):
     @handle(Dispatch)
     def dispatch(self):
         cmd = self.msg.command
+        self.vim.set_pvar('last_command', dict(name=cmd.name))
+        self.vim.pautocmd('RunCommand')
         return (
             self.data.dispatch_message(cmd, self.msg.options) /
             _.pub /
