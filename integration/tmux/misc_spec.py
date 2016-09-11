@@ -39,18 +39,20 @@ class PinSpec(TmuxIntegrationSpec):
 
     def open(self):
         check = lambda: self._panes.length.should.equal(3)
+        def check2():
+            (self._panes.find(_.height == 2) / _.active).should.contain(True)
         self.json_cmd('MyoTmuxCreateLayout test', parent='root')
         self._create_pane('pan1', parent='test', pin=True)
-        self._create_pane('pan2', parent='test')
+        self._create_pane('pan2', parent='test', focus=True, fixed_size=2)
         self._open_pane('pan2')
         later(check)
+        later(check2)
 
 
 class FocusSpec(TmuxIntegrationSpec):
 
     def no_focus(self):
-        def check():
-            (self._panes.head / _.active).should.contain(True)
+        check = lambda: (self._panes.head / _.active).should.contain(True)
         self._create_pane('pan1')
         self._open_pane('pan1')
         self._pane_count(2)
@@ -58,8 +60,7 @@ class FocusSpec(TmuxIntegrationSpec):
         later(check)
 
     def focus(self):
-        def check():
-            (self._panes.lift(1) / _.active).should.contain(True)
+        check = lambda: (self._panes.lift(1) / _.active).should.contain(True)
         self._create_pane('pan1', focus=True)
         self._open_pane('pan1')
         later(check)

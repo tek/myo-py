@@ -17,7 +17,7 @@ TmuxInfo = message('TmuxInfo')
 TmuxParse = json_message('TmuxParse')
 TmuxPack = message('TmuxPack')
 TmuxPostOpen = json_message('TmuxPostOpen', 'ident')
-TmuxSetFocus = message('TmuxSetFocus', 'pane')
+TmuxFixFocus = message('TmuxFixFocus', 'pane')
 TmuxMinimize = json_message('TmuxMinimize', 'pane')
 TmuxRestore = json_message('TmuxRestore', 'pane')
 TmuxToggle = json_message('TmuxToggle', 'pane')
@@ -33,4 +33,4 @@ __all__ = ('TmuxRunCommand', 'TmuxOpenPane', 'TmuxCreatePane',
            'TmuxClosePane', 'TmuxRunCommandInShell', 'TmuxRunLineInShell',
            'TmuxRunShell', 'StartWatcher', 'WatchCommand', 'QuitWatcher',
            'TmuxParse', 'SetCommandLog', 'TmuxPack', 'TmuxPostOpen',
-           'TmuxSetFocus', 'TmuxMinimize', 'TmuxRestore', 'TmuxToggle')
+           'TmuxFixFocus', 'TmuxMinimize', 'TmuxRestore', 'TmuxToggle',

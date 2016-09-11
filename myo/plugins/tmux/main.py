@@ -22,7 +22,7 @@ from myo.plugins.tmux.message import (TmuxOpenPane, TmuxRunCommand,
                                       TmuxClosePane, TmuxRunShell,
                                       TmuxRunLineInShell, StartWatcher,
                                       WatchCommand, QuitWatcher, SetCommandLog,
-                                      TmuxPack, TmuxPostOpen, TmuxSetFocus,
+                                      TmuxPack, TmuxPostOpen, TmuxFixFocus,
                                       TmuxMinimize, TmuxRestore, TmuxToggle)
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
@@ -238,17 +238,20 @@ class TmuxTransitions(MyoTransitions):
             return (
                 self._pinned_panes(self.msg.ident) /
                 L(TmuxOpenPane)(_, Map(pinned=True))
-            ) + List(TmuxPack().at(1), TmuxSetFocus(pane))
+            ) + List(TmuxFixFocus(pane.ident), TmuxPack().at(1))
         return self._pane(self.msg.ident) / go
 
-    @handle(TmuxSetFocus)
+    @handle(TmuxFixFocus)
     def set_focus(self):
-        pane = self.msg.pane
         return (
-            pane.focus.flat_maybe_call(self.panes.find, pane) /
-            _.focus /
-            Task /
-            UnitTask
+            self._pane(self.msg.pane) // (
+                lambda a:
+                a.focus.cata(Just(a), self._vim_pane) //
+                self.panes.find /
+                _.focus /
+                Task /
+                UnitTask
+            )
         )
 
     @may_handle(TmuxClosePane)
@@ -428,6 +431,10 @@ class TmuxTransitions(MyoTransitions):
 
     def _pane(self, ident: Ident):
         return self.state.vim_window // __.root.find_pane(ident)
+
+    @property
+    def _vim_pane(self):
+        return self._pane('vim')
 
     def _pane_uuid(self, ident: Ident):
         return self._pane(ident) / _.uuid
