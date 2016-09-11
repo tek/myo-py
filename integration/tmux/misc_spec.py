@@ -6,7 +6,7 @@ from amino import _
 
 class ClosePaneSpec(DefaultLayoutSpec):
 
-    def close(self):
+    def _close(self):
         self._open_pane('make')
         self._pane_count(2)
         self.vim.cmd('MyoTmuxClosePane make')

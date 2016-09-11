@@ -16,4 +16,7 @@ class DummyTransitions(MyoTransitions):
 class Plugin(MyoComponent):
     Transitions = DummyTransitions
 
+    def new_state(self):
+        pass
+
 __all__ = ('Plugin',)
