@@ -25,6 +25,9 @@ class OutputLine(Record):
     def create(text, target):
         return OutputLine(text=text, target=target)
 
+    def __repr__(self):
+        return '{}({!r})'.format(self.__class__.__name__, self.text)
+
 
 class ErrorEntry(OutputEntry):
     error = field(str)

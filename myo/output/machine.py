@@ -4,16 +4,48 @@ from ribosome.machine import message, may_handle, Machine, handle
 from ribosome.nvim import ScratchBuffer, NvimFacade
 from ribosome.machine.scratch import ScratchMachine, Quit
 from ribosome.machine.base import UnitTask
+from ribosome.machine.state import Init
+from ribosome.record import field
 
 from amino.task import Task
-from amino import Map, _, L, Left, __
+from amino import Map, _, L, Left, __, List, Either
+from amino.lazy import lazy
 
 from myo.output.data import ParseResult, Location
 from myo.state import MyoTransitions
 from myo.logging import Logging
+from myo.record import Record
+from myo.util import parse_callback_spec
 
-OutputInit = message('OutputInit')
 Jump = message('Jump')
+DisplayLines = message('DisplayLines')
+
+
+class ResultAdapter(Logging):
+
+    def __init__(self, vim, result: ParseResult, filters: List[str]) -> None:
+        self.vim = vim
+        self.result = result
+        self.filters = filters
+
+    @property
+    def filter_callbacks(self):
+        return (
+            self.filters / parse_callback_spec / __.right_or_map(Left)
+        ).sequence(Either)
+
+    @lazy
+    def lines(self):
+        def fold(cbs):
+            return cbs.fold_left(self.result.lines)(lambda z, a: a(z))
+        return self.filter_callbacks / fold
+
+    @property
+    def display_lines(self):
+        return (self.lines.eff() / _.text).value
+
+    def target_for_line(self, line):
+        return self.lines // __.lift(line) / _.target
 
 
 class OMState(Record):
@@ -34,12 +66,16 @@ class OutputMachineTransitions(MyoTransitions):
     def result(self):
         return self.machine.result
 
-    @may_handle(OutputInit)
-    def output_init(self):
-        return UnitTask(
-            Task.call(self.buffer.set_content, self.result.display_lines) //
+    @may_handle(Init)
+    def init(self):
+        return self.with_sub(self.state), DisplayLines()
+
+    @handle(DisplayLines)
+    def display_lines(self):
+        return self.result.display_lines / (lambda a: UnitTask(
+            Task.call(self.buffer.set_content, a) //
             (lambda a: Task.call(self.buffer.set_modifiable, False))
-        )
+        ))
 
     @handle(Jump)
     def jump(self):
@@ -76,7 +112,7 @@ class OutputMachine(ScratchMachine, Logging):
     Transitions = OutputMachineTransitions
 
     def __init__(self, vim: NvimFacade, scratch: ScratchBuffer,
-                 result: ParseResult, parent: Machine) -> None:
+                 result: ResultAdapter, parent: Machine) -> None:
         super().__init__(vim, scratch, parent=parent, title='output')
         self.result = result
 

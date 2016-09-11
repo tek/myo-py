@@ -11,7 +11,7 @@ from ribosome.machine import Nop, Message
 
 from myo.logging import Logging
 from myo.output.data import ParseResult
-from myo.output.machine import OutputMachine, OutputInit
+from myo.output.machine import OutputMachine
 
 
 class OutputHandler(Logging, metaclass=abc.ABCMeta):
@@ -21,7 +21,7 @@ class OutputHandler(Logging, metaclass=abc.ABCMeta):
         ...
 
     @abc.abstractmethod
-    def display(self, result: ParseResult) -> Task[Message]:
+    def display(self, result: ParseResult) -> Task[List[Message]]:
         ...
 
 
@@ -35,13 +35,11 @@ class CustomOutputHandler(OutputHandler):
     def parse(self, output: List[str], errfile: Path):
         return Task.call(self.handler, output)
 
-    def display(self, result):
+    def display(self, result: ParseResult):
         ctor = L(OutputMachine)(self.vim, _, result, _)
         size = self.vim.pvar('scratch_size') | 10
-        return (
-            Task.now(RunScratchMachine(ctor, False, size=Just(size))) /
-            (lambda a: Just(List(a.pub, OutputInit().pub)))
-        )
+        return Task.now(
+            Just(RunScratchMachine(ctor, False, size=Just(size)).pub))
 
 
 class VimCompiler(OutputHandler):

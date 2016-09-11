@@ -50,6 +50,8 @@ class ParseSpec(MyoIntegrationSpec, ParseHelpers):
         self.root.send_sync(msg)
         self._modifiable(False)
 
+_trace_len = 3
+
 
 class PythonParseSpec(MyoIntegrationSpec):
 
@@ -79,26 +81,38 @@ class PythonParseSpec(MyoIntegrationSpec):
             tmpl.format(self._file, self._python_func_name),
             '    {}()'.format(r())
         )
-        t = List.range(3) // frame
+        t = List.range(_trace_len) // frame
         err = 'AttributeError: butt'
         return t.cat(err)
 
-    def python(self):
+    def _go(self, line_count, parse_opt=Map()):
         trace1 = self._mk_trace
         trace2 = self._mk_trace
         output = trace1 + trace2
         cmd = Command(name='a', line='a', langs=List('python'))
-        msg = ParseOutput(cmd, output, None, Map())
+        msg = ParseOutput(cmd, output, None, parse_opt)
         self.plugin.myo_start()
         self.root.send_sync(msg)
         output_machine = self.root.sub[-1]
         self.vim.buffer.content.should.contain(output[-1])
         self.vim.buffer.option('modifiable').should.contain(False)
         self.vim.window.set_cursor(4)
+        self.vim.buffer.content.should.have.length_of(line_count)
         self.root.send_sync(Mapping(output_machine.uuid, '%cr%'))
         self.vim.windows.should.have.length_of(2)
         self.vim.window.buffer.name.should.equal(str(self._file))
         self.vim.window.cursor.should.equal(List(2, 0))
+
+    def basic(self):
+        self._go(_trace_len * 4 + 5)
+
+    def filter(self):
+        filters = List('py:integration.core.parse_spec._filter1')
+        self._go(_trace_len * 2 + 3, Map(filters=filters))
+
+
+def _filter1(a):
+    return a[:1] + a[1 + _trace_len * 2 + 2:]
 
 
 class SbtParseSpec(MyoIntegrationSpec):

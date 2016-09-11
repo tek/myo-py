@@ -9,6 +9,7 @@ from myo.plugins.core.dispatch import VimDispatcher
 from myo.plugins.core.message import StageI, Initialized, ParseOutput
 from myo.output import VimCompiler, CustomOutputHandler, Parsing
 from myo.util import parse_callback_spec
+from myo.output.machine import ResultAdapter
 
 
 class CoreTransitions(MyoTransitions):
@@ -33,11 +34,14 @@ class CoreTransitions(MyoTransitions):
 
     @handle(ParseOutput)
     def parse_output(self):
-        return self._error_handler(self.msg.command).join / (
-            lambda parser:
-            RunTask(
-                parser.parse(self.msg.output, self.msg.path) // parser.display)
-        )
+        filters = self.msg.options.get('filters') | List()
+        def handle(parser):
+            def dispatch(result):
+                adapter = ResultAdapter(self.vim, result, filters)
+                return parser.display(adapter)
+            return RunTask(parser.parse(self.msg.output, self.msg.path) //
+                           dispatch)
+        return self._error_handler(self.msg.command).join / handle
 
     def _error_handler(self, cmd):
         langs = self.msg.options.get('langs') / List.wrap | cmd.langs
