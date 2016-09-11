@@ -5,6 +5,10 @@ from amino.test import later
 
 class DispatchSpec(CmdSpec):
 
+    @property
+    def _plugins(self):
+        return super()._plugins.cat('integration._support.plugins.dummy')
+
     def autocmd(self):
         name = 'test'
         self.vim.autocmd('User', 'MyoRunCommand',
