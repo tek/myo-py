@@ -337,7 +337,7 @@ class PaneFacade(Logging):
     def run_command_line(self, pane: Pane, line: str):
         return (
             self.find_task(pane) /
-            __.send_keys(line, suppress_history=False)
+            __.run_command(line)
         )
 
     def command_pid(self, pane: Pane):

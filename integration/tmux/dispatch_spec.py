@@ -2,6 +2,7 @@ from integration._support.tmux import TmuxCmdSpec
 
 from psutil import Process
 from amino.test import later
+from amino import __, _
 
 _test_line = 'this is a test'
 
@@ -78,5 +79,20 @@ class DispatchSpec(TmuxCmdSpec):
         self._create_pane('py', parent='main')
         self.json_cmd('MyoShell py', line='python', target='py', start=True)
         self._pane_count(2)
+
+    def quit_copy_mode(self):
+        def copy_mode(v):
+            later(lambda: (self._panes.last / _.in_copy_mode)
+                  .should.contain(v))
+        target = 'cmd test'
+        self.json_cmd('MyoShellCommand test', line="echo '{}'".format(target))
+        self._create_pane('make')
+        self._open_pane('make')
+        later(lambda: self._pane_count(2))
+        self._panes.last / __.cmd('copy-mode')
+        copy_mode(True)
+        self.json_cmd('MyoRun test')
+        copy_mode(False)
+        self._output_contains(target)
 
 __all__ = ('DispatchSpec',)

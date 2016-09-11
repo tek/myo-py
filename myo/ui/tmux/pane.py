@@ -122,6 +122,9 @@ class PaneAdapter(Adapter, PaneI):
             self.log.error(List.wrap(c.stderr).join_lines)
         return c.stdout
 
+    def cmd_async(self, *a):
+        self.native.cmd(*a)
+
     @lazy
     def id(self):
         return self.native._pane_id
@@ -236,5 +239,17 @@ class PaneAdapter(Adapter, PaneI):
 
     def focus(self):
         self.native.select_pane()
+
+    def run_command(self, line):
+        self.quit_copy_mode()
+        self.send_keys(line, suppress_history=False)
+
+    @property
+    def in_copy_mode(self):
+        return self.native.in_mode == '1'
+
+    def quit_copy_mode(self):
+        if self.in_copy_mode:
+            self.send_keys('C-c')
 
 __all__ = ('Pane', 'VimPane', 'PaneAdapter')
