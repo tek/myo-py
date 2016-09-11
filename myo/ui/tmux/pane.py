@@ -225,7 +225,7 @@ class PaneAdapter(Adapter, PaneI):
         self.cmd('move-pane', '-s', other.id)
 
     def swap(self, other: 'PaneAdapter'):
-        self.cmd('swap-pane', '-s', other.id)
+        self.cmd('swap-pane', '-d', '-s', other.id)
 
     def __eq__(self, other):
         return isinstance(other, PaneAdapter) and self.id == other.id
