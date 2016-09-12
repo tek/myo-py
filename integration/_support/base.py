@@ -27,7 +27,7 @@ class MyoPluginIntegrationSpec(IntegrationCommon, PluginIntegrationSpec, Spec,
     def _pre_start(self):
         super()._pre_start()
         self.vim.cmd_sync('MyoStart')
-        self._wait_for(lambda: self.vim.pvar('started').is_just)
+        self._wait_for(lambda: self.vim.vars.p('started').is_just)
         self.vim.cmd('MyoPostStartup')
 
     @property
@@ -39,8 +39,8 @@ class MyoPluginIntegrationSpec(IntegrationCommon, PluginIntegrationSpec, Spec,
         self._set_vars()
 
     def _set_vars(self):
-        self.vim.set_pvar('config_path', str(self._config_path))
-        self.vim.set_pvar('plugins', self._plugins)
+        self.vim.vars.set_p('config_path', str(self._config_path))
+        self.vim.vars.set_p('plugins', self._plugins)
 
     @property
     def _plugins(self):

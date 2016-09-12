@@ -83,7 +83,7 @@ class DefaultLayoutDistributeSizeSpec(DefaultLayoutSpec):
     def _set_vars(self):
         super()._set_vars()
         self.vim_width = 10
-        self.vim.set_pvar('tmux_vim_width', self.vim_width)
+        self.vim.vars.set_p('tmux_vim_width', self.vim_width)
 
     def distribute(self):
         def check():

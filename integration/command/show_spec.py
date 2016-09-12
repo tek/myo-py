@@ -8,7 +8,7 @@ class ShowSpec(CmdSpec):
 
     def _set_vars(self):
         super()._set_vars()
-        self.vim.set_pvar('tmux_use_defaults', False)
+        self.vim.vars.set_p('tmux_use_defaults', False)
 
     def output(self):
         langs = List('python', 'nvim')

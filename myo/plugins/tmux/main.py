@@ -142,20 +142,20 @@ class TmuxTransitions(MyoTransitions):
         vim_pid = self._vim_pid
         vim_pane = vim_pid // self._find_vim_pane
         id = (
-            (self.vim.pvar('tmux_force_vim_pane_id') // parse_int)
+            (self.vim.vars.p('tmux_force_vim_pane_id') // parse_int)
             .or_else(vim_pane // _.id_i)
         )
         wid = (
-            self.vim.pvar('tmux_force_vim_win_id')
+            self.vim.vars.p('tmux_force_vim_win_id')
             .or_else(vim_pane // _.window_id_i)
             .to_either('no vim win id')
         )
         sid = (
-            self.vim.pvar('tmux_force_vim_session_id')
+            self.vim.vars.p('tmux_force_vim_session_id')
             .or_else(vim_pane // _.session_id_i)
             .to_either('no vim session id')
         )
-        vim_w = self.vim.pvar('tmux_vim_width').or_else(Just(85))
+        vim_w = self.vim.vars.p('tmux_vim_width').or_else(Just(85))
         pane = VimPane(id=id.to_maybe, name='vim', pid=vim_pid.to_maybe,
                        window_id=wid, session_id=sid)
         vim_layout = VimLayout(name='vim',
@@ -477,7 +477,7 @@ class Plugin(MyoComponent):
 
     @lazy
     def native_server(self):
-        socket = self.vim.pvar('tmux_socket') | None
+        socket = self.vim.vars.p('tmux_socket') | None
         return libtmux.Server(socket_name=socket)
 
     @property
@@ -497,7 +497,7 @@ class Plugin(MyoComponent):
 
     @lazy
     def watcher(self):
-        interval = self.vim.pvar('tmux_watcher_interval') | 1.0
+        interval = self.vim.vars.p('tmux_watcher_interval') | 1.0
         return Watcher(self, interval=interval)
 
 __all__ = ('Plugin',)

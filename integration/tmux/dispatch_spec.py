@@ -56,14 +56,14 @@ class DispatchSpec(TmuxCmdSpec):
         later(lambda: pid().should.equal(-1))
 
     def pvar_test_target(self):
-        self.vim.buffer.set_pvar('test_target', 'test')
+        self.vim.buffer.vars.set_p('test_target', 'test')
         self._create_pane('test', parent='main')
         self.json_cmd_sync('MyoTest',
                            ctor='py:integration.tmux.dispatch_spec._test_ctor')
         self._pane_count(3)
 
     def pvar_test_shell(self):
-        self.vim.buffer.set_pvar('test_shell', 'py')
+        self.vim.buffer.vars.set_p('test_shell', 'py')
         ctor = 'py:integration.tmux.dispatch_spec._test_shell_ctor'
         self._create_shell()
         self.json_cmd_sync('MyoTest', ctor=ctor)

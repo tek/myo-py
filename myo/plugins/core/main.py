@@ -20,7 +20,7 @@ class CoreTransitions(MyoTransitions):
 
     @may_handle(Initialized)
     def initialized(self):
-        started = io(__.set_pvar('started', True))
+        started = io(__.vars.set_p('started', True))
         return (self.data.set(initialized=True) + VimDispatcher(self.vim),
                 started)
 

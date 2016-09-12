@@ -4,7 +4,7 @@ from amino import _, L, List, Right, Left
 
 
 def vimtest_position(vim: NvimFacade):
-    fn_mod = vim.var('g:test#filename_modifier') | ':.'
+    fn_mod = vim.vars('g:test#filename_modifier') | ':.'
     line, col = vim.window.cursor
     return vim.call('expand', '%{}'.format(fn_mod)) / (
         lambda f: dict(file=f, line=line, col=col)

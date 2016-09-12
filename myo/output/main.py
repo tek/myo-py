@@ -37,7 +37,7 @@ class CustomOutputHandler(OutputHandler):
 
     def display(self, result: ParseResult):
         ctor = L(OutputMachine)(self.vim, _, result, _)
-        size = self.vim.pvar('scratch_size') | 10
+        size = self.vim.vars.p('scratch_size') | 10
         return Task.now(
             Just(RunScratchMachine(ctor, False, size=Just(size)).pub))
 

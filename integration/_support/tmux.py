@@ -14,11 +14,11 @@ class TmuxIntegrationSpec(MyoPluginIntegrationSpec, TmuxSpecBase):
 
     def _post_start_neovim(self):
         super()._post_start_neovim()
-        self.vim.set_pvar('tmux_socket', self.socket)
+        self.vim.vars.set_p('tmux_socket', self.socket)
         id = self.session.windows[0].panes[0].id_i | -1
         wid = self.session.windows[0].id_i | -1
-        self.vim.set_pvar('tmux_force_vim_pane_id', id)
-        self.vim.set_pvar('tmux_force_vim_win_id', wid)
+        self.vim.vars.set_p('tmux_force_vim_pane_id', id)
+        self.vim.vars.set_p('tmux_force_vim_win_id', wid)
 
     def teardown(self):
         super().teardown()
@@ -44,15 +44,15 @@ class DefaultLayoutSpec(TmuxIntegrationSpec):
 
     def _set_vars(self):
         super()._set_vars()
-        self.vim.set_pvar('tmux_use_defaults', True)
+        self.vim.vars.set_p('tmux_use_defaults', True)
 
 
 class TmuxCmdSpec(TmuxIntegrationSpec, CmdSpec):
 
     def _set_vars(self):
         super()._set_vars()
-        self.vim.set_pvar('tmux_use_defaults', True)
-        self.vim.set_pvar('tmux_vim_width', 10)
-        self.vim.set_pvar('tmux_watcher_interval', 0.1)
+        self.vim.vars.set_p('tmux_use_defaults', True)
+        self.vim.vars.set_p('tmux_vim_width', 10)
+        self.vim.vars.set_p('tmux_watcher_interval', 0.1)
 
 __all__ = ('TmuxIntegrationSpec', 'DefaultLayoutSpec', 'TmuxCmdSpec')

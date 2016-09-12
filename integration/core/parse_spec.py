@@ -15,7 +15,7 @@ from myo.plugins.core.message import ParseOutput
 class ParseHelpers:
 
     def _modifiable(self, val):
-        self.vim.buffer.option('modifiable').should.contain(val)
+        self.vim.buffer.options('modifiable').should.contain(val)
 
 
 class ParseSpec(MyoIntegrationSpec, ParseHelpers):
@@ -30,7 +30,7 @@ class ParseSpec(MyoIntegrationSpec, ParseHelpers):
             '%C  %.%#',
             '%+Z%.%#Error: %.%#'
         ).mk_string(',')
-        self.vim.buffer.set_option('errorformat', errorformat)
+        self.vim.buffer.options.set('errorformat', errorformat)
         msg = ParseOutput(cmd, output, fix, Map())
         self.plugin.myo_start()
         self.root.send(msg)
@@ -95,7 +95,7 @@ class PythonParseSpec(MyoIntegrationSpec):
         self.root.send_sync(msg)
         output_machine = self.root.sub[-1]
         self.vim.buffer.content.should.contain(output[-1])
-        self.vim.buffer.option('modifiable').should.contain(False)
+        self.vim.buffer.options('modifiable').should.contain(False)
         self.vim.window.set_cursor(4)
         self.vim.buffer.content.should.have.length_of(line_count)
         self.root.send_sync(Mapping(output_machine.uuid, '%cr%'))
@@ -107,6 +107,7 @@ class PythonParseSpec(MyoIntegrationSpec):
         self._go(_trace_len * 4 + 5)
 
     def filter(self):
+        # raise 1
         filters = List('py:integration.core.parse_spec._filter1')
         self._go(_trace_len * 2 + 3, Map(filters=filters))
 
@@ -158,7 +159,7 @@ class SbtParseSpec(MyoIntegrationSpec):
         self.root.send_sync(msg)
         output_machine = self.root.sub[-1]
         self.vim.buffer.content.should.contain(output[-1])
-        self.vim.buffer.option('modifiable').should.contain(False)
+        self.vim.buffer.options('modifiable').should.contain(False)
         self.vim.window.set_cursor(4)
         self.root.send_sync(Mapping(output_machine.uuid, '%cr%'))
         self.vim.windows.should.have.length_of(2)

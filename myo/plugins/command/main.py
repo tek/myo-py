@@ -132,7 +132,7 @@ class CommandTransitions(MyoTransitions):
     @handle(Dispatch)
     def dispatch(self):
         cmd = self.msg.command
-        self.vim.set_pvar('last_command', dict(name=cmd.name))
+        self.vim.vars.set_p('last_command', dict(name=cmd.name))
         self.vim.pautocmd('RunCommand')
         return (
             self.data.dispatch_message(cmd, self.msg.options) /
@@ -195,7 +195,8 @@ class CommandTransitions(MyoTransitions):
 
     @curried
     def _run_test_line(self, options, line):
-        langs = options.get('langs') | List()
+        glangs = self.vim.buffer.vars.pl('test_langs')
+        langs = options.get('langs').or_else(glangs) | List()
         shell = self.vim.buffer.pvar_or_global('test_shell')
         target = self.vim.buffer.pvar_or_global('test_target')
         opt = amend_options(options, 'shell', shell)
