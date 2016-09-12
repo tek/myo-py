@@ -116,5 +116,24 @@ class MinimizeSpec(TmuxIntegrationSpec):
         self.json_cmd_sync('MyoTmuxRestore pan1')
         check(10)
 
+    def open_or_toggle(self):
+        fix = 10
+        mini = 5
+        cmd = lambda: self.json_cmd_sync('MyoTmuxOpenOrToggle pan')
+        def height(h):
+            later(lambda: (self._pane_with_id(2) / _.height).should.contain(h))
+        self.json_cmd_sync('MyoTmuxCreateLayout test', parent='root')
+        self._create_pane('pan', fixed_size=fix, minimized_size=mini,
+                          parent='test')
+        self._create_pane('pan2', parent='test', weight=1)
+        self._open_pane('pan2')
+        cmd()
+        self._pane_count(3)
+        height(fix)
+        cmd()
+        height(mini)
+        cmd()
+        height(fix)
+
 __all__ = ('CutSizeSpec', 'DistributeSizeSpec',
            'DefaultLayoutDistributeSizeSpec')

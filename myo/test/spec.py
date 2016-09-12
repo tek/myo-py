@@ -5,7 +5,7 @@ from libtmux.exc import LibTmuxException
 
 import amino.test
 from amino.test.path import fixture_path
-from amino import List, _
+from amino import List, _, __
 from amino.test import later
 from amino.lazy import lazy
 
@@ -90,6 +90,9 @@ class TmuxSpecBase(Spec):
     @property
     def _panes(self):
         return self._window / _.panes | List()
+
+    def _pane_with_id(self, id):
+        return self._panes.find(__.id_i.contains(id))
 
     @property
     def _sizes(self):

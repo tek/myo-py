@@ -24,7 +24,7 @@ from myo.plugins.tmux.message import (TmuxOpenPane, TmuxRunCommand,
                                       WatchCommand, QuitWatcher, SetCommandLog,
                                       TmuxPack, TmuxPostOpen, TmuxFixFocus,
                                       TmuxMinimize, TmuxRestore, TmuxToggle,
-                                      TmuxFocus)
+                                      TmuxFocus, TmuxOpenOrToggle)
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
@@ -328,6 +328,15 @@ class TmuxTransitions(MyoTransitions):
     @may_handle(TmuxToggle)
     def toggle(self):
         return self._minimize(lambda a: a.set(minimized=not a.minimized))
+
+    @handle(TmuxOpenOrToggle)
+    def open_or_toggle(self):
+        name = self.msg.pane
+        return (
+            self._pane(name) /
+            self.panes.is_open /
+            __.cata(TmuxToggle(name), TmuxOpenPane(name))
+        )
 
     def _minimize(self, f):
         return self._pane_mod(self.msg.pane, f), TmuxPack().at(1)
