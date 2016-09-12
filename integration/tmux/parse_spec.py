@@ -50,12 +50,13 @@ class VimTestSpec(TmuxCmdSpec):
         def check1():
             self._output.exists(lambda a: target in a).should.be.true
         self.vim.cmd_sync('noswapfile edit {}'.format(fname))
+        self.vim.buffer.vars.set_p('test_langs', ['python'])
         self.vim.cursor(5, 1)
         self.json_cmd('MyoVimTest')
         later(check1)
         target2 = 'RuntimeError: supernova'
         check2 = lambda: self.vim.buffer.content.last.should.contain(target2)
-        self.json_cmd_sync('MyoParse', langs=['python'])
+        self.json_cmd_sync('MyoParse')
         later(check2)
         self.vim.cursor(6, 1)
         self.vim.cmd_sync('call feedkeys("\\<cr>")')
