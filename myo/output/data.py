@@ -90,6 +90,7 @@ class MultiEvent(OutputEvent):
 class ParseResult(Record):
     head = field(str)
     events = list_field(OutputEvent)
+    langs = list_field(str)
 
     @lazy
     def lines(self):

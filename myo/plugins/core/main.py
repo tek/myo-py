@@ -34,11 +34,12 @@ class CoreTransitions(MyoTransitions):
 
     @handle(ParseOutput)
     def parse_output(self):
-        filters = self.msg.options.get('filters') | List()
+        opt = self.msg.options
+        filters = opt.get('filters') | List()
         def handle(parser):
             def dispatch(result):
                 adapter = ResultAdapter(self.vim, result, filters)
-                return parser.display(adapter)
+                return parser.display(adapter, opt)
             return RunTask(parser.parse(self.msg.output, self.msg.path) //
                            dispatch)
         return self._error_handler(self.msg.command).join / handle

@@ -1,7 +1,7 @@
 import abc
 from typing import Callable
 
-from amino import List, Path, Either, __, L, _, Just
+from amino import List, Path, Either, __, L, _, Just, Maybe, Map
 from amino.task import Task
 from amino.lazy import lazy
 
@@ -21,7 +21,8 @@ class OutputHandler(Logging, metaclass=abc.ABCMeta):
         ...
 
     @abc.abstractmethod
-    def display(self, result: ParseResult) -> Task[List[Message]]:
+    def display(self, result: ParseResult, jump: Maybe[Callable]
+                ) -> Task[List[Message]]:
         ...
 
 
@@ -35,8 +36,8 @@ class CustomOutputHandler(OutputHandler):
     def parse(self, output: List[str], errfile: Path):
         return Task.call(self.handler, output)
 
-    def display(self, result: ParseResult):
-        ctor = L(OutputMachine)(self.vim, _, result, _)
+    def display(self, result: ParseResult, options: Map[str, str]):
+        ctor = L(OutputMachine)(self.vim, _, result, _, options)
         size = self.vim.vars.p('scratch_size') | 10
         return Task.now(
             Just(RunScratchMachine(ctor, False, size=Just(size)).pub))
@@ -52,7 +53,7 @@ class VimCompiler(OutputHandler):
         return (Task.call(self.vim.cmd_sync, 'cgetfile {}'.format(errfile))
                 .replace(r))
 
-    def display(self, result):
+    def display(self, result, jump):
         copen = Task.call(self.vim.cmd_sync, 'copen')
         cfirst = Task.call(self.vim.cmd_sync, 'cfirst')
         return (copen + cfirst).replace(Just(Nop()))
@@ -74,6 +75,7 @@ class Parsing(CustomOutputHandler):
 
     def parse(self, output: List[str], errfile: Path):
         events = self.parsers // __.events(output)
-        return Task.now(ParseResult(head='parsed', events=events))
+        return Task.now(ParseResult(head='parsed', events=events,
+                                    langs=self.langs))
 
 __all__ = ('CustomOutputHandler', 'VimCompiler', 'Parsing')

@@ -1,6 +1,6 @@
 from operator import add
 
-from ribosome.machine import message, may_handle, Machine, handle
+from ribosome.machine import message, may_handle, Machine, handle, Nop
 from ribosome.nvim import ScratchBuffer, NvimFacade
 from ribosome.machine.scratch import ScratchMachine, Quit
 from ribosome.machine.base import UnitTask
@@ -8,7 +8,7 @@ from ribosome.machine.state import Init
 from ribosome.record import field
 
 from amino.task import Task
-from amino import Map, _, L, Left, __, List, Either
+from amino import Map, _, L, Left, __, List, Either, Just
 from amino.lazy import lazy
 
 from myo.output.data import ParseResult, Location
@@ -18,6 +18,7 @@ from myo.record import Record
 from myo.util import parse_callback_spec
 
 Jump = message('Jump')
+FirstError = message('FirstError')
 DisplayLines = message('DisplayLines')
 
 
@@ -47,6 +48,10 @@ class ResultAdapter(Logging):
     def target_for_line(self, line):
         return self.lines // __.lift(line) / _.target
 
+    @property
+    def langs(self):
+        return self.result.langs
+
 
 class OMState(Record):
     result = field(ResultAdapter)
@@ -66,16 +71,52 @@ class OutputMachineTransitions(MyoTransitions):
     def result(self):
         return self.machine.result
 
+    @property
+    def _special_jumps(self):
+        return Map(default=self._jump_default, first=self._jump_first,
+                   last=self._jump_last)
+
+    @property
+    def _lang_jumps(self):
+        return Map(python=self._jump_last)
+
     @may_handle(Init)
     def init(self):
         return self.with_sub(self.state), DisplayLines()
 
     @handle(DisplayLines)
     def display_lines(self):
-        return self.result.display_lines / (lambda a: UnitTask(
-            Task.call(self.buffer.set_content, a) //
-            (lambda a: Task.call(self.buffer.set_modifiable, False))
-        ))
+        def run(lines):
+            return (
+                Task.call(self.buffer.set_content, lines) &
+                Task.call(self.buffer.set_modifiable, False)
+            ).replace(Just(FirstError()))
+        return self.result.display_lines / run
+
+    @handle(FirstError)
+    def first_error(self):
+        spec = (
+            self.machine.options.get('first_error')
+            .o(self.vim.vars.pl('first_error')) |
+            List()
+        ).cat('default')
+        special, custom_spec = spec.split(self._special_jumps.contains)
+        special_cb = special // self._special_jumps.get
+        jump = self.vim.vars.pb('jump_to_error') | True
+        next_step = Jump() if jump else Nop()
+        return (
+            (
+                custom_spec /
+                parse_callback_spec /
+                _.ljoin
+            ).sequence(Either) // (
+                __
+                .add(special_cb)
+                .find_map(__(self.result))
+                .map2(L(Task.call)(self.vim.window.set_cursor, _, _))
+                .map(__.replace(Just(next_step)))
+            )
+        )
 
     @handle(Jump)
     def jump(self):
@@ -90,6 +131,29 @@ class OutputMachineTransitions(MyoTransitions):
             .map2(lambda a, b: Task(lambda: self.vim.window.set_cursor(a, b)))
         )
         return (open_file & set_line).map2(add) / UnitTask
+
+    @property
+    def _jump_default(self):
+        return (self.result.langs.find_map(self._lang_jumps.get) |
+                self._jump_first)
+
+    def _position_index(self, lines):
+        return (
+            lines
+            .index_where(lambda a: isinstance(a.target, Location))
+            .map(lambda a: (a + 1, 1))
+        )
+
+    def _jump_first(self, result):
+        return (self.result.lines // self._position_index)
+
+    def _jump_last(self, result):
+        def run(lines):
+            return (
+                self._position_index(lines)
+                .map2(lambda l, c: (lines.length - l, c))
+            )
+        return self.result.lines / _.reversed // run
 
     def _open_file(self, path):
         def split():
@@ -112,9 +176,10 @@ class OutputMachine(ScratchMachine, Logging):
     Transitions = OutputMachineTransitions
 
     def __init__(self, vim: NvimFacade, scratch: ScratchBuffer,
-                 result: ResultAdapter, parent: Machine) -> None:
+                 result: ResultAdapter, parent: Machine, options: Map) -> None:
         super().__init__(vim, scratch, parent=parent, title='output')
         self.result = result
+        self.options = options
 
     @property
     def prefix(self):

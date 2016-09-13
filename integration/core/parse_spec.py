@@ -51,9 +51,14 @@ class ParseSpec(MyoIntegrationSpec, ParseHelpers):
         self._modifiable(False)
 
 _trace_len = 3
+_line_count = _trace_len * 4 + 5
 
 
 class PythonParseSpec(MyoIntegrationSpec):
+
+    def _pre_start(self):
+        super()._pre_start()
+        self.vim.vars.set_p('jump_to_error', False)
 
     @lazy
     def _file(self):
@@ -85,7 +90,7 @@ class PythonParseSpec(MyoIntegrationSpec):
         err = 'AttributeError: butt'
         return t.cat(err)
 
-    def _go(self, line_count, parse_opt=Map()):
+    def _init(self, parse_opt=Map()):
         trace1 = self._mk_trace
         trace2 = self._mk_trace
         output = trace1 + trace2
@@ -93,27 +98,55 @@ class PythonParseSpec(MyoIntegrationSpec):
         msg = ParseOutput(cmd, output, None, parse_opt)
         self.plugin.myo_start()
         self.root.send_sync(msg)
-        output_machine = self.root.sub[-1]
+        return output
+
+    def _go(self, line_count=_line_count, parse_opt=Map()):
+        output = self._init(parse_opt)
         self.vim.buffer.content.should.contain(output[-1])
         self.vim.buffer.options('modifiable').should.contain(False)
-        self.vim.window.set_cursor(4)
         self.vim.buffer.content.should.have.length_of(line_count)
-        self.root.send_sync(Mapping(output_machine.uuid, '%cr%'))
-        self.vim.windows.should.have.length_of(2)
+
+    def _check_jumped(self):
         self.vim.window.buffer.name.should.equal(str(self._file))
         self.vim.window.cursor.should.equal(List(2, 0))
 
-    def basic(self):
-        self._go(_trace_len * 4 + 5)
+    def jump(self):
+        self._go()
+        output_machine = self.root.sub[-1]
+        self.vim.window.set_cursor(4)
+        self.root.send_sync(Mapping(output_machine.uuid, '%cr%'))
+        self.vim.windows.should.have.length_of(2)
+        self._check_jumped()
 
     def filter(self):
-        # raise 1
         filters = List('py:integration.core.parse_spec._filter1')
         self._go(_trace_len * 2 + 3, Map(filters=filters))
+
+    def initial_pos(self):
+        self.vim.vars.set_p('first_error',
+                            ['py:integration.core.parse_spec._first_error'])
+        self._go()
+        self.vim.window.line.should.contain(_line_count - 1)
+
+    def initial_pos_with_jump(self):
+        self.vim.vars.set_p('jump_to_error', True)
+        self.vim.vars.set_p('first_error',
+                            ['py:integration.core.parse_spec._first_error'])
+        self._init()
+        self._check_jumped()
+
+    def default_jump(self):
+        self.vim.vars.set_p('jump_to_error', True)
+        self._init()
+        self._check_jumped()
 
 
 def _filter1(a):
     return a[:1] + a[1 + _trace_len * 2 + 2:]
+
+
+def _first_error(a):
+    return Just((_line_count - 1, 1))
 
 
 class SbtParseSpec(MyoIntegrationSpec):
