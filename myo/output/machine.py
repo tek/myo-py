@@ -135,7 +135,7 @@ class OutputMachineTransitions(MyoTransitions):
     @property
     def _jump_default(self):
         return (self.result.langs.find_map(self._lang_jumps.get) |
-                self._jump_first)
+                (lambda: self._jump_first))
 
     def _position_index(self, lines):
         return (
