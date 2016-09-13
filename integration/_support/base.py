@@ -16,6 +16,10 @@ class IntegrationCommon:
     def plugin_class(self):
         return Right(MyoNvimPlugin)
 
+    @property
+    def _prefix(self):
+        return 'myo'
+
 
 class MyoIntegrationSpec(IntegrationCommon, ExternalIntegrationSpec):
     pass
@@ -29,10 +33,6 @@ class MyoPluginIntegrationSpec(IntegrationCommon, PluginIntegrationSpec, Spec,
         self.vim.cmd_sync('MyoStart')
         self._wait_for(lambda: self.vim.vars.p('started').is_just)
         self.vim.cmd('MyoPostStartup')
-
-    @property
-    def _prefix(self):
-        return 'myo'
 
     def _post_start_neovim(self):
         super()._post_start_neovim()
