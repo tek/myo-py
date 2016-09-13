@@ -44,6 +44,7 @@ class VimTestSpec(TmuxCmdSpec):
 
     @vimtest
     def vimtest(self):
+        self.vim.vars.set_p('jump_to_error', False)
         self.vim.vars.set('test#python#runner', 'nose')
         fname = fixture_path('tmux', 'vim_test', 'test.py')
         target = str(fname.relative_to(base_dir().parent))

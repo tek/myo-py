@@ -54,11 +54,14 @@ _trace_len = 3
 _line_count = _trace_len * 4 + 5
 
 
-class PythonParseSpec(MyoIntegrationSpec):
+class ParseSpecBase(MyoIntegrationSpec):
 
     def _pre_start(self):
         super()._pre_start()
         self.vim.vars.set_p('jump_to_error', False)
+
+
+class PythonParseSpec(ParseSpecBase):
 
     @lazy
     def _file(self):
@@ -149,7 +152,7 @@ def _first_error(a):
     return Just((_line_count - 1, 1))
 
 
-class SbtParseSpec(MyoIntegrationSpec):
+class SbtParseSpec(ParseSpecBase):
 
     @lazy
     def _scala_file(self):
