@@ -7,6 +7,7 @@ from amino import List, L, _, I
 from ribosome import command, NvimStatePlugin, msg_command, json_msg_command
 from ribosome.machine.scratch import Mapping
 from ribosome.request import msg_function
+import ribosome.nvim.components
 
 from myo.plugins.core.main import StageI
 from myo.main import Myo
@@ -182,6 +183,7 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
 
     @neovim.autocmd('VimLeave', sync=True)
     def vim_leave(self):
+        ribosome.nvim.components.shutdown = True
         self.myo_quit()
 
     @msg_function(Mapping)

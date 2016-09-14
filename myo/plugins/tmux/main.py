@@ -482,10 +482,13 @@ class TmuxTransitions(MyoTransitions):
 class Plugin(MyoComponent):
     Transitions = TmuxTransitions
 
+    @lazy
+    def socket(self):
+        return self.vim.vars.p('tmux_socket') | None
+
     @property
     def native_server(self):
-        socket = self.vim.vars.p('tmux_socket') | None
-        return NativeServer(socket_name=socket)
+        return NativeServer(socket_name=self.socket)
 
     @property
     def server(self):
