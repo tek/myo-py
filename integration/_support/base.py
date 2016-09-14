@@ -7,14 +7,15 @@ from ribosome.test.integration import ExternalIntegrationSpec
 
 from myo.test.spec import Spec
 from myo.logging import Logging
-from myo.nvim_plugin import MyoNvimPlugin
+
+from integration._support.plugin import MyoSpecPlugin
 
 
 class IntegrationCommon:
 
     @property
     def plugin_class(self):
-        return Right(MyoNvimPlugin)
+        return Right(MyoSpecPlugin)
 
     @property
     def _prefix(self):
