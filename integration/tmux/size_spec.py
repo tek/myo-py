@@ -96,11 +96,12 @@ class DefaultLayoutDistributeSizeSpec(DefaultLayoutSpec):
 
 class MinimizeSpec(TmuxIntegrationSpec):
 
+    def _check(self, size):
+        later(lambda: self._panes.find(__.id_i.contains(1))
+              .map(_.height)
+              .should.contain(size))
+
     def minimize(self):
-        def check(size):
-            later(lambda: self._panes.find(__.id_i.contains(1))
-                  .map(_.height)
-                  .should.contain(size))
         self.json_cmd('MyoTmuxCreateLayout test', parent='root')
         self._create_pane('pan1', minimized_size=5, fixed_size=10,
                           parent='test')
@@ -110,11 +111,21 @@ class MinimizeSpec(TmuxIntegrationSpec):
         self._open_pane('pan2')
         self._open_pane('pan3')
         self._pane_count(4)
-        check(10)
+        self._check(10)
         self.json_cmd_sync('MyoTmuxMinimize pan1')
-        check(5)
+        self._check(5)
         self.json_cmd_sync('MyoTmuxRestore pan1')
-        check(10)
+        self._check(10)
+
+    def minimize_default(self):
+        self.json_cmd('MyoTmuxCreateLayout test', parent='root')
+        self._create_pane('pan1', parent='test')
+        self._create_pane('pan2', parent='test')
+        self._open_pane('pan1')
+        self._open_pane('pan2')
+        self._pane_count(3)
+        self.json_cmd_sync('MyoTmuxMinimize pan1')
+        self._check(2)
 
     def open_or_toggle(self):
         fix = 10

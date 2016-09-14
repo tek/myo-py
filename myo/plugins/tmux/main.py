@@ -1,7 +1,5 @@
 from typing import Callable
 
-import libtmux
-
 from lenses import lens
 
 from amino import (List, _, __, Just, Maybe, Map, Right, Empty, Either,
@@ -29,7 +27,7 @@ from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
 from myo.ui.tmux.session import Session
-from myo.ui.tmux.server import Server
+from myo.ui.tmux.server import Server, NativeServer
 from myo.util import parse_int, view_params, pane_params, pane_bool_params
 from myo.ui.tmux.window import VimWindow, Window
 from myo.ui.tmux.facade import LayoutFacade, PaneFacade
@@ -484,10 +482,10 @@ class TmuxTransitions(MyoTransitions):
 class Plugin(MyoComponent):
     Transitions = TmuxTransitions
 
-    @lazy
+    @property
     def native_server(self):
         socket = self.vim.vars.p('tmux_socket') | None
-        return libtmux.Server(socket_name=socket)
+        return NativeServer(socket_name=socket)
 
     @property
     def server(self):

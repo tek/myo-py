@@ -15,9 +15,17 @@ libtmux.formats.PANE_FORMATS += [
 ]
 
 
+class NativeServer(libtmux.Server):
+
+    def _update_panes(self):
+        if not self._panes:
+            super()._update_panes()
+        return self
+
+
 class Server(Logging):
 
-    def __init__(self, native: libtmux.Server) -> None:
+    def __init__(self, native: NativeServer) -> None:
         self.native = native
 
     @lazy
