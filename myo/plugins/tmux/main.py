@@ -35,7 +35,8 @@ from myo.ui.tmux.view import View
 from myo.plugins.core.message import AddDispatcher
 from myo.plugins.tmux.dispatch import TmuxDispatcher
 from myo.ui.tmux.util import format_state, Ident
-from myo.ui.tmux.pane_path import PanePathMod, ppm_id
+from myo.ui.tmux.view_path import (ppm_id, LayoutPathMod, PanePathMod,
+                                   ViewPathMod)
 from myo.plugins.command.message import SetShellTarget
 from myo.command import Command, Shell
 from myo.plugins.tmux.watcher import Watcher, Terminated
@@ -47,6 +48,14 @@ _is_vim_pane = lambda a: isinstance(a, VimPane)
 
 def _ident_ppm(ident: Ident):
     return PanePathMod(pred=__.has_ident(ident))
+
+
+def _ident_lpm(ident: Ident):
+    return LayoutPathMod(pred=__.has_ident(ident))
+
+
+def _ident_vpm(ident: Ident):
+    return ViewPathMod(pred=__.has_ident(ident))
 
 
 class TmuxState(Record):
@@ -158,7 +167,8 @@ class TmuxTransitions(MyoTransitions):
                        window_id=wid, session_id=sid)
         vim_layout = VimLayout(name='vim',
                                direction=LayoutDirections.vertical,
-                               panes=List(pane), fixed_size=vim_w)
+                               panes=List(pane), min_size=vim_w,
+                               weight=Just(0))
         root = Layout(name='root',
                       direction=LayoutDirections.horizontal,
                       layouts=List(vim_layout))
@@ -168,7 +178,8 @@ class TmuxTransitions(MyoTransitions):
 
     @may_handle(TmuxLoadDefaults)
     def load_defaults(self):
-        main = TmuxCreateLayout('main', options=Map(parent='root'))
+        main = TmuxCreateLayout('main',
+                                options=Map(parent='root', weight=1))
         make = TmuxCreatePane('make', options=Map(parent='main', pin=True,
                                                   position=-1))
         return main, make
@@ -224,7 +235,7 @@ class TmuxTransitions(MyoTransitions):
             return (
                 self._pinned_panes(self.msg.ident) /
                 L(TmuxOpenPane)(_, Map(pinned=True))
-            ) + List(TmuxFixFocus(pane.ident), TmuxPack().at(1))
+            ) + List(TmuxFixFocus(pane.ident), TmuxPack().pub.at(1))
         return self._pane(self.msg.ident) / go
 
     @handle(TmuxFixFocus)
@@ -280,9 +291,17 @@ class TmuxTransitions(MyoTransitions):
             L(self._run_in_shell)(_, self.msg.shell, opt)
         )
 
+    @may_handle(ViewPathMod)
+    def view_path_mod(self):
+        return self._run_vpm(self.msg)
+
     @may_handle(PanePathMod)
     def pane_path_mod(self):
-        return self._run_ppm(self.msg)
+        return self._run_vpm(self.msg)
+
+    @may_handle(LayoutPathMod)
+    def layout_path_mod(self):
+        return self._run_vpm(self.msg)
 
     @may_handle(Quit)
     def quit(self):
@@ -337,7 +356,7 @@ class TmuxTransitions(MyoTransitions):
         )
 
     def _minimize(self, f):
-        return self._pane_mod(self.msg.pane, f), TmuxPack().at(1)
+        return self._view_mod(self.msg.pane, f), TmuxPack().pub.at(1)
 
     def _window_task(self, f: Callable[[Window], Task[Either[str, Window]]]):
         return DataTask(_ // L(self._wrap_window)(_, f))
@@ -348,8 +367,8 @@ class TmuxTransitions(MyoTransitions):
         update = __.map(L(self._with_vim_window)(data, state, _))
         return win // callback / update
 
-    def _run_ppm(self, ppm):
-        return self._window_task(ppm.run)
+    def _run_vpm(self, vpm):
+        return self._window_task(vpm.run)
 
     def _open_pane_ppm(self, name: Ident):
         # cannot reference self.layouts.pack_path directly, because panes
@@ -366,29 +385,29 @@ class TmuxTransitions(MyoTransitions):
         signals = opt.get('signals') / List.wrap | command.signals
         def check_running(path):
             return Task.now(Right(path)) if in_shell else (
-                self.panes.ensure_not_running(path.pane, kill=kill,
+                self.panes.ensure_not_running(path.view, kill=kill,
                                               signals=signals) /
                 __.replace(path)
             )
         def pipe(path):
             return (
-                self.panes.pipe(path.pane, self.state.instance_id) /
-                path.setter.pane /
+                self.panes.pipe(path.view, self.state.instance_id) /
+                path.setter.view /
                 Right
             )
         def run(path):
             return (
-                self._run_command_line(command.line, path.pane, opt) /
+                self._run_command_line(command.line, path.view, opt) /
                 (lambda a: Right(path))
             )
         def pid(path):
             return (
-                self.panes.command_pid(path.pane) /
-                (lambda a: path.map_pane(__.set(pid=a))) /
+                self.panes.command_pid(path.view) /
+                (lambda a: path.map_view(__.set(pid=a))) /
                 Right
             )
         def watch(path):
-            msg = WatchCommand(command, path.pane)
+            msg = WatchCommand(command, path.view)
             return (
                 Task.call(self.machine.watcher.send, msg)
                 .replace(Right(path))
@@ -445,9 +464,15 @@ class TmuxTransitions(MyoTransitions):
         return 'make'
 
     def _pane_mod(self, ident: Ident, f: Callable[[Pane], Pane]):
+        return self._mod(_ident_ppm, ident, f)
+
+    def _view_mod(self, ident: Ident, f: Callable[[View], View]):
+        return self._mod(_ident_vpm, ident, f)
+
+    def _mod(self, ctor: Callable, ident: Ident, f: Callable[[View], View]):
         def g(path):
-            return Task.now(Right(path.map_pane(f)))
-        return _ident_ppm(ident) / g
+            return Task.now(Right(path.map_view(f)))
+        return ctor(ident) / g
 
     @property
     def _vim_pid(self):

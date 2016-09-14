@@ -20,7 +20,7 @@ from myo.ui.tmux.window import Window
 from myo.ui.tmux.layout import Layout
 from myo.ui.tmux.pane import Pane, PaneAdapter
 from myo.command import ShellCommand
-from myo.ui.tmux.pane_path import PanePath
+from myo.ui.tmux.view_path import ViewPath
 
 
 def _pos(a):
@@ -51,15 +51,15 @@ class LayoutFacade(Logging):
     def open_views(self, layout):
         return layout.views.filter(self.view_open)
 
-    def open_pane(self, path: PanePath) -> Task[Either[str, PanePath]]:
+    def open_pane(self, path: ViewPath) -> Task[Either[str, ViewPath]]:
         return (
             self._pane_opener(path).eff(Either) //
-            L(self._split_pane)(_, path.pane).map(Right) /
-            path.setter.pane
+            L(self._split_pane)(_, path.view).map(Right) /
+            path.setter.view
         ).value
 
-    def _pane_opener(self, path: PanePath) -> Task[Either[str, Layout]]:
-        pane = path.pane
+    def _pane_opener(self, path: ViewPath) -> Task[Either[str, Layout]]:
+        pane = path.view
         def find_layout():
             return (path.layouts.reversed.find(self.layout_open)
                     .to_either(
@@ -95,10 +95,10 @@ class LayoutFacade(Logging):
             .or_else(layout.layouts.find_map(self._ref_pane))
         )
 
-    def open_pane_path(self, path: PanePath) -> Task[Either[str, PanePath]]:
+    def open_pane_path(self, path: ViewPath) -> Task[Either[str, ViewPath]]:
         ''' legacy version
         '''
-        p = path.pane
+        p = path.view
         return (Task.now(Left('pane {} already open'.format(p)))
                 if self.panes.is_open(p)
                 else self._open_pane_path(path))
@@ -115,14 +115,14 @@ class LayoutFacade(Logging):
     def _open_in_layout(self, pane, layout) -> Task[Tuple[Layout, Pane]]:
         return self._split_pane(layout, pane) & (Task.now(layout))
 
-    def close_pane_path(self, path: PanePath):
-        new_path = path.map_pane(__.set(id=Empty()))
-        return self.panes.close(path.pane) / __.replace(new_path)
+    def close_pane_path(self, path: ViewPath):
+        new_path = path.map_view(__.set(id=Empty()))
+        return self.panes.close(path.view) / __.replace(new_path)
 
     def _opened_panes(self, panes):
         return panes.filter(self.panes.is_open)
 
-    def pack_path(self, path: PanePath):
+    def pack_path(self, path: ViewPath):
         return self.pack_window(path.window) / __.replace(path)
 
     def pack_window(self, window: Window) -> Task[Either[str, Window]]:

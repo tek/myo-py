@@ -12,36 +12,35 @@ from ribosome.machine.transition import Error
 
 from myo.ui.tmux.window import Window
 from myo.logging import Logging
-from myo.ui.tmux.pane import Pane
-from myo.ui.tmux.layout import Layout
 from myo.ui.tmux.view import View
+from myo.ui.tmux.layout import Layout
 
 
-class PanePath(Record):
+class ViewPath(Record):
     window = field(Window)
-    pane = field(Pane)
+    view = field(View)
     layout = field(Layout)
     outer = list_field()
 
     @staticmethod
-    def create(window, pane, layout, outer):
-        return PanePath(window=window, pane=pane, layout=layout, outer=outer)
+    def create(window, view, layout, outer):
+        return ViewPath(window=window, view=view, layout=layout, outer=outer)
 
     @staticmethod
-    def try_create(views: List[View]) -> Either[str, 'PanePath']:
-        def try_create2(pane, win, layouts):
+    def try_create(views: List[View]) -> Either[str, 'ViewPath']:
+        def try_create2(view, win, layouts):
             return (
-                layouts.detach_last.map2(F(PanePath.create, win, pane))
-                .to_either('PanePath.create: last item is not Pane')
+                layouts.detach_last.map2(F(ViewPath.create, win, view))
+                .to_either('ViewPath.create: last item is not View')
             )
-        def try_create1(pane, layouts):
+        def try_create1(view, layouts):
             return (
                 layouts.detach_head
-                .to_either('PanePath.create: last item is not Pane')
-                .flat_map2(F(try_create2, pane))
+                .to_either('ViewPath.create: last item is not View')
+                .flat_map2(F(try_create2, view))
             )
         return (
-            views.detach_last.to_either('PanePath.create: empty List[View]')
+            views.detach_last.to_either('ViewPath.create: empty List[View]')
             .flat_map2(try_create1)
         )
 
@@ -51,28 +50,28 @@ class PanePath(Record):
 
     @property
     def to_list(self):
-        return self.layouts.cat(self.pane).cons(self.window)
+        return self.layouts.cat(self.view).cons(self.window)
 
-    def map(self, fp: Callable[[Pane], Pane], fl: Callable[[Layout], Layout]):
-        return PanePath.create(
-            self.window, fp(self.pane), fl(self.layout), self.outer / fl)
+    def map(self, fp: Callable[[View], View], fl: Callable[[Layout], Layout]):
+        return ViewPath.create(
+            self.window, fp(self.view), fl(self.layout), self.outer / fl)
 
-    def map_pane(self, f: Callable[[Pane], Pane]):
+    def map_view(self, f: Callable[[View], View]):
         return self.map(f, I)
 
-PPTrans = Callable[[PanePath], Task[Either[Any, PanePath]]]
+PPTrans = Callable[[ViewPath], Task[Either[Any, ViewPath]]]
 
 
-class PanePathLens(Record):
+class ViewPathLens(Record):
     lens = field(Lens)
 
     @staticmethod
     def create(lens: Lens):
-        return PanePathLens(lens=lens)
+        return ViewPathLens(lens=lens)
 
     def run(self, win: Window, f: PPTrans) -> Task[Either[Any, Window]]:
         bound = self.lens.bind(win)
-        path = PanePath.try_create(List.wrap(bound.get()))
+        path = ViewPath.try_create(List.wrap(bound.get()))
         def update(pp):
             return bound.set(pp.to_list)
         def apply(pp):
@@ -84,14 +83,33 @@ def _initial_ppm_f(pp, window) -> Task[Either[Any, Window]]:
     return Task.now(Right(window))
 
 
-class PanePathMod(Logging, Message):
+class ViewPathMod(Logging, Message):
     pred = field(Callable)
     _f = field(Callable, initial=(lambda: _initial_ppm_f))
+
+    @property
+    def attr(self):
+        return (lambda a: self._pane_attr(a).or_else(self._layout_attr(a)))
+
+    @property
+    def _pane_attr(self):
+        return self._attr(_.panes)
+
+    @property
+    def _layout_attr(self):
+        return self._attr(_.layouts)
+
+    def _attr(self, f):
+        return (
+            f(__)
+            .find_lens_pred(self.pred)
+            .map(f(lens()).add_lens)
+        )
 
     def _chain(self, f: PPTrans, g: Callable):
         h = lambda pp: L(pp.run)(_, f)
         chain = lambda pp, win: self._f(pp, win) // g(win, h(pp))
-        return PanePathMod(pred=self.pred, _f=chain)
+        return type(self)(pred=self.pred, _f=chain)  # type: ignore
 
     def map(self, f: PPTrans) -> Task[Either[Any, Window]]:
         keep_error = F(Left) >> Task.now
@@ -108,19 +126,32 @@ class PanePathMod(Logging, Message):
         return self._lens(window) // L(self._f)(_, window)
 
     def _lens(self, window):
-        f = __.panes.find_lens_pred(self.pred).map(lens().panes.add_lens)
         sub = _.layouts
         pre = _.root
         return (
             Task.from_maybe(
-                path_lens_unbound_pre(window, sub, f, pre),
+                path_lens_unbound_pre(window, sub, self.attr, pre),
                 Error('lens path failed for {}'.format(self.pred))
             ) /
-            PanePathLens.create
+            ViewPathLens.create
         )
 
 
-def ppm_id(path: PanePathMod):
+class PanePathMod(ViewPathMod):
+
+    @property
+    def attr(self):
+        return self._pane_attr
+
+
+class LayoutPathMod(ViewPathMod):
+
+    @property
+    def attr(self):
+        return self._layout_attr
+
+
+def ppm_id(path: ViewPathMod):
     return Task.now(Right(path))
 
-__all__ = ('PanePath', 'PanePathLens', 'PanePathMod', 'ppm_id')
+__all__ = ('ViewPath', 'ViewPathLens', 'ViewPathMod', 'ppm_id')
