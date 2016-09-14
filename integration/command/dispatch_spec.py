@@ -1,14 +1,21 @@
 from integration._support.command import CmdSpec
 
 from amino.test import later
-from amino import __
+from amino import __, List
 
 
-class DispatchSpec(CmdSpec):
+class _DispatchBase(CmdSpec):
 
     @property
     def _plugins(self):
         return super()._plugins.cat('integration._support.plugins.dummy')
+
+    @property
+    def _last(self):
+        return (lambda: self.vim.vars.pd('last_command') // __.get('name'))
+
+
+class DispatchSpec(_DispatchBase):
 
     def autocmd(self):
         name = 'test'
@@ -20,13 +27,29 @@ class DispatchSpec(CmdSpec):
 
     def run_latest(self):
         name = 'test'
-        var = lambda: self.vim.vars.pd('last_command') // __.get('name')
         self.json_cmd('MyoShellCommand {}'.format(name), line='')
         self.vim.cmd_sync('MyoRun {}'.format(name))
-        later(lambda: var().should.contain(name))
+        later(lambda: self._last().should.contain(name))
         self.vim.vars.set_p('last_command', {})
-        later(lambda: var().should.be.empty)
+        later(lambda: self._last().should.be.empty)
         self.vim.cmd_sync('MyoRunLatest')
-        later(lambda: var().should.contain(name))
+        later(lambda: self._last().should.contain(name))
 
-__all__ = ('DispatchSpec',)
+
+class HistorySpec(_DispatchBase):
+
+    @property
+    def _cmd(self):
+        return 'test'
+
+    def _set_vars(self):
+        super()._set_vars()
+        history = List(self._cmd)
+        self.vim.vars.set('Myo_history', history)
+
+    def load_history(self):
+        self.json_cmd_sync('MyoShellCommand {}'.format(self._cmd), line='')
+        self.vim.cmd_sync('MyoRunLatest')
+        later(lambda: self._last().should.contain(self._cmd))
+
+__all__ = ('DispatchSpec', 'HistorySpec')

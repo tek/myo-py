@@ -14,7 +14,8 @@ from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
                                          AddShellCommand, AddShell,
                                          AddVimCommand, SetShellTarget,
                                          CommandExecuted, RunTest, RunVimTest,
-                                         CommandAdded, CommandShow, RunLatest)
+                                         CommandAdded, CommandShow, RunLatest,
+                                         LoadHistory, StoreHistory)
 from myo.plugins.command.util import assemble_vim_test_line
 
 RunInShell = namedtuple('RunInShell', ['shell'])
@@ -63,7 +64,46 @@ class CommandTransitions(MyoTransitions):
 
     @may_handle(StageI)
     def stage_i(self):
-        return AddShellCommand(name=self._test_cmd_name, options=Map(line=''))
+        line = self.vim.vars(self._last_test_line_var) | ''
+        shell = self.vim.vars(self._last_test_shell_var)
+        opt1 = Map(line=line)
+        opt = shell / (lambda a: opt1.cat(('shell', a))) | opt1
+        return (
+            AddShellCommand(name=self._test_cmd_name, options=opt),
+            LoadHistory()
+        )
+
+    @property
+    def _history_var(self):
+        return 'Myo_history'
+
+    @property
+    def _last_test_line_var(self):
+        return 'Myo_last_test_line'
+
+    @property
+    def _last_test_shell_var(self):
+        return 'Myo_last_test_shell'
+
+    @handle(LoadHistory)
+    def load_history(self):
+        return (
+            self.vim.vars(self._history_var) /
+            __.split(',') /
+            List.wrap /
+            (lambda a: self.data.commands.set(history=a)) /
+            self.data.setter.commands
+        )
+
+    @may_handle(StoreHistory)
+    def store_history(self):
+        names = (
+            self.data.commands.history /
+            self.data.command //
+            _.to_maybe /
+            _.name
+        )
+        self.vim.vars.set(self._history_var, names.mk_string(','))
 
     @handle(AddCommand)
     def add_command(self):
@@ -143,7 +183,7 @@ class CommandTransitions(MyoTransitions):
     @may_handle(CommandExecuted)
     def command_executed(self):
         new = self.data.commands.add_history(self.msg.command.uuid)
-        return self.data.set(commands=new)
+        return self.data.set(commands=new), StoreHistory()
 
     @handle(Parse)
     def parse(self):
@@ -201,6 +241,8 @@ class CommandTransitions(MyoTransitions):
         target = self.vim.buffer.pvar_or_global('test_target')
         opt = amend_options(options, 'shell', shell)
         opt2 = amend_options(opt, 'target', target)
+        self.vim.vars.set(self._last_test_line_var, line)
+        shell / L(self.vim.vars.set)('Myo_last_test_shell', _)
         def dispatch(data):
             return Right(data) & (data.command(self._test_cmd_name) /
                                   L(Dispatch)(_, opt2))

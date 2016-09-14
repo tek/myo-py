@@ -14,7 +14,10 @@ SetShellTarget = message('SetShellTarget', 'shell', 'target')
 CommandAdded = json_message('CommandAdded', 'command')
 CommandExecuted = message('CommandExecuted', 'command')
 CommandShow = message('CommandShow')
+LoadHistory = message('LoadHistory')
+StoreHistory = message('StoreHistory')
 
 __all__ = ('Run', 'ShellRun', 'Dispatch', 'AddCommand', 'AddShellCommand',
            'AddShell', 'AddVimCommand', 'SetShellTarget', 'CommandExecuted',
-           'RunTest', 'RunVimTest', 'CommandAdded', 'CommandShow', 'RunLatest')
+           'RunTest', 'RunVimTest', 'CommandAdded', 'CommandShow', 'RunLatest',
+           'LoadHistory', 'StoreHistory')

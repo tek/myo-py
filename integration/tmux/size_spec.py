@@ -93,14 +93,6 @@ class DefaultLayoutDistributeSizeSpec(DefaultLayoutSpec):
         self._open_pane('make')
         later(check)
 
-    def mini(self):
-        self._open_pane('make')
-        self._wait(1)
-        print(self._sizes)
-        self.json_cmd_sync('MyoTmuxMinimize main')
-        self._wait(1)
-        print(self._sizes)
-
 
 class MinimizeSpec(TmuxIntegrationSpec):
 

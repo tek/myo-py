@@ -162,7 +162,7 @@ class TmuxTransitions(MyoTransitions):
             .or_else(vim_pane // _.session_id_i)
             .to_either('no vim session id')
         )
-        vim_w = self.vim.vars.p('tmux_vim_width').or_else(Just(85))
+        vim_w = self.vim.vars.p('tmux_vim_width').or_else(Just(88))
         pane = VimPane(id=id.to_maybe, name='vim', pid=vim_pid.to_maybe,
                        window_id=wid, session_id=sid)
         vim_layout = VimLayout(name='vim',
