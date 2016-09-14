@@ -52,6 +52,10 @@ class ResultAdapter(Logging):
     def langs(self):
         return self.result.langs
 
+    @property
+    def events(self):
+        return self.result.events
+
 
 class OMState(Record):
     result = field(ResultAdapter)
