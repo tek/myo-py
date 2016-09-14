@@ -6,7 +6,7 @@ import os
 from amino.task import task
 
 from psutil import Process
-from amino import __, List, Boolean, Maybe, _, Map, Just
+from amino import __, List, Boolean, Maybe, _, Map, Just, Try
 from amino.lazy import lazy
 
 from ribosome.record import maybe_field, either_field, bool_field
@@ -135,7 +135,7 @@ class PaneAdapter(Adapter, PaneI):
 
     @property
     def _raw_pid(self):
-        return Just(self.native.pid)
+        return Try(lambda: self.native.pid)
 
     @task
     def resize(self, size, horizontal):
