@@ -18,13 +18,17 @@ class View(Named):
     position = maybe_field(Number)
 
     @property
+    def _minimized_size(self):
+        return self.minimized_size | 2
+
+    @property
     def effective_weight(self):
-        return (Just(0) if self.fixed_size.is_just or
-                self.minimized_size.is_just else self.weight)
+        return (Just(0) if self.fixed_size.is_just or self.minimized else
+                self.weight)
 
     @property
     def effective_fixed_size(self):
-        return self.minimized.cata(self.minimized_size, self.fixed_size)
+        return self.minimized.cata(Just(self._minimized_size), self.fixed_size)
 
     @property
     def size_desc(self):
