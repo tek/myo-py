@@ -8,7 +8,7 @@ from psutil import Process
 
 from amino.task import Task, task
 from amino.anon import L
-from amino import _, __, List, Left, F, Boolean, Right, Empty, Either, Maybe
+from amino import _, __, List, Left, F, Boolean, Right, Empty, Either, Maybe, I
 from amino.lazy import lazy
 
 from ribosome.machine.transition import Fatal, NothingToDo
@@ -52,14 +52,24 @@ class LayoutFacade(Logging):
         return layout.views.filter(self.view_open)
 
     def open_pane(self, path: ViewPath) -> Task[Either[str, ViewPath]]:
-        return (
-            self._pane_opener(path).eff(Either) //
-            L(self._split_pane)(_, path.view).map(Right) /
-            path.setter.view
-        ).value
+        v = path.view
+        is_pane = Boolean(isinstance(v, Pane))
+        def open(pane):
+            def apply(layout):
+                set = is_pane.cata(I, layout.replace_pane)
+                return (
+                    self._split_pane(layout, pane) /
+                    set /
+                    path.setter.view /
+                    Right
+                )
+            return (self._pane_opener(path, pane).eff(Either) // apply).value
+        view = (Task.now(v) if is_pane else
+                v.panes.head.task('{} has no panes'.format(v)))
+        return view // open
 
-    def _pane_opener(self, path: ViewPath) -> Task[Either[str, Layout]]:
-        pane = path.view
+    def _pane_opener(self, path: ViewPath, pane: Pane
+                     ) -> Task[Either[str, Layout]]:
         def find_layout():
             return (path.layouts.reversed.find(self.layout_open)
                     .to_either(

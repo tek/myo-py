@@ -58,6 +58,10 @@ class Layout(View):
             return l.layouts.deep_lens(g) / lens().layouts.add_lens
         return h(root) / lens(root).add_lens
 
+    def replace_pane(self, pane: Pane):
+        panes = self.panes.replace_where(pane)(__.has_ident(pane.ident))
+        return self.set(panes=panes)
+
     @lazy
     def views(self):
         return self.panes + self.layouts

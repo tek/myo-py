@@ -1,7 +1,7 @@
 from integration._support.command import CmdSpec
 
 from amino.test import later
-from amino import __, List
+from amino import __
 
 
 class _DispatchBase(CmdSpec):
@@ -44,7 +44,7 @@ class HistorySpec(_DispatchBase):
 
     def _set_vars(self):
         super()._set_vars()
-        history = List(self._cmd)
+        history = self._cmd
         self.vim.vars.set('Myo_history', history)
 
     def load_history(self):

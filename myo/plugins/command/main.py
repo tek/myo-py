@@ -88,7 +88,7 @@ class CommandTransitions(MyoTransitions):
     @handle(LoadHistory)
     def load_history(self):
         return (
-            self.vim.vars(self._history_var) /
+            self.vim.vars.s(self._history_var) /
             __.split(',') /
             List.wrap /
             (lambda a: self.data.commands.set(history=a)) /

@@ -373,7 +373,7 @@ class TmuxTransitions(MyoTransitions):
     def _open_pane_ppm(self, name: Ident):
         # cannot reference self.layouts.pack_path directly, because panes
         # are cached
-        return _ident_ppm(name) / self._open_pane
+        return _ident_vpm(name) / self._open_pane
 
     def _close_pane_ppm(self, name: Ident):
         return _ident_ppm(name) / self._close_pane / self._pack_path
@@ -423,8 +423,8 @@ class TmuxTransitions(MyoTransitions):
             SetCommandLog(command.uuid, pane_ident))
         return set_log.to_list.cons(runner).cat(TmuxPostOpen(pane_ident, opt))
 
-    def _open_pane(self, w):
-        return self.layouts.open_pane(w)
+    def _open_pane(self, path):
+        return self.layouts.open_pane(path)
 
     def _close_pane(self, w):
         return self.layouts.close_pane_path(w)
