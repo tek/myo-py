@@ -20,7 +20,7 @@ from myo.plugins.tmux.message import (TmuxCreatePane, TmuxCreateSession,
                                       TmuxInfo, TmuxClosePane, TmuxPack,
                                       TmuxMinimize, TmuxRestore, TmuxToggle,
                                       TmuxFocus, TmuxOpenOrToggle)
-from myo.plugins.tmux import TmuxOpenPane
+from myo.plugins.tmux import TmuxOpen
 from myo.plugins.core.message import Parse
 
 
@@ -101,8 +101,8 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
     def myo_tmux_create_pane(self):
         pass
 
-    @json_msg_command(TmuxOpenPane)
-    def myo_tmux_open_pane(self):
+    @json_msg_command(TmuxOpen)
+    def myo_tmux_open(self):
         pass
 
     @msg_command(TmuxClosePane)

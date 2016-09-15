@@ -13,7 +13,7 @@ from ribosome.record import field, list_field, Record
 from ribosome.machine.base import UnitTask, DataTask
 
 from myo.state import MyoComponent, MyoTransitions
-from myo.plugins.tmux.message import (TmuxOpenPane, TmuxRunCommand,
+from myo.plugins.tmux.message import (TmuxOpen, TmuxRunCommand,
                                       TmuxCreatePane, TmuxCreateLayout,
                                       TmuxCreateSession, TmuxSpawnSession,
                                       TmuxFindVim, TmuxInfo, TmuxLoadDefaults,
@@ -226,7 +226,7 @@ class TmuxTransitions(MyoTransitions):
                     **pane_bool_params(opts))
         return self._add_to_layout(opts.get('parent'), _.panes, pane)
 
-    @may_handle(TmuxOpenPane)
+    @may_handle(TmuxOpen)
     def open(self):
         name = self.msg.name
         opt = self.msg.options
@@ -241,7 +241,7 @@ class TmuxTransitions(MyoTransitions):
         def go(pane):
             return (
                 self._pinned_panes(self.msg.ident) /
-                L(TmuxOpenPane)(_, Map(pinned=True))
+                L(TmuxOpen)(_, Map(pinned=True))
             ) + List(TmuxFixFocus(pane.ident), TmuxPack().pub.at(1))
         return self._pane(self.msg.ident) / go
 
@@ -359,7 +359,7 @@ class TmuxTransitions(MyoTransitions):
         return (
             self._view(name) /
             self.views.is_open /
-            __.cata(TmuxToggle(name), TmuxOpenPane(name))
+            __.cata(TmuxToggle(name), TmuxOpen(name))
         )
 
     def _minimize(self, f):
