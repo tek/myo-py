@@ -40,7 +40,7 @@ class CustomOutputHandler(OutputHandler):
         ctor = L(OutputMachine)(self.vim, _, result, _, options)
         size = self.vim.vars.p('scratch_size') | 10
         return Task.now(Just(RunScratchMachine(
-            ctor, options=Map(use_tab=False, size=Just(size))).pub))
+            ctor, options=Map(use_tab=False, size=Just(size), wrap=True)).pub))
 
 
 class VimCompiler(OutputHandler):
