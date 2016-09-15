@@ -39,8 +39,8 @@ class CustomOutputHandler(OutputHandler):
     def display(self, result: ParseResult, options: Map[str, str]):
         ctor = L(OutputMachine)(self.vim, _, result, _, options)
         size = self.vim.vars.p('scratch_size') | 10
-        return Task.now(
-            Just(RunScratchMachine(ctor, False, size=Just(size)).pub))
+        return Task.now(Just(RunScratchMachine(
+            ctor, options=Map(use_tab=False, size=Just(size))).pub))
 
 
 class VimCompiler(OutputHandler):
