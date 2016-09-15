@@ -69,10 +69,17 @@ class FocusSpec(TmuxIntegrationSpec):
 
 class OpenLayoutSpec(TmuxIntegrationSpec):
 
-    def open(self):
+    def _pre_start(self):
+        super()._pre_start()
         self.json_cmd('MyoTmuxCreateLayout lay', parent='root')
         self._create_pane('pan1', parent='lay')
+
+    def open(self):
         self._open_pane('lay')
+        self._pane_count(2)
+
+    def toggle(self):
+        self.json_cmd('MyoTmuxOpenOrToggle lay')
         self._pane_count(2)
 
 __all__ = ('ClosePaneSpec', 'ShowSpec')

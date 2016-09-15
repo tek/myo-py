@@ -36,15 +36,26 @@ class Layout(View):
     def pane_index(self, f: Callable[[Pane], bool]):
         self.panes.index_where(f)
 
-    def find_pane_pred(self, pred: Callable[[Pane], bool]):
-        return (self.panes.find(pred)
-                .or_else(lambda: self._find_pane_in_layouts(pred)))
+    def find_sub_pred(self, sub: Callable[['Layout'], List[View]],
+                      pred: Callable[[View], bool]):
+        return (sub(self).find(pred)
+                .or_else(lambda: self._find_sub_in_layouts(sub, pred)))
 
-    def _find_pane_in_layouts(self, pred: Callable[[Pane], bool]):
-        return self.layouts.find_map(__.find_pane_pred(pred))
+    def _find_sub_in_layouts(self, sub: Callable[['Layout'], List[View]],
+                             pred: Callable[[View], bool]):
+        return self.layouts.find_map(__.find_sub_pred(sub, pred))
+
+    def find_sub(self, sub: Callable[['Layout'], List[View]], ident: Ident):
+        return self.find_sub_pred(sub, __.has_ident(ident))
+
+    def find_layout(self, ident: Ident):
+        return self.find_sub(_.layouts, ident)
 
     def find_pane(self, ident: Ident):
-        return self.find_pane_pred(__.has_ident(ident))
+        return self.find_sub(_.panes, ident)
+
+    def find_view(self, ident: Ident):
+        return self.find_pane(ident).or_else(self.find_layout(ident))
 
     @staticmethod
     def pane_lens(root, f: Callable[[Pane], bool]):

@@ -21,6 +21,7 @@ from myo.ui.tmux.layout import Layout
 from myo.ui.tmux.pane import Pane, PaneAdapter
 from myo.command import ShellCommand
 from myo.ui.tmux.view_path import ViewPath
+from myo.ui.tmux.view import View
 
 
 def _pos(a):
@@ -47,6 +48,8 @@ class LayoutFacade(Logging):
         f = (self.layout_open if isinstance(view, Layout) else
              self.panes.is_open)
         return f(view)
+
+    is_open = view_open
 
     def open_views(self, layout):
         return layout.views.filter(self.view_open)
@@ -402,5 +405,18 @@ class PaneFacade(Logging):
             __.pipe(base) /
             pane.setter.log_path
         )
+
+
+class ViewFacade(Logging):
+
+    def __init__(self, server: Server) -> None:
+        self.layouts = LayoutFacade(server)
+        self.panes = PaneFacade(server)
+
+    def _discern(self, view: View):
+        return self.layouts if isinstance(view, Layout) else self.panes
+
+    def is_open(self, view: View):
+        return self._discern(view).is_open(view)
 
 __all__ = ('LayoutFacade', 'PaneFacade')

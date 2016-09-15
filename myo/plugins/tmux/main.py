@@ -30,7 +30,7 @@ from myo.ui.tmux.session import Session
 from myo.ui.tmux.server import Server, NativeServer
 from myo.util import parse_int, view_params, pane_params, pane_bool_params
 from myo.ui.tmux.window import VimWindow, Window
-from myo.ui.tmux.facade import LayoutFacade, PaneFacade
+from myo.ui.tmux.facade import LayoutFacade, PaneFacade, ViewFacade
 from myo.ui.tmux.view import View
 from myo.plugins.core.message import AddDispatcher
 from myo.plugins.tmux.dispatch import TmuxDispatcher
@@ -104,6 +104,9 @@ class TmuxState(Record):
             .filter(lambda a: not _is_vim_pane(a))
         )
 
+    def find_view(self, view: View):
+        return self.windows.find_map(__.root.find_view(view))
+
 
 class TmuxTransitions(MyoTransitions):
 
@@ -126,6 +129,10 @@ class TmuxTransitions(MyoTransitions):
     @property
     def layouts(self):
         return self.machine.layouts
+
+    @property
+    def views(self):
+        return self.machine.views
 
     @property
     def panes(self):
@@ -350,8 +357,8 @@ class TmuxTransitions(MyoTransitions):
     def open_or_toggle(self):
         name = self.msg.pane
         return (
-            self._pane(name) /
-            self.panes.is_open /
+            self._view(name) /
+            self.views.is_open /
             __.cata(TmuxToggle(name), TmuxOpenPane(name))
         )
 
@@ -453,6 +460,9 @@ class TmuxTransitions(MyoTransitions):
     def _pane(self, ident: Ident):
         return self.state.vim_window // __.root.find_pane(ident)
 
+    def _view(self, ident: Ident):
+        return self.state.find_view(ident)
+
     @property
     def _vim_pane(self):
         return self._pane('vim')
@@ -526,6 +536,10 @@ class Plugin(MyoComponent):
     @property
     def panes(self):
         return PaneFacade(self.server)
+
+    @property
+    def views(self):
+        return ViewFacade(self.server)
 
     def new_state(self):
         return TmuxState(server=self.server)
