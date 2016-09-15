@@ -59,7 +59,7 @@ class LayoutFacade(Logging):
         is_pane = Boolean(isinstance(v, Pane))
         def open(pane):
             def apply(layout):
-                set = is_pane.cata(I, layout.replace_pane)
+                set = is_pane.cata(I, lambda a: v.replace_pane(a))
                 return (
                     self._split_pane(layout, pane) /
                     set /

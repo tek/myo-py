@@ -26,4 +26,6 @@ class Named(Record):
     def __repr__(self):
         return '{}({})'.format(self.__class__.__name__, self.name)
 
+    __str__ = __repr__
+
 __all__ = ('Record',)

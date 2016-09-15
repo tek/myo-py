@@ -4,6 +4,15 @@ from amino.test import later
 from amino import _
 
 
+class OpenSpec(TmuxIntegrationSpec):
+
+    def open(self):
+        self.json_cmd('MyoTmuxCreateLayout lay', parent='root')
+        self._create_pane('pan', parent='lay')
+        self._open_pane('pan')
+        self._pane_count(2)
+
+
 class ClosePaneSpec(DefaultLayoutSpec):
 
     def _close(self):
@@ -80,6 +89,23 @@ class OpenLayoutSpec(TmuxIntegrationSpec):
 
     def toggle(self):
         self.json_cmd('MyoTmuxOpenOrToggle lay')
+        self._pane_count(2)
+
+    def minimize(self):
+        self.json_cmd('MyoTmuxCreateLayout lay2', parent='root')
+        self._create_pane('pan2', parent='lay2')
+        self._open_pane('lay')
+        self._open_pane('lay2')
+        self._pane_count(3)
+        self.json_cmd('MyoTmuxMinimize lay2')
+        later(lambda: (self._pane_with_id(2) / _.width).should.contain(2))
+
+    def open_twice(self):
+        self._create_pane('pan', parent='lay')
+        self.vim.cmd_sync('MyoTmuxOpen lay')
+        self._pane_count(2)
+        self.vim.cmd_sync('MyoTmuxOpen lay')
+        self._wait(1)
         self._pane_count(2)
 
 __all__ = ('ClosePaneSpec', 'ShowSpec')

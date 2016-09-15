@@ -175,7 +175,7 @@ class TmuxTransitions(MyoTransitions):
         vim_layout = VimLayout(name='vim',
                                direction=LayoutDirections.vertical,
                                panes=List(pane), min_size=vim_w,
-                               weight=Just(0))
+                               weight=Just(0.0001))
         root = Layout(name='root',
                       direction=LayoutDirections.horizontal,
                       layouts=List(vim_layout))

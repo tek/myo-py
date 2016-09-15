@@ -93,6 +93,23 @@ class DefaultLayoutDistributeSizeSpec(DefaultLayoutSpec):
         self._open_pane('make')
         later(check)
 
+    def minimize(self):
+        mini = 5
+        self._create_pane('pan', parent='root', fixed_size=20,
+                          minimized_size=mini, weight=0)
+        self._open_pane('pan')
+        self.vim.cmd_sync('MyoTmuxMinimize pan')
+        self._width(1, mini)
+
+    def minimize_layout(self):
+        mini = 5
+        self.json_cmd_sync('MyoTmuxCreateLayout lay', parent='root',
+                           fixed_size=20, minimized_size=mini, weight=0)
+        self._create_pane('pan', parent='lay')
+        self._open_pane('lay')
+        self.vim.cmd_sync('MyoTmuxMinimize lay')
+        self._width(1, mini)
+
 
 class MinimizeSpec(TmuxIntegrationSpec):
 
@@ -127,24 +144,43 @@ class MinimizeSpec(TmuxIntegrationSpec):
         self.json_cmd_sync('MyoTmuxMinimize pan1')
         self._check(2)
 
-    def open_or_toggle(self):
+    def open_or_toggle_pane(self):
         fix = 10
         mini = 5
         cmd = lambda: self.json_cmd_sync('MyoTmuxOpenOrToggle pan')
-        def height(h):
-            later(lambda: (self._pane_with_id(2) / _.height).should.contain(h))
-        self.json_cmd_sync('MyoTmuxCreateLayout test', parent='root')
+        self.json_cmd_sync('MyoTmuxCreateLayout lay', parent='root')
         self._create_pane('pan', fixed_size=fix, minimized_size=mini,
-                          parent='test')
-        self._create_pane('pan2', parent='test', weight=1)
+                          parent='lay')
+        self._create_pane('pan2', parent='lay', weight=1)
+        cmd()
+        self._wait(.1)
         self._open_pane('pan2')
-        cmd()
         self._pane_count(3)
-        height(fix)
+        self._height(1, fix)
         cmd()
-        height(mini)
+        self._height(1, mini)
         cmd()
-        height(fix)
+        self._height(1, fix)
+
+    def open_or_toggle_layout(self):
+        fix = 10
+        mini = 5
+        cmd = lambda: self.json_cmd_sync('MyoTmuxOpenOrToggle lay2')
+        self.json_cmd_sync('MyoTmuxCreateLayout lay', parent='root')
+        self.json_cmd_sync('MyoTmuxCreateLayout lay2', parent='lay',
+                           fixed_size=fix, minimized_size=mini, weight=0)
+        self._create_pane('pan', parent='lay2')
+        self._create_pane('pan2', parent='lay', weight=1)
+        cmd()
+        self._wait(.1)
+        self._open_pane('pan2')
+        self._pane_count(3)
+        self._wait(2)
+        self._height(1, fix)
+        cmd()
+        self._height(1, mini)
+        cmd()
+        self._height(1, fix)
 
 __all__ = ('CutSizeSpec', 'DistributeSizeSpec',
            'DefaultLayoutDistributeSizeSpec')

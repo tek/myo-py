@@ -33,6 +33,12 @@ class Layout(View):
     layouts = list_field()
     direction = dfield(LayoutDirections.vertical)
 
+    def __repr__(self):
+        return '{}({}, {!r}, {!r})'.format(self.__class__.__name__, self.name,
+                                           self.panes, self.layouts)
+
+    __str__ = __repr__
+
     def pane_index(self, f: Callable[[Pane], bool]):
         self.panes.index_where(f)
 
