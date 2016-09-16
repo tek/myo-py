@@ -30,11 +30,11 @@ class ParseSpec(TmuxCmdSpec):
         heads = List(_parse_head, _event_head)
         target = heads + lines / __.replace('line', 'entry')
         check2 = lambda: self.vim.buffer.content.should.equal(target)
-        self.json_cmd('MyoShellCommand test', line="echo '{}'".format(s),
+        self.json_cmd('MyoShellCommand com', line="echo '{}'".format(s),
                       target='make',
                       parser='py:integration.tmux.parse_spec._parse_echo')
         self._open_pane('make')
-        self.json_cmd('MyoRun test')
+        self.json_cmd('MyoRun com')
         self._output_contains(l1)
         self.json_cmd('MyoParse')
         later(check2)
@@ -45,13 +45,14 @@ class ParseSpec(TmuxCmdSpec):
         line = 'raise Exception(\'{}\')'.format(err)
         target = 'Exception: {}'.format(err)
         self._py_shell()
-        self.json_cmd_sync('MyoShellCommand test', line=line, shell='py')
+        self.json_cmd_sync('MyoShellCommand test', line=line, shell='py',
+                           langs=['python'])
         self.json_cmd_sync('MyoRun test')
         self._output_contains(target)
         self.json_cmd_sync('MyoRun test')
         later(lambda: self._output.filter(_ == target).should.have.length_of(2)
               )
-        self.json_cmd_sync('MyoParse', command='py')
+        self.json_cmd_sync('MyoParse')
         later(lambda: self.vim.buffer.content.should.have.length_of(3))
 
 

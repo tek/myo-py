@@ -326,18 +326,16 @@ class TmuxTransitions(MyoTransitions):
     def terminated(self):
         return self._pane_mod(self.msg.pane.uuid, __.setter.pid(Empty()))
 
-    @may_handle(SetCommandLog)
+    @handle(SetCommandLog)
     def set_command_log(self):
-        def set_log(data):
+        def set_log(cmd):
             log = lambda p: self.log.debug(
                 'setting {} log to {}'.format(cmd.name, p))
+            cmd_lens = self.data.command_lens(cmd.ident)
             log_path = self._pane(self.msg.pane_ident) // _.log_path
-            cmd = data.command_lens(self.msg.cmd_ident)
-            res = cmd / (lambda c: c.modify(__.set(log_path=log_path)))
-            return res.to_either('command not found')
-        # NOTE Must run this as a task so it is executed after the cmd runner
-        return DataTask(_ / set_log)
             log_path % log
+            return cmd_lens / __.modify(__.set(log_path=log_path))
+        return self._main_command(self.msg.cmd_ident) // set_log
 
     @may_handle(TmuxPack)
     def pack(self):
@@ -514,6 +512,10 @@ class TmuxTransitions(MyoTransitions):
                    l.panes.filter(_.pin))
             return sub + add
         return (self.state.windows / _.root // layout) / _.ident
+
+    def _main_command(self, cmd_ident: Ident):
+        holder = lambda cmd: cmd.shell // self.data.shell | cmd
+        return self.data.command(cmd_ident) / holder
 
 
 class Plugin(MyoComponent):

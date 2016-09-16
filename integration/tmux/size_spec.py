@@ -24,17 +24,17 @@ class CutSizeSpec(TmuxIntegrationSpec):
 class DistributeSizeSpec(TmuxIntegrationSpec):
 
     def distribute(self):
+        ''' Sizes and weights are chosen exactly.
+        '''
         h1 = 8
-        check = lambda: (self._sizes / __[1]).last.should.contain(h1)
         self.json_cmd('MyoTmuxCreateLayout test', parent='root')
         self._create_pane('pan1', parent='test', min_size=5, max_size=h1,
                           weight=1)
         self._create_pane('pan2', parent='test', min_size=10, max_size=40,
                           weight=h1 + 1)
         self._open_pane('pan1')
-        self._wait(.1)
         self._open_pane('pan2')
-        later(check)
+        self._height(1, h1 - 1)
 
     def default_positions(self):
         sz1, sz2 = 5, 10
