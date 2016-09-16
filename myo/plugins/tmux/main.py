@@ -457,7 +457,7 @@ class TmuxTransitions(MyoTransitions):
         )
 
     def _pane(self, ident: Ident):
-        return self.state.vim_window // __.root.find_pane(ident)
+        return self.state.pane(ident)
 
     def _view(self, ident: Ident):
         return self.state.find_view(ident)
