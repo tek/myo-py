@@ -186,7 +186,7 @@ class LayoutFacade(Logging):
         min_s = self.actual_min_sizes(views) / calc
         max_s = self.actual_max_sizes(views) / calc
         weights = self.weights(views)
-        return self._balance_sizes(min_s, max_s, weights, total)
+        return self._balance_sizes(min_s, max_s, weights, total) / round
 
     def _balance_sizes(self, min_s, max_s, weights, total):
         return self._rectify_sizes(
