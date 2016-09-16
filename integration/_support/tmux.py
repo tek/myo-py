@@ -65,4 +65,9 @@ class TmuxCmdSpec(TmuxIntegrationSpec, CmdSpec):
         self.vim.vars.set_p('tmux_vim_width', 10)
         self.vim.vars.set_p('tmux_watcher_interval', 0.1)
 
+    def _py_shell(self):
+        self._create_pane('py', parent='main')
+        self.json_cmd('MyoShell py', line='python', target='py',
+                      langs=['python'])
+
 __all__ = ('TmuxIntegrationSpec', 'DefaultLayoutSpec', 'TmuxCmdSpec')

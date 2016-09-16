@@ -24,16 +24,12 @@ class DispatchSpec(TmuxCmdSpec):
         self.json_cmd('MyoRun test')
         self._output_contains(target)
 
-    def _create_shell(self):
-        self._create_pane('py', parent='main')
-        self.json_cmd('MyoShell py', line='python', target='py')
-
     def _shell(self, create):
         s = 'cmd test {}'
         i = 5342
         target = s.format(i)
         line = 'print(\'{}\'.format(\'{}\'))'.format(s, i)
-        self._create_shell()
+        self._py_shell()
         create(line)
         self._output_contains(target)
 
@@ -65,7 +61,7 @@ class DispatchSpec(TmuxCmdSpec):
     def pvar_test_shell(self):
         self.vim.buffer.vars.set_p('test_shell', 'py')
         ctor = 'py:integration.tmux.dispatch_spec._test_shell_ctor'
-        self._create_shell()
+        self._py_shell()
         self.json_cmd_sync('MyoTest', ctor=ctor)
         self._output_contains(_test_line)
 
