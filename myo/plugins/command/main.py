@@ -199,6 +199,7 @@ class CommandTransitions(MyoTransitions):
             )
         log_path = cmd // find_log
         def parse(c, l):
+            self.log.debug('parsing {} from {}'.format(c, l))
             return (
                 Try(l.read_text) /
                 __.splitlines() /

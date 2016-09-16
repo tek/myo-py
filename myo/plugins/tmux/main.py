@@ -329,12 +329,15 @@ class TmuxTransitions(MyoTransitions):
     @may_handle(SetCommandLog)
     def set_command_log(self):
         def set_log(data):
+            log = lambda p: self.log.debug(
+                'setting {} log to {}'.format(cmd.name, p))
             log_path = self._pane(self.msg.pane_ident) // _.log_path
             cmd = data.command_lens(self.msg.cmd_ident)
             res = cmd / (lambda c: c.modify(__.set(log_path=log_path)))
             return res.to_either('command not found')
         # NOTE Must run this as a task so it is executed after the cmd runner
         return DataTask(_ / set_log)
+            log_path % log
 
     @may_handle(TmuxPack)
     def pack(self):

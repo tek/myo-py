@@ -399,11 +399,14 @@ class PaneFacade(Logging):
         return self.find_task(pane) // handle
 
     def pipe(self, pane: Pane, base: str):
+        lg = lambda p: self.log.debug(
+            'piping {} to {}'.format(p.name, p.log_path | 'nowhere'))
         return (
             self.find(pane)
-            .task('capture: pane not found') /
+            .task(Fatal('pipe: pane not found')) /
             __.pipe(base) /
-            pane.setter.log_path
+            pane.setter.log_path %
+            lg
         )
 
 
