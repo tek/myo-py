@@ -35,8 +35,7 @@ from myo.ui.tmux.view import View
 from myo.plugins.core.message import AddDispatcher
 from myo.plugins.tmux.dispatch import TmuxDispatcher
 from myo.ui.tmux.util import format_state, Ident
-from myo.ui.tmux.view_path import (ppm_id, LayoutPathMod, PanePathMod,
-                                   ViewPathMod)
+from myo.ui.tmux.view_path import LayoutPathMod, PanePathMod, ViewPathMod
 from myo.plugins.command.message import SetShellTarget
 from myo.command import Command, Shell
 from myo.plugins.tmux.watcher import Watcher, Terminated
@@ -421,7 +420,7 @@ class TmuxTransitions(MyoTransitions):
             )
         runner = (
             (self._open_pane_ppm(pane_ident) + check_running) /
-            in_shell.no.maybe(pipe).get_or_else(lambda: ppm_id) /
+            pipe /
             run /
             pid /
             watch

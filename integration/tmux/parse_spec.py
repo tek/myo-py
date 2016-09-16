@@ -1,8 +1,8 @@
 import re
 
-from amino import Maybe, List, __
+from amino import Maybe, List, __, _
 from amino.test import later
-from amino.test.path import fixture_path, base_dir
+from amino.test.path import fixture_path
 
 from myo.output.data import OutputEntry, OutputEvent, ParseResult
 
@@ -39,33 +39,72 @@ class ParseSpec(TmuxCmdSpec):
         self.json_cmd('MyoParse')
         later(check2)
 
+    def shell(self):
+        self.vim.vars.set_p('jump_to_error', False)
+        err = List.random_string()
+        line = 'raise Exception(\'{}\')'.format(err)
+        target = 'Exception: {}'.format(err)
+        self._py_shell()
+        self.json_cmd_sync('MyoShellCommand test', line=line, shell='py')
+        self.json_cmd_sync('MyoRun test')
+        self._output_contains(target)
+        self.json_cmd_sync('MyoRun test')
+        later(lambda: self._output.filter(_ == target).should.have.length_of(2)
+              )
+        self.json_cmd_sync('MyoParse', command='py')
+        later(lambda: self.vim.buffer.content.should.have.length_of(3))
+
 
 class VimTestSpec(TmuxCmdSpec):
 
-    @vimtest
-    def vimtest(self):
+    @property
+    def _fname(self):
+        return fixture_path('tmux', 'vim_test', 'test.py')
+
+    @property
+    def _target(self):
+        return 'RuntimeError: supernova'
+
+    def _pre_start(self):
+        super()._pre_start()
         self.vim.vars.set_p('jump_to_error', False)
         self.vim.vars.set('test#python#runner', 'nose')
-        fname = fixture_path('tmux', 'vim_test', 'test.py')
-        target = str(fname.relative_to(base_dir().parent))
-        def check1():
-            self._output.exists(lambda a: target in a).should.be.true
-        self.vim.cmd_sync('noswapfile edit {}'.format(fname))
+        self.vim.cmd_sync('noswapfile edit {}'.format(self._fname))
         self.vim.buffer.vars.set_p('test_langs', ['python'])
-        self.vim.cursor(5, 1)
+
+    def _run_test(self):
+        check = lambda: self._output.should.contain(self._target)
+        self.vim.cursor(4, 1)
+        len_pre = self._output.length
         self.json_cmd('MyoVimTest')
-        later(check1)
-        target2 = 'RuntimeError: supernova'
-        check2 = lambda: self.vim.buffer.content.last.should.contain(target2)
+        later(lambda: self._output.length.should.be.greater_than(len_pre))
+        later(check)
+
+    def _run_parse(self):
+        check = lambda: self.vim.buffer.content.last.should.contain(
+            self._target)
         self.json_cmd_sync('MyoParse')
-        later(check2)
+        later(check)
+
+    @vimtest
+    def complete(self):
+        self._run_test()
+        self._run_parse()
         self.vim.cursor(6, 1)
         self.vim.cmd_sync('call feedkeys("\\<cr>")')
-        check3 = lambda: self.vim.buffer.name.should.equal(str(fname))
-        later(check3)
+        check1 = lambda: self.vim.buffer.name.should.equal(str(self._fname))
+        later(check1)
         self.vim.focus(1).run_sync()
         self.vim.cmd_sync('call feedkeys("q")')
-        check4 = lambda: self.vim.buffers.should.have.length_of(1)
-        later(check4)
+        check2 = lambda: self.vim.buffers.should.have.length_of(1)
+        later(check2)
+
+    @vimtest
+    def twice(self):
+        self._run_test()
+        self._run_parse()
+        self.vim.window.close()
+        self._run_test()
+        self._run_parse()
 
 __all__ = ('ParseSpec',)
