@@ -195,7 +195,7 @@ class CommandTransitions(MyoTransitions):
         def find_log(c):
             return (
                 (c.shell // self.data.shell | c)
-                .log_path.to_either('command has no log')
+                .log_path.to_either('{} has no log'.format(c))
             )
         log_path = cmd // find_log
         def parse(c, l):
@@ -206,7 +206,7 @@ class CommandTransitions(MyoTransitions):
                 L(ParseOutput)(c, _, l, self.msg.options) /
                 _.pub
             )
-        return (cmd & log_path).flat_map2(parse)
+        return (cmd & log_path).flat_map2(parse).lmap(Fatal)
 
     @handle(RunTest)
     def run_test(self):
