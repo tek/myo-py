@@ -37,7 +37,7 @@ class SbtParseSpec(UnitSpec):
         (e.head / __.entries.map(type)).should.contain(
             List(FileEntry, ErrorEntry, ColEntry))
         (e.last // _.entries.head / _.error).should.contain(_errmsg)
-        res = ParseResult(head='head', events=e)
+        res = ParseResult(head=List('head'), events=e)
         (res.lines.lift(1) / _.target).should.equal(e.head)
         (e.head / _.coords).should.contain((_line, _col))
 

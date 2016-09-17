@@ -49,7 +49,7 @@ class VimCompiler(OutputHandler):
         self.vim = vim
 
     def parse(self, output: List[str], errfile: Path):
-        r = ParseResult(head='errorformat')
+        r = ParseResult(head=List('errorformat'))
         return (Task.call(self.vim.cmd_sync, 'cgetfile {}'.format(errfile))
                 .replace(r))
 
@@ -75,7 +75,7 @@ class Parsing(CustomOutputHandler):
 
     def parse(self, output: List[str], errfile: Path):
         events = self.parsers // __.events(output)
-        return Task.now(ParseResult(head='parsed', events=events,
+        return Task.now(ParseResult(head=List('parsed'), events=events,
                                     langs=self.langs))
 
 __all__ = ('CustomOutputHandler', 'VimCompiler', 'Parsing')

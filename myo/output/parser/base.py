@@ -38,7 +38,7 @@ class SimpleParser(ParserBase, metaclass=abc.ABCMeta):
         ...
 
     def event(self, entries: List[OutputEntry]):
-        return Just(OutputEvent(head='traceback', entries=entries))
+        return Just(OutputEvent(head=List('traceback'), entries=entries))
 
     def edges(self, node):
         e = (Step(t, d['data'], d.get('weight', 0))

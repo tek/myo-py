@@ -17,8 +17,8 @@ def _parse_echo(data):
     matcher = re.compile('^line (\d+)')
     matches = data / matcher.match // Maybe / __.group(1)
     entries = matches / (lambda a: OutputEntry(text='entry {}'.format(a)))
-    event = OutputEvent(head=_event_head, entries=entries)
-    return ParseResult(head=_parse_head, events=List(event))
+    event = OutputEvent(head=List(_event_head), entries=entries)
+    return ParseResult(head=List(_parse_head), events=List(event))
 
 
 class ParseSpec(TmuxCmdSpec):

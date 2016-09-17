@@ -1,7 +1,7 @@
 import abc
 from typing import Tuple
 
-from amino import _, Path, List, __, Empty, Just
+from amino import _, Path, List, __, Empty, Just, L
 from amino.lazy import lazy
 
 from ribosome.record import field, list_field, dfield, any_field, RecordMeta
@@ -65,7 +65,7 @@ class PositionEntry(OutputEntry, Location):
 
 
 class OutputEvent(Record):
-    head = field(str)
+    head = list_field(str)
     entries = list_field(OutputEntry)
 
     @property
@@ -75,8 +75,8 @@ class OutputEvent(Record):
     @property
     def lines(self):
         return (
+            (self.head / L(OutputLine.create)(_, self)) +
             (self.entries // __.output_lines(self._target))
-            .cons(OutputLine.create(self.head, self))
         )
 
 
@@ -88,15 +88,15 @@ class MultiEvent(OutputEvent):
 
 
 class ParseResult(Record):
-    head = field(str)
+    head = list_field(str)
     events = list_field(OutputEvent)
     langs = list_field(str)
 
     @lazy
     def lines(self):
         return (
+            (self.head / L(OutputLine.create)(_, self)) +
             (self.events // _.lines)
-            .cons(OutputLine.create(self.head, self))
         )
 
     @property

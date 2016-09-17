@@ -68,7 +68,7 @@ class Parser(SimpleParser):
         col = entries.find_type(ColEntry)
         return (
             entries.find_type(FileEntry) / (
-                lambda a: SbtOutputEvent(head='error', entries=entries,
+                lambda a: SbtOutputEvent(head=List('error'), entries=entries,
                                          col=col, file=a)
             )
         )
