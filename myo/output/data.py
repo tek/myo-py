@@ -1,7 +1,7 @@
 import abc
-from typing import Tuple
+from typing import Tuple, Callable
 
-from amino import _, Path, List, __, Empty, Just, L
+from amino import _, Path, List, __, Empty, Just, L, I
 from amino.lazy import lazy
 
 from ribosome.record import field, list_field, dfield, any_field, RecordMeta
@@ -13,13 +13,26 @@ from myo.util import parse_int
 class OutputEntry(Record):
     text = field(str)
 
+    def __repr__(self):
+        return self._name
+
+    __str__ = __repr__
+
     def output_lines(self, event):
-        return List(OutputLine.create(self.text, event | self))
+        return self.format_output_lines(event, _.text)
+
+    def format_output_lines(self, event, f: Callable):
+        return List(OutputLine.create(f(self), event | self))
 
 
 class OutputLine(Record):
     text = field(str)
     target = any_field()
+
+    def __repr__(self):
+        return '{}({})'.format(self._name, self.text)
+
+    __str__ = __repr__
 
     @staticmethod
     def create(text, target):
@@ -67,6 +80,11 @@ class PositionEntry(OutputEntry, Location):
 class OutputEvent(Record):
     head = list_field(str)
     entries = list_field(OutputEntry)
+
+    def __repr__(self):
+        return '{}({!r})'.format(self._name, self.entries)
+
+    __str__ = __repr__
 
     @property
     def _target(self):

@@ -20,7 +20,7 @@ trace = '''
 [error]  required: CorrectType
 [error]       codeLine
 [error]           ^
-[error] one error found
+[error] two errors found
 [error] (compile:compileIncremental) Compilation failed
 [error] Total time: 0 s, completed Jan 1, 1900 00:00:00 AM
 >

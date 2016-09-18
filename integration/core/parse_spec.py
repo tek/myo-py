@@ -1,8 +1,8 @@
 from integration._support.base import MyoIntegrationSpec
 
 from amino.test.path import fixture_path
-from amino import Map, Just, List
-from amino.test import temp_file
+from amino import Map, Just, List, _
+from amino.test import temp_file, later
 from amino.lazy import lazy
 
 from ribosome.test.integration import main_looped
@@ -123,7 +123,7 @@ class PythonParseSpec(ParseSpecBase):
 
     def filter(self):
         filters = List('py:integration.core.parse_spec._filter1')
-        self._go(_trace_len * 2 + 3, Map(filters=filters))
+        self._go(_trace_len * 2 + 3, Map(output_filters=filters))
 
     def initial_pos(self):
         self.vim.vars.set_p('first_error',
@@ -144,8 +144,10 @@ class PythonParseSpec(ParseSpecBase):
         self._check_jumped()
 
 
-def _filter1(a):
-    return a[:1] + a[1 + _trace_len * 2 + 2:]
+def _filter1(result):
+    e = result.events
+    e2 = e[:1] + e[1 + _trace_len * 2 + 2:]
+    return result.set(events=e2)
 
 
 def _first_error(a):
@@ -178,7 +180,7 @@ class SbtParseSpec(ParseSpecBase):
         )
 
     @property
-    def _mk_scala_trace(self):
+    def _mk_scala_error(self):
         r = lambda: List.random_string(4)
         tmpl = '[error] {}:{}: butt'
         return List(
@@ -187,12 +189,20 @@ class SbtParseSpec(ParseSpecBase):
             '[error]    ^',
         )
 
-    def sbt(self):
-        output = self._mk_scala_trace
+    def _mk_scala_errors(self, count):
+        return List.gen(count, lambda: self._mk_scala_error)
+
+    def _parse(self, output):
         cmd = Command(name='a', line='a', langs=List('sbt'))
         msg = ParseOutput(cmd, output, None, Map())
         self.plugin.myo_start()
         self.root.send_sync(msg)
+
+    def complete(self):
+        self.vim.vars.set_p('output_reifier',
+                            'myo.output.reifier.base.LiteralReifier')
+        output = self._mk_scala_errors(1)
+        self._parse(output)
         output_machine = self.root.sub[-1]
         self.vim.buffer.content.should.contain(output[-1])
         self.vim.buffer.options('modifiable').should.contain(False)
@@ -201,5 +211,32 @@ class SbtParseSpec(ParseSpecBase):
         self.vim.windows.should.have.length_of(2)
         self.vim.window.buffer.name.should.equal(str(self._scala_file))
         self.vim.window.cursor.should.equal(List(3, 4))
+
+    def filter_format(self):
+        def check():
+            c = self.vim.buffer.content
+            c.should.have.length_of(4)
+            c.head.should.contain(self._scala_file.name)
+        filters = List('py:integration.core.parse_spec._filter')
+        formatters = List('py:integration.core.parse_spec._format')
+        trunc = 'py:integration.core.parse_spec._trunc'
+        self.vim.vars.set_p('output_filters', filters)
+        self.vim.vars.set_p('output_formatters', formatters)
+        self.vim.vars.set_p('path_truncator', trunc)
+        output = self._mk_scala_errors(4)
+        self._parse(output)
+        later(check)
+
+
+def _filter(r):
+    return r.modder.events(_[2:])
+
+
+def _format(r):
+    return r
+
+
+def _trunc(path):
+    return path.name
 
 __all__ = ('ParseSpec',)

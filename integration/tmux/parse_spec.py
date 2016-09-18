@@ -56,7 +56,7 @@ class ParseSpec(TmuxCmdSpec):
         later(lambda: self.vim.buffer.content.should.have.length_of(3))
 
 
-class VimTestSpec(TmuxCmdSpec):
+class PythonVimTestSpec(TmuxCmdSpec):
 
     @property
     def _fname(self):

@@ -82,7 +82,6 @@ class DispatchSpec(TmuxCmdSpec):
                   .should.contain(v))
         target = 'cmd test'
         self.json_cmd('MyoShellCommand test', line="echo '{}'".format(target))
-        self._create_pane('make')
         self._open_pane('make')
         later(lambda: self._pane_count(2))
         self._panes.last / __.cmd('copy-mode')

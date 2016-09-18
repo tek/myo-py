@@ -24,7 +24,8 @@ class CutSizeSpec(TmuxIntegrationSpec):
 class DistributeSizeSpec(TmuxIntegrationSpec):
 
     def distribute(self):
-        ''' Sizes and weights are chosen exactly.
+        ''' Simple distribute with min/max sizes.
+        Sizes and weights are chosen exactly.
         '''
         h1 = 8
         self.json_cmd('MyoTmuxCreateLayout test', parent='root')

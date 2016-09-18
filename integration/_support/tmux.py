@@ -32,6 +32,7 @@ class TmuxIntegrationSpec(MyoPluginIntegrationSpec, TmuxSpecBase):
 
     def _create_pane(self, name, **kw):
         self.json_cmd_sync('MyoTmuxCreatePane {}'.format(name), **kw)
+        self._wait(.1)
 
     def _open_pane(self, name, **kw):
         self.json_cmd_sync('MyoTmuxOpen {}'.format(name), **kw)

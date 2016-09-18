@@ -1,52 +1,69 @@
 from operator import add
+from typing import Callable
 
 from ribosome.machine import message, may_handle, Machine, handle, Nop
 from ribosome.nvim import ScratchBuffer, NvimFacade
 from ribosome.machine.scratch import ScratchMachine, Quit
 from ribosome.machine.base import UnitTask
 from ribosome.machine.state import Init
-from ribosome.record import field
+from ribosome.record import field, list_field
 
 from amino.task import Task
-from amino import Map, _, L, Left, __, List, Either, Just
-from amino.lazy import lazy
+from amino import Map, _, L, Left, __, List, Either, Just, Try, Right
 
-from myo.output.data import ParseResult, Location
+from myo.output.data import ParseResult, Location, OutputLine
 from myo.state import MyoTransitions
 from myo.logging import Logging
 from myo.record import Record
 from myo.util import parse_callback_spec
+from myo.output.reifier.base import Reifier, LiteralReifier
 
 Jump = message('Jump')
 FirstError = message('FirstError')
 DisplayLines = message('DisplayLines')
 
 
+def fold_callbacks(cbs, z):
+    return cbs.fold_left(Right(z))(lambda z, a: z // L(Try)(a, _))
+
+
 class ResultAdapter(Logging):
 
-    def __init__(self, vim, result: ParseResult, filters: List[str]) -> None:
+    def __init__(self, vim, result: ParseResult, filters: List[Callable],
+                 reifier: Either[str, Reifier], formatters: List[Callable]
+                 ) -> None:
         self.vim = vim
         self.result = result
         self.filters = filters
+        self.reifier = reifier
+        self.formatters = formatters
 
     @property
-    def filter_callbacks(self):
+    def filtered(self):
+        return fold_callbacks(self.filters, self.result)
+
+    def format(self, lines: List[OutputLine]):
+        return fold_callbacks(self.formatters, lines)
+
+    @property
+    def _reifier(self):
         return (
-            self.filters / parse_callback_spec / __.right_or_map(Left)
-        ).sequence(Either)
+            self.reifier.o(self._lang_reifier) /
+            (lambda a: a(self.vim)) |
+            (lambda: LiteralReifier(self.vim))
+        )
 
-    @lazy
-    def lines(self):
-        def fold(cbs):
-            return cbs.fold_left(self.result.lines)(lambda z, a: a(z))
-        return self.filter_callbacks / fold
+    def _lang_reifier(self):
+        def create(lang):
+            return (
+                Either.import_name('myo.output.reifier.{}'.format(lang),
+                                   'Reifier')
+            )
+        return self.langs.find_map(create)
 
     @property
-    def display_lines(self):
-        return (self.lines.eff() / _.text).value
-
-    def target_for_line(self, line):
-        return self.lines // __.lift(line) / _.target
+    def lines(self):
+        return self.filtered // L(Try)(self._reifier, _) // self.format
 
     @property
     def langs(self):
@@ -56,9 +73,13 @@ class ResultAdapter(Logging):
     def events(self):
         return self.result.events
 
+    def __repr__(self):
+        return repr(self.result)
+
 
 class OMState(Record):
     result = field(ResultAdapter)
+    lines = list_field(OutputLine)
 
 
 class OutputMachineTransitions(MyoTransitions):
@@ -84,18 +105,32 @@ class OutputMachineTransitions(MyoTransitions):
     def _lang_jumps(self):
         return Map(python=self._jump_last)
 
+    @property
+    def lines(self):
+        return self.state.lines
+
+    @property
+    def _set_lines(self):
+        def run(lines):
+            text = lines / _.text
+            return (
+                self._with_sub(self.data, self.state.set(lines=lines)),
+                Task.call(self.buffer.set_content, text) &
+                Task.call(self.buffer.set_modifiable, False)
+            )
+        return self.result.lines / run
+
+    def target_for_line(self, line):
+        return self.lines.lift(line) / _.target
+
     @may_handle(Init)
     def init(self):
         return self.with_sub(self.state), DisplayLines()
 
     @handle(DisplayLines)
     def display_lines(self):
-        def run(lines):
-            return (
-                Task.call(self.buffer.set_content, lines) &
-                Task.call(self.buffer.set_modifiable, False)
-            ).replace(Just(FirstError()))
-        return self.result.display_lines / run
+        return self._set_lines.map2(
+            lambda a, b: (a, b.replace(Just(FirstError()))))
 
     @handle(FirstError)
     def first_error(self):
@@ -127,7 +162,7 @@ class OutputMachineTransitions(MyoTransitions):
         target = (
             self.vim.window.line /
             (_ - 1) //
-            self.result.target_for_line
+            self.target_for_line
         ).filter_type(Location).to_either('not a location')
         open_file = target / L(self._open_file)(_.file_path)
         set_line = (
@@ -149,15 +184,13 @@ class OutputMachineTransitions(MyoTransitions):
         )
 
     def _jump_first(self, result):
-        return (self.result.lines // self._position_index)
+        return self._position_index(self.lines)
 
     def _jump_last(self, result):
-        def run(lines):
-            return (
-                self._position_index(lines)
-                .map2(lambda l, c: (lines.length - l, c))
-            )
-        return self.result.lines / _.reversed // run
+        return (
+            self._position_index(self.lines.reversed)
+            .map2(lambda l, c: (self.lines.length - l, c))
+        )
 
     def _open_file(self, path):
         def split():

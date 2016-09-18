@@ -1,5 +1,3 @@
-import operator
-
 from networkx import DiGraph
 
 from amino.lazy import lazy
@@ -51,6 +49,10 @@ class SbtOutputEvent(OutputEvent, Location):
     @property
     def coords(self):
         return self.file.line, self.col / _.col | 1
+
+    @property
+    def error(self):
+        return self.entries.find_type(ErrorEntry)
 
 
 class Parser(SimpleParser):
