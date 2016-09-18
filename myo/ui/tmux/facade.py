@@ -151,22 +151,23 @@ class LayoutFacade(Logging):
         )
 
     def _pack_layout(self, l, w, h):
+        nop = Task.now(List())
         horizontal = l.horizontal
         total = w if horizontal else h
         @singledispatch
-        def recurse(v, size):
+        def recurse(v, size, multi):
             pass
         @recurse.register(Pane)
-        def rec_pane(v, size):
-            return self._apply_size(v, size, horizontal)
+        def rec_pane(v, size, multi):
+            return self._apply_size(v, size, horizontal) if multi else nop
         @recurse.register(Layout)
-        def rec_layout(v, size):
+        def rec_layout(v, size, multi):
             sub_size = (size, h) if horizontal else (w, size)
             return (
                 self._pack_layout(v, *sub_size)
                 .flat_replace(
                     self._ref_pane_fatal(v) //
-                    L(self._apply_size)(_, size, horizontal)
+                    L(self._apply_size)(_, size, horizontal) if multi else nop
                 )
             )
         views = self.open_views(l)
@@ -176,10 +177,10 @@ class LayoutFacade(Logging):
             m = self._measure_layout(views, total - count + 1)
             return (
                 self._apply_positions(views, horizontal) +
-                views.zip(m).map2(recurse).sequence(Task)
+                views.zip(m).map2(L(recurse)(_, _, count > 1)).sequence(Task)
             )
         else:
-            return Task.now(List())
+            return nop
 
     def _measure_layout(self, views, total):
         calc = lambda s: s if s > 1 else s * total
@@ -241,7 +242,7 @@ class LayoutFacade(Logging):
         )
 
     def _apply_positions(self, views, horizontal):
-        if views.exists(_.position.is_just):
+        if views.length > 1 and views.exists(_.position.is_just):
             quantity = _.left if horizontal else _.top
             ordered = views.sort_by(_.position | 0).reversed
             adapters = self._ref_adapters(ordered)
