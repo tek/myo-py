@@ -7,6 +7,7 @@ from ribosome.machine.scratch import ScratchMachine, Quit
 from ribosome.machine.base import UnitTask
 from ribosome.machine.state import Init
 from ribosome.record import field, list_field
+from ribosome.nvim.components import Syntax
 
 from amino.task import Task
 from amino import Map, _, L, Left, __, List, Either, Just, Try, Right
@@ -110,15 +111,34 @@ class OutputMachineTransitions(MyoTransitions):
         return self.state.lines
 
     @property
-    def _set_lines(self):
+    def _set_content(self):
         def run(lines):
             text = lines / _.text
             return (
                 self._with_sub(self.data, self.state.set(lines=lines)),
-                Task.call(self.buffer.set_content, text) &
-                Task.call(self.buffer.set_modifiable, False)
+                Task.call(self.buffer.set_content, text) +
+                Task.call(self.buffer.set_modifiable, False) +
+                self._run_syntax(lines)
             )
         return self.result.lines / run
+
+    @property
+    def _syntax(self):
+        custom = self.vim.vars.p('output_syntax') // Either.import_path
+        return (
+            custom.o(self._lang_syntax) /
+            (lambda a: a(self.vim, Syntax(self.buffer)))
+        )
+
+    @property
+    def _lang_syntax(self):
+        def create(lang):
+            return Either.import_name('myo.output.syntax.{}'.format(lang),
+                                      'Syntax')
+        return self.result.langs.find_map(create)
+
+    def _run_syntax(self, lines):
+        return self._syntax / (lambda a: a(lines)) | Task.now(None)
 
     def target_for_line(self, line):
         return self.lines.lift(line) / _.target
@@ -129,7 +149,7 @@ class OutputMachineTransitions(MyoTransitions):
 
     @handle(DisplayLines)
     def display_lines(self):
-        return self._set_lines.map2(
+        return self._set_content.map2(
             lambda a, b: (a, b.replace(Just(FirstError()))))
 
     @handle(FirstError)

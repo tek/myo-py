@@ -186,7 +186,7 @@ class SbtParseSpec(ParseSpecBase):
         return List(
             tmpl.format(self._scala_file, self._line),
             '[error]    {}()'.format(r()),
-            '[error]    ^',
+            '[error]     ^',
         )
 
     def _mk_scala_errors(self, count):
@@ -226,6 +226,14 @@ class SbtParseSpec(ParseSpecBase):
         output = self._mk_scala_errors(4)
         self._parse(output)
         later(check)
+
+    def _syntax(self):
+        from amino import log
+        self.vim.cmd_sync('hi Error cterm=bold ctermfg=1')
+        output = self._mk_scala_errors(1)
+        self._parse(output)
+        self._wait(2)
+        log.info(self.vim.cmd_output('syntax').join_lines)
 
 
 def _filter(r):

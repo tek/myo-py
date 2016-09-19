@@ -1,10 +1,11 @@
 import abc
 from typing import Tuple, Callable
 
-from amino import _, Path, List, __, Empty, Just, L, I
+from amino import _, Path, List, __, Empty, Just, L
 from amino.lazy import lazy
 
-from ribosome.record import field, list_field, dfield, any_field, RecordMeta
+from ribosome.record import (field, list_field, dfield, any_field, RecordMeta,
+                             maybe_field)
 
 from myo.record import Record
 from myo.util import parse_int
@@ -13,21 +14,20 @@ from myo.util import parse_int
 class OutputEntry(Record):
     text = field(str)
 
-    def __repr__(self):
+    def __str__(self):
         return self._name
-
-    __str__ = __repr__
 
     def output_lines(self, event):
         return self.format_output_lines(event, _.text)
 
     def format_output_lines(self, event, f: Callable):
-        return List(OutputLine.create(f(self), event | self))
+        return List(OutputLine.create(f(self), event | self, Just(self)))
 
 
 class OutputLine(Record):
     text = field(str)
     target = any_field()
+    entry = maybe_field()
 
     def __repr__(self):
         return '{}({})'.format(self._name, self.text)
@@ -35,8 +35,8 @@ class OutputLine(Record):
     __str__ = __repr__
 
     @staticmethod
-    def create(text, target):
-        return OutputLine(text=text, target=target)
+    def create(text, target, entry=Empty()):
+        return OutputLine(text=text, target=target, entry=entry)
 
     def __repr__(self):
         return '{}({!r})'.format(self.__class__.__name__, self.text)
