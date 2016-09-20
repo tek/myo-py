@@ -181,12 +181,13 @@ class SbtParseSpec(ParseSpecBase):
 
     @property
     def _mk_scala_error(self):
-        r = lambda: List.random_string(4)
+        l = 4
+        r = lambda: List.random_string(l)
         tmpl = '[error] {}:{}: butt'
         return List(
             tmpl.format(self._scala_file, self._line),
             '[error]    {}()'.format(r()),
-            '[error]     ^',
+            '[error]    {}^'.format(' ' * l),
         )
 
     def _mk_scala_errors(self, count):
@@ -215,8 +216,8 @@ class SbtParseSpec(ParseSpecBase):
     def filter_format(self):
         def check():
             c = self.vim.buffer.content
-            c.should.have.length_of(4)
-            c.head.should.contain(self._scala_file.name)
+            c.should.have.length_of(6)
+            c.head.should.contain('{}  4'.format(self._scala_file.name))
         filters = List('py:integration.core.parse_spec._filter')
         formatters = List('py:integration.core.parse_spec._format')
         trunc = 'py:integration.core.parse_spec._trunc'

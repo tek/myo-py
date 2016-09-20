@@ -1,15 +1,63 @@
 import abc
 
-from myo.logging import Logging
+from amino import Task
+from amino.lazy import lazy
+
+from ribosome.nvim.components import Syntax
+
+from myo.util.callback import VimCallback
 
 
-class OutputSyntax(Logging, metaclass=abc.ABCMeta):
+class OutputSyntax(VimCallback):
 
-    def __init__(self, vim) -> None:
-        self.vim = vim
+    @lazy
+    def syntax(self):
+        return Syntax(self.vim)
+
+    def _line_re(self, index, rest='.*'):
+        return '\%{}l{}'.format(index + 1, rest)
+
+    def _whole_line_re(self, index, rest='.*'):
+        return '^{}$'.format(self._line_re(index, rest))
+
+    def _match(self, grp, rex, *a, **kw):
+        return Task.call(self.syntax.match, grp, rex, *a, **kw)
+
+    def _match_line(self, grp, index):
+        return self._match(grp, self._whole_line_re(index))
+
+    def _cont(self, grp, rex, cont):
+        return self._match(grp, rex, 'contained', containedin=cont)
+
+    def _link(self, left, right):
+        return Task.call(self.syntax.link, left, right)
+
+
+class SimpleSyntax(OutputSyntax):
+
+    def __call__(self, lines):
+        return Task.call(self.syntax, lines)
 
     @abc.abstractmethod
-    def __call__(self, lines):
-        pass
+    def syntax(self, lines):
+        ...
 
-__all__ = ('OutputSyntax',)
+
+class LineGroups(OutputSyntax):
+
+    def __call__(self, lines):
+        'transparent'
+        return ((lines.with_index.map2(self._line)).sequence(Task) +
+                self._highlight)
+
+    def _line(self, index, line):
+        def run(grp):
+            prefixed = '{}{}'.format('Myo', grp)
+            return self._match_line(prefixed, index)
+        return line.syntax_group / run | Task.zero
+
+    @property
+    def _highlight(self):
+        return self._link('MyoError', 'Error')
+
+__all__ = ('OutputSyntax', 'SimpleSyntax')

@@ -1,12 +1,13 @@
 from ribosome import Machine, NvimFacade, RootMachine
 from ribosome.nvim import HasNvim
 
-from amino import List, Either, _
+from amino import List, _, L
 from ribosome.machine.state import SubMachine, SubTransitions
 
 from myo.logging import Logging
 from myo.env import Env
 from myo.util import parse_callback_spec
+from myo.util.callback import VimCallback
 
 
 class MyoComponent(SubMachine, HasNvim, Logging):
@@ -30,12 +31,19 @@ class MyoTransitions(SubTransitions, HasNvim):
         SubTransitions.__init__(self, machine, *a, **kw)
         HasNvim.__init__(self, machine.vim)
 
+    def _callback_errors(self, all, cbs):
+        def log(s, e):
+            self.log.error('failed to parse callback \'{}\': {}'.format(s, e))
+        (all & cbs).map2(lambda s, c: c.lmap(L(log)(s, _)))
+
     def _callbacks(self, name):
+        def inst(name):
+            return name() if issubclass(name, VimCallback) else name
         var = self.vim.vars.pl(name) | List()
         opt = self.msg.options.get(name) | List()
-        return (
-            (var + opt) /
-            parse_callback_spec
-        ).traverse(_.join, Either)
+        all = var + opt
+        cbs = all / parse_callback_spec / _.join
+        self._callback_errors(all, cbs)
+        return cbs.filter(_.is_right).join / inst
 
 __all__ = ('MyoComponent', 'MyoState', 'MyoTransitions')

@@ -8,9 +8,6 @@ from myo.ui.tmux.util import Ident
 class Record(RecordBase):
     uuid = uuid_field()
 
-    def __str__(self):
-        return super().__repr__()
-
     @property
     def ident(self):
         return self.uuid

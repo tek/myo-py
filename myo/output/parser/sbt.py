@@ -6,20 +6,28 @@ from amino import List, _
 from ribosome.record import field, maybe_field
 
 from myo.output.data import (PositionEntry, OutputEntry, OutputEvent,
-                             ErrorEntry, Location)
+                             Location, CodeEntry)
 from myo.output.parser.base import EdgeData, SimpleParser
 
 
 class FileEntry(PositionEntry):
     error = field(str)
 
+    @property
+    def _str_extra(self):
+        return super()._str_extra.cat(self.error)
+
 
 class ColEntry(OutputEntry):
     ws = field(str)
 
     @property
+    def _str_extra(self):
+        return List(self.col)
+
+    @property
     def col(self):
-        return len(self.ws)
+        return len(self.ws) - 4
 
 
 _msg_type = '\[\w+\]'
@@ -28,9 +36,9 @@ _file = EdgeData(
     .format(_msg_type),
     entry=FileEntry
 )
-_error = EdgeData(
-    r='^{}\s*(?P<error>.+)'.format(_msg_type),
-    entry=ErrorEntry
+_code = EdgeData(
+    r='^{}\s*(?P<code>.+)'.format(_msg_type),
+    entry=CodeEntry
 )
 _col = EdgeData(
     r='^{}(?P<ws>\s*)\^\s*'.format(_msg_type),
@@ -51,8 +59,8 @@ class SbtOutputEvent(OutputEvent, Location):
         return self.file.line, self.col / _.col | 1
 
     @property
-    def error(self):
-        return self.entries.find_type(ErrorEntry)
+    def code(self):
+        return self.entries.find_type(CodeEntry)
 
 
 class Parser(SimpleParser):
@@ -61,8 +69,8 @@ class Parser(SimpleParser):
     def graph(self):
         g = DiGraph()
         g.add_edge('start', 'file', data=_file)
-        g.add_edge('file', 'error', data=_error)
-        g.add_edge('error', 'error', data=_error)
+        g.add_edge('file', 'error', data=_code)
+        g.add_edge('error', 'error', data=_code)
         g.add_edge('error', 'col', data=_col, weight=1)
         return g
 

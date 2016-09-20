@@ -3,10 +3,10 @@ import abc
 from amino import List
 
 from myo.output.data import OutputLine, ParseResult
-from myo.logging import Logging
+from myo.util.callback import VimCallback
 
 
-class Reifier(Logging, metaclass=abc.ABCMeta):
+class Reifier(VimCallback):
 
     def __init__(self, vim) -> None:
         self.vim = vim

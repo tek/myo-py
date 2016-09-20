@@ -14,36 +14,47 @@ from myo.util import parse_int
 class OutputEntry(Record):
     text = field(str)
 
-    def __str__(self):
-        return self._name
+    @property
+    def _str_name(self):
+        return self._name.replace('Entry', '')
 
-    def output_lines(self, event):
-        return self.format_output_lines(event, _.text)
+    def output_lines(self, event, group=Empty()):
+        return self.format_output_lines(event, _.text, group)
 
-    def format_output_lines(self, event, f: Callable):
-        return List(OutputLine.create(f(self), event | self, Just(self)))
+    def format_output_lines(self, event, f: Callable, group=Empty()):
+        return List(OutputLine.create(f(self), event | self, Just(self),
+                                      group=group))
 
 
 class OutputLine(Record):
     text = field(str)
     target = any_field()
-    entry = maybe_field()
+    entry = maybe_field(OutputEntry)
+    indent = dfield(0)
+    group = maybe_field(str)
 
-    def __repr__(self):
+    def __str__(self):
         return '{}({})'.format(self._name, self.text)
 
-    __str__ = __repr__
-
     @staticmethod
-    def create(text, target, entry=Empty()):
-        return OutputLine(text=text, target=target, entry=entry)
+    def create(text, target, entry=Empty(), group=Empty()):
+        return OutputLine(text=text, target=target, entry=entry, group=group)
 
-    def __repr__(self):
-        return '{}({!r})'.format(self.__class__.__name__, self.text)
+    @property
+    def formatted(self):
+        return '{}{}'.format(' ' * self.indent, self.text)
+
+    @property
+    def syntax_group(self):
+        return self.group.o(self.entry / __._name.replace('Entry', ''))
 
 
 class ErrorEntry(OutputEntry):
     error = field(str)
+
+
+class CodeEntry(OutputEntry):
+    code = field(str)
 
 
 def _parse_line(data):
@@ -69,6 +80,10 @@ class PositionEntry(OutputEntry, Location):
     col = dfield(0)
 
     @property
+    def _str_extra(self):
+        return List(self.path.name, self.coords)
+
+    @property
     def file_path(self):
         return self.path
 
@@ -81,10 +96,9 @@ class OutputEvent(Record):
     head = list_field(str)
     entries = list_field(OutputEntry)
 
-    def __repr__(self):
-        return '{}({!r})'.format(self._name, self.entries)
-
-    __str__ = __repr__
+    @property
+    def _str_extra(self):
+        return self.entries
 
     @property
     def _target(self):
@@ -119,7 +133,7 @@ class ParseResult(Record):
 
     @property
     def display_lines(self):
-        return self.lines / _.text
+        return self.lines / _.formatted
 
     def target_for_line(self, line):
         return self.lines.lift(line) / _.target

@@ -3,7 +3,7 @@ from myo.output.reifier.base import Reifier as ReifierBase
 from myo.output.data import OutputLine
 from myo.util import parse_callback_spec
 
-from amino import List, L, _, Just
+from amino import List, L, _, Just, __
 
 
 class Reifier(ReifierBase):
@@ -23,23 +23,28 @@ class Reifier(ReifierBase):
     def _format_error(self, entry):
         return entry.error
 
-    def _sbt_event(self, event, error, col):
+    def _format_code(self, entry):
+        return entry.code
+
+    def _sbt_event(self, event, code, col):
+        code_line = (code.format_output_lines(Just(event), self._format_code) /
+                     __.set(indent=4))
         return (
             event.file.format_output_lines(Just(event),
                                            L(self._format_file)(_, col)) +
-            error.format_output_lines(Just(event), self._format_error)
+            event.file.format_output_lines(Just(event),
+                                           L(self._format_error)(_),
+                                           group=Just('Error')) +
+            code_line
         )
 
     def _event(self, event):
-        if isinstance(event, SbtOutputEvent):
-            return (
-                (event.error & event.col)
-                .map2(L(self._sbt_event)(event, _, _)) | List()
-            )
-        else:
-            return List()
+        return (
+            (event.code & event.col)
+            .map2(L(self._sbt_event)(event, _, _)) | List()
+        )
 
     def __call__(self, result) -> List[OutputLine]:
-        return result.events // self._event
+        return result.events.filter_type(SbtOutputEvent) // self._event
 
 __all__ = ('Reifier',)

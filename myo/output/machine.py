@@ -7,7 +7,6 @@ from ribosome.machine.scratch import ScratchMachine, Quit
 from ribosome.machine.base import UnitTask
 from ribosome.machine.state import Init
 from ribosome.record import field, list_field
-from ribosome.nvim.components import Syntax
 
 from amino.task import Task
 from amino import Map, _, L, Left, __, List, Either, Just, Try, Right
@@ -18,6 +17,7 @@ from myo.logging import Logging
 from myo.record import Record
 from myo.util import parse_callback_spec
 from myo.output.reifier.base import Reifier, LiteralReifier
+from myo.output.syntax.base import LineGroups
 
 Jump = message('Jump')
 FirstError = message('FirstError')
@@ -31,13 +31,14 @@ def fold_callbacks(cbs, z):
 class ResultAdapter(Logging):
 
     def __init__(self, vim, result: ParseResult, filters: List[Callable],
-                 reifier: Either[str, Reifier], formatters: List[Callable]
-                 ) -> None:
+                 reifier: Either[str, Reifier], formatters: List[Callable],
+                 syntaxes: List[Callable]) -> None:
         self.vim = vim
         self.result = result
         self.filters = filters
         self.reifier = reifier
         self.formatters = formatters
+        self.syntaxes = syntaxes
 
     @property
     def filtered(self):
@@ -113,7 +114,7 @@ class OutputMachineTransitions(MyoTransitions):
     @property
     def _set_content(self):
         def run(lines):
-            text = lines / _.text
+            text = lines / _.formatted
             return (
                 self._with_sub(self.data, self.state.set(lines=lines)),
                 Task.call(self.buffer.set_content, text) +
@@ -124,21 +125,18 @@ class OutputMachineTransitions(MyoTransitions):
 
     @property
     def _syntax(self):
-        custom = self.vim.vars.p('output_syntax') // Either.import_path
-        return (
-            custom.o(self._lang_syntax) /
-            (lambda a: a(self.vim, Syntax(self.buffer)))
-        )
+        lang = self._lang_syntax.to_list
+        return self.result.syntaxes.cons(LineGroups(self.vim)) + lang
 
     @property
     def _lang_syntax(self):
         def create(lang):
             return Either.import_name('myo.output.syntax.{}'.format(lang),
                                       'Syntax')
-        return self.result.langs.find_map(create)
+        return self.result.langs.find_map(create) / __(self.vim)
 
     def _run_syntax(self, lines):
-        return self._syntax / (lambda a: a(lines)) | Task.now(None)
+        return (self._syntax / (lambda a: a(lines))).sequence(Task)
 
     def target_for_line(self, line):
         return self.lines.lift(line) / _.target

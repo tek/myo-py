@@ -36,13 +36,14 @@ class CoreTransitions(MyoTransitions):
     @handle(ParseOutput)
     def parse_output(self):
         opt = self.msg.options
-        filters = self._callbacks('output_filters') | List()
+        filters = self._callbacks('output_filters')
         reifier = self.vim.vars.p('output_reifier') // Either.import_path
-        formatters = self._callbacks('output_formatters') | List()
+        formatters = self._callbacks('output_formatters')
+        syntaxes = self._callbacks('output_syntaxes')
         def handle(parser):
             def dispatch(result):
                 adapter = ResultAdapter(self.vim, result, filters, reifier,
-                                        formatters)
+                                        formatters, syntaxes)
                 return parser.display(adapter, opt)
             return RunTask(parser.parse(self.msg.output, self.msg.path) //
                            dispatch)

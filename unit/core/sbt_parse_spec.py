@@ -1,5 +1,5 @@
 from myo.output.parser.sbt import Parser, FileEntry, ColEntry
-from myo.output.data import ErrorEntry, ParseResult
+from myo.output.data import ParseResult, CodeEntry
 
 from unit._support.spec import UnitSpec
 
@@ -35,7 +35,7 @@ class SbtParseSpec(UnitSpec):
         e.should.have.length_of(2)
         (e / _.entries.length).should.equal(List(3, 6))
         (e.head / __.entries.map(type)).should.contain(
-            List(FileEntry, ErrorEntry, ColEntry))
+            List(FileEntry, CodeEntry, ColEntry))
         (e.last // _.entries.head / _.error).should.contain(_errmsg)
         res = ParseResult(head=List('head'), events=e)
         (res.lines.lift(1) / _.target).should.equal(e.head)
