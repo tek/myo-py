@@ -16,9 +16,9 @@ class FileEntry(PositionEntry):
     fun = field(str)
     expr = maybe_field(str)
 
-    def output_lines(self, event: OutputEvent):
+    def lines(self, event: OutputEvent):
         x = self.expr / L(OutputLine.create)(_, self)
-        return super().output_lines(event) + x.to_list
+        return super().lines(event) + x.to_list
 
 
 class ExprEntry(OutputEntry):

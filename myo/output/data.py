@@ -18,10 +18,10 @@ class OutputEntry(Record):
     def _str_name(self):
         return self._name.replace('Entry', '')
 
-    def output_lines(self, event, group=Empty()):
-        return self.format_output_lines(event, _.text, group)
+    def lines(self, event, group=Empty()):
+        return self.format_lines(event, _.text, group)
 
-    def format_output_lines(self, event, f: Callable, group=Empty()):
+    def format_lines(self, event, f: Callable, group=Empty()):
         return List(OutputLine.create(f(self), event | self, Just(self),
                                       group=group))
 
@@ -108,7 +108,7 @@ class OutputEvent(Record):
     def lines(self):
         return (
             (self.head / L(OutputLine.create)(_, self)) +
-            (self.entries // __.output_lines(self._target))
+            (self.entries // __.lines(self._target))
         )
 
 
