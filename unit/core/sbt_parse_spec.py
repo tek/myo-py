@@ -7,7 +7,7 @@ from amino import List, _, __
 
 _errmsg = 'error 23'
 _line = 23
-_col = 7
+_col = 3
 
 trace = '''
 [info] Compiling 1 Scala source to /path/to/file...
@@ -24,7 +24,7 @@ trace = '''
 [error] (compile:compileIncremental) Compilation failed
 [error] Total time: 0 s, completed Jan 1, 1900 00:00:00 AM
 >
-'''.format(err=_errmsg, line=_line, col=' ' * _col)
+'''.format(err=_errmsg, line=_line, col=' ' * (_col + 4))
 
 
 class SbtParseSpec(UnitSpec):
