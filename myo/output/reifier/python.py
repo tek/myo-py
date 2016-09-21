@@ -1,21 +1,11 @@
 from myo.output.reifier.base import Reifier as ReifierBase
 from myo.output.data import OutputLine, EmptyLine
-from myo.util import parse_callback_spec
 from myo.output.parser.python import FileEntry, PyErrorEntry
 
-from amino import List, _, Just, __
+from amino import List, Just, __
 
 
 class Reifier(ReifierBase):
-
-    def _truncate(self, path):
-        return (
-            self.vim.vars.p('path_truncator') /
-            parse_callback_spec //
-            _.join /
-            (lambda a: a(path)) |
-            path
-        )
 
     def _format_file(self, entry: FileEntry):
         return '{}  {} {}'.format(str(self._truncate(entry.path)), entry.line,

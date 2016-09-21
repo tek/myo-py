@@ -12,7 +12,7 @@ class OutputSyntax(VimCallback):
 
     @lazy
     def syntax(self):
-        return Syntax(self.vim)
+        return Syntax(self.target)
 
     def _line_re(self, index, rest='.*'):
         return '\%{}l{}'.format(index + 1, rest)
