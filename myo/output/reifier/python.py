@@ -28,9 +28,9 @@ class Reifier(ReifierBase):
         return entry.code
 
     def _file(self, event, entry: FileEntry):
-        code = (entry.code / __.format_lines(Just(event), self._format_code) |
+        code = (entry.code / __.format_lines(Just(entry), self._format_code) |
                 List()) / __.set(indent=4)
-        return entry.format_lines(Just(event), self._format_file) + code
+        return entry.format_lines(Just(entry), self._format_file) + code
 
     def _error(self, event, entry: PyErrorEntry):
         return (entry.format_lines(Just(event), self._format_error) +
