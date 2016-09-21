@@ -66,7 +66,7 @@ class PythonParseSpec(ParseSpecBase):
     def _pre_start(self):
         super()._pre_start()
         self.vim.vars.set_p('output_reifier',
-                            'myo.output.reifier.base.LiteralReifier')
+                            'py:myo.output.reifier.base.LiteralReifier')
 
     @lazy
     def _file(self):
@@ -98,15 +98,18 @@ class PythonParseSpec(ParseSpecBase):
         err = 'AttributeError: butt'
         return t.cat(err)
 
-    def _init(self, parse_opt=Map()):
-        trace1 = self._mk_trace
-        trace2 = self._mk_trace
-        output = trace1 + trace2
+    def _parse(self, output, parse_opt=Map()):
         cmd = Command(name='a', line='a', langs=List('python'))
         msg = ParseOutput(cmd, output, None, parse_opt)
         self.plugin.myo_start()
         self.root.send_sync(msg)
         return output
+
+    def _init(self, parse_opt=Map()):
+        trace1 = self._mk_trace
+        trace2 = self._mk_trace
+        output = trace1 + trace2
+        return self._parse(output, parse_opt)
 
     def _go(self, line_count=_line_count, parse_opt=Map()):
         output = self._init(parse_opt)
@@ -151,10 +154,12 @@ class PythonParseSpec(ParseSpecBase):
     def _syntax(self):
         from amino import log
         self.vim.vars.set_p('output_reifier', '')
+        self.vim.vars.set_p('jump_to_error', True)
         self.vim.cmd_sync('hi Error cterm=bold ctermfg=1')
         self._init()
         self._wait(3)
         log.info(self.vim.cmd_output('syntax').join_lines)
+        self._check_jumped()
 
 
 def _filter1(result):
