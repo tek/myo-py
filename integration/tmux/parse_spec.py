@@ -72,6 +72,8 @@ class PythonVimTestSpec(TmuxCmdSpec):
         self.vim.vars.set('test#python#runner', 'nose')
         self.vim.cmd_sync('noswapfile edit {}'.format(self._fname))
         self.vim.buffer.vars.set_p('test_langs', ['python'])
+        self.vim.vars.set_p('output_reifier',
+                            'myo.output.reifier.base.LiteralReifier')
 
     def _run_test(self):
         check = lambda: self._output.should.contain(self._target)

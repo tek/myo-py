@@ -63,6 +63,11 @@ class ParseSpecBase(MyoIntegrationSpec):
 
 class PythonParseSpec(ParseSpecBase):
 
+    def _pre_start(self):
+        super()._pre_start()
+        self.vim.vars.set_p('output_reifier',
+                            'myo.output.reifier.base.LiteralReifier')
+
     @lazy
     def _file(self):
         path = temp_file('core', 'parse', 'python', 'code.py')
@@ -145,6 +150,7 @@ class PythonParseSpec(ParseSpecBase):
 
     def _syntax(self):
         from amino import log
+        self.vim.vars.set_p('output_reifier', '')
         self.vim.cmd_sync('hi Error cterm=bold ctermfg=1')
         self._init()
         self._wait(3)
@@ -224,7 +230,7 @@ class SbtParseSpec(ParseSpecBase):
         def check():
             c = self.vim.buffer.content
             c.should.have.length_of(6)
-            c.head.should.contain('{}  4'.format(self._scala_file.name))
+            c.head.should.contain('{}  3'.format(self._scala_file.name))
         filters = List('py:integration.core.parse_spec._filter')
         formatters = List('py:integration.core.parse_spec._format')
         trunc = 'py:integration.core.parse_spec._trunc'
