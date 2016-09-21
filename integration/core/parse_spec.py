@@ -143,6 +143,13 @@ class PythonParseSpec(ParseSpecBase):
         self._init()
         self._check_jumped()
 
+    def _syntax(self):
+        from amino import log
+        self.vim.cmd_sync('hi Error cterm=bold ctermfg=1')
+        self._init()
+        self._wait(3)
+        log.info(self.vim.cmd_output('syntax').join_lines)
+
 
 def _filter1(result):
     e = result.events

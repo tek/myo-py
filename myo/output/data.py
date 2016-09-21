@@ -49,6 +49,13 @@ class OutputLine(Record):
         return self.group.o(self.entry / __._name.replace('Entry', ''))
 
 
+class EmptyLine(OutputLine):
+
+    @staticmethod
+    def create(target):
+        return EmptyLine(text='', target=target)
+
+
 class ErrorEntry(OutputEntry):
     error = field(str)
 

@@ -23,14 +23,17 @@ class OutputSyntax(VimCallback):
     def _match(self, grp, rex, *a, **kw):
         return Task.call(self.syntax.match, grp, rex, *a, **kw)
 
-    def _match_line(self, grp, index):
-        return self._match(grp, self._whole_line_re(index))
+    def _match_line(self, grp, index, *a, **kw):
+        return self._match(grp, self._whole_line_re(index), *a, **kw)
 
     def _cont(self, grp, rex, cont):
         return self._match(grp, rex, 'contained', containedin=cont)
 
     def _link(self, left, right):
         return Task.call(self.syntax.link, left, right)
+
+    def _hi(self, grp, *a, **kw):
+        return Task.call(self.syntax.highlight, grp, *a, **kw)
 
 
 class SimpleSyntax(OutputSyntax):
@@ -53,7 +56,7 @@ class LineGroups(OutputSyntax):
     def _line(self, index, line):
         def run(grp):
             prefixed = '{}{}'.format('Myo', grp)
-            return self._match_line(prefixed, index)
+            return self._match_line(prefixed, index, 'transparent')
         return line.syntax_group / run | Task.zero
 
     @property
