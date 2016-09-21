@@ -56,11 +56,14 @@ class LineGroups(OutputSyntax):
     def _line(self, index, line):
         def run(grp):
             prefixed = '{}{}'.format('Myo', grp)
-            return self._match_line(prefixed, index, 'transparent')
+            return self._match_line(prefixed, index)
         return line.syntax_group / run | Task.zero
 
     @property
     def _highlight(self):
-        return self._link('MyoError', 'Error')
+        return (
+            self._link('MyoError', 'Error') +
+            self._link('MyoPath', 'Directory')
+        )
 
 __all__ = ('OutputSyntax', 'SimpleSyntax')
