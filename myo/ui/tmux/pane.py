@@ -116,15 +116,6 @@ class PaneData(PaneI):
 
 class PaneAdapter(Adapter, PaneI):
 
-    def cmd(self, *a):
-        c = self.native.cmd(*a)
-        if c.stderr:
-            self.log.error(List.wrap(c.stderr).join_lines)
-        return c.stdout
-
-    def cmd_async(self, *a):
-        self.native.cmd(*a)
-
     @lazy
     def id(self):
         return self.native._pane_id
