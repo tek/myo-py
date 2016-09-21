@@ -12,7 +12,7 @@ from amino.task import Task
 from amino import Map, _, L, Left, __, List, Either, Just, Try, Right
 
 from myo.output.data import ParseResult, Location, OutputLine
-from myo.state import MyoTransitions
+from myo.state import MyoTransitions, MyoHelpers
 from myo.logging import Logging
 from myo.record import Record
 from myo.util import parse_callback_spec
@@ -30,10 +30,10 @@ def fold_callbacks(cbs, z):
 
 class ResultAdapter(Logging):
 
-    def __init__(self, vim, result: ParseResult, filters: List[Callable],
+    def __init__(self, buffer, result: ParseResult, filters: List[Callable],
                  reifier: Either[str, Reifier], formatters: List[Callable],
                  syntaxes: List[Callable]) -> None:
-        self.vim = vim
+        self.buffer = buffer
         self.result = result
         self.filters = filters
         self.reifier = reifier
@@ -50,18 +50,18 @@ class ResultAdapter(Logging):
     @property
     def _reifier(self):
         return (
-            self.reifier.o(self._lang_reifier) /
-            (lambda a: a(self.vim)) |
-            (lambda: LiteralReifier(self.vim))
+            self.reifier.o(lambda: self._lang_reifier) |
+            (lambda: LiteralReifier(self.buffer))
         )
 
+    @property
     def _lang_reifier(self):
         def create(lang):
             return (
                 Either.import_name('myo.output.reifier.{}'.format(lang),
                                    'Reifier')
             )
-        return self.langs.find_map(create)
+        return self.langs.find_map(create) / __(self.buffer)
 
     @property
     def lines(self):
@@ -194,19 +194,19 @@ class OutputMachineTransitions(MyoTransitions):
         return (self.result.langs.find_map(self._lang_jumps.get) |
                 (lambda: self._jump_first))
 
-    def _position_index(self, lines):
+    def _location_index(self, lines):
         return (
             lines
-            .index_where(lambda a: isinstance(a.target, Location))
+            .index_where(__.entry.exists(L(isinstance)(_, Location)))
             .map(lambda a: (a + 1, 1))
         )
 
     def _jump_first(self, result):
-        return self._position_index(self.lines)
+        return self._location_index(self.lines)
 
     def _jump_last(self, result):
         return (
-            self._position_index(self.lines.reversed)
+            self._location_index(self.lines.reversed)
             .map2(lambda l, c: (self.lines.length - l, c))
         )
 
@@ -227,14 +227,28 @@ class OutputMachineTransitions(MyoTransitions):
             return win + edit
 
 
-class OutputMachine(ScratchMachine, Logging):
+class OutputMachine(ScratchMachine, MyoHelpers, Logging):
     Transitions = OutputMachineTransitions
 
     def __init__(self, vim: NvimFacade, scratch: ScratchBuffer,
-                 result: ResultAdapter, parent: Machine, options: Map) -> None:
+                 result: ParseResult, parent: Machine, options: Map) -> None:
         super().__init__(vim, scratch, parent=parent, title='output')
-        self.result = result
-        self.options = options
+        self._result = result
+        self._options = options
+
+    @property
+    def options(self):
+        return self._options
+
+    @property
+    def result(self):
+        buffer = self.scratch.buffer
+        filters = self._callbacks('output_filters')
+        reifier = self._callback('output_reifier')
+        formatters = self._callbacks('output_formatters')
+        syntaxes = self._callbacks('output_syntaxes', buffer)
+        return ResultAdapter(buffer, self._result, filters, reifier,
+                             formatters, syntaxes)
 
     @property
     def prefix(self):

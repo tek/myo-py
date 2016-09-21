@@ -3,14 +3,13 @@ from ribosome.machine.base import io
 from ribosome.machine.transition import Fatal
 
 import amino
-from amino import __, F, L, _, Right, Just, List, Left, Either
+from amino import __, F, L, _, Right, Just, List, Left
 
 from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.core.dispatch import VimDispatcher
 from myo.plugins.core.message import StageI, Initialized, ParseOutput
 from myo.output import VimCompiler, CustomOutputHandler, Parsing
 from myo.util import parse_callback_spec
-from myo.output.machine import ResultAdapter
 
 
 class CoreTransitions(MyoTransitions):
@@ -36,17 +35,9 @@ class CoreTransitions(MyoTransitions):
     @handle(ParseOutput)
     def parse_output(self):
         opt = self.msg.options
-        filters = self._callbacks('output_filters')
-        reifier = self.vim.vars.p('output_reifier') // Either.import_path
-        formatters = self._callbacks('output_formatters')
-        syntaxes = self._callbacks('output_syntaxes')
         def handle(parser):
-            def dispatch(result):
-                adapter = ResultAdapter(self.vim, result, filters, reifier,
-                                        formatters, syntaxes)
-                return parser.display(adapter, opt)
             return RunTask(parser.parse(self.msg.output, self.msg.path) //
-                           dispatch)
+                           L(parser.display)(_, opt))
         return self._error_handler(self.msg.command).join / handle
 
     def _error_handler(self, cmd):
