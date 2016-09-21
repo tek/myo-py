@@ -96,7 +96,7 @@ class OutputMachineTransitions(MyoTransitions):
 
     @property
     def result(self):
-        return self.machine.result
+        return self.state.result
 
     @property
     def _special_jumps(self):
