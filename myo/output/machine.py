@@ -177,6 +177,8 @@ class OutputMachineTransitions(MyoTransitions):
 
     @handle(Jump)
     def jump(self):
+        # cannot use Task.call for set_cursor because then the window is fixed
+        # to what is active before opening the file
         target = (
             self.vim.window.line /
             (_ - 1) //
@@ -187,7 +189,8 @@ class OutputMachineTransitions(MyoTransitions):
             (target / _.coords)
             .map2(lambda a, b: Task(lambda: self.vim.window.set_cursor(a, b)))
         )
-        return (open_file & set_line).map2(add) / UnitTask
+        post = Task(lambda: self.vim.cmd('normal! zvzz'))
+        return (open_file & set_line).map2(add) / (_ + post) / UnitTask
 
     @property
     def _jump_default(self):
