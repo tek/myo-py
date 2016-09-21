@@ -60,7 +60,10 @@ def parse_vim_callback(data: str):
 
 
 def parse_callback_spec(data: str):
-    return parse_python_callback(data).or_else(F(parse_vim_callback, data))
+    if not isinstance(data, str):
+        return Left('callback spec must be str, got {}'.format(type(data)))
+    else:
+        return parse_python_callback(data).or_else(F(parse_vim_callback, data))
 
 
 def amend_options(opt: Map, key: str, value: Maybe):
