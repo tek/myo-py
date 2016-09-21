@@ -95,6 +95,10 @@ class OutputMachineTransitions(MyoTransitions):
         return self.scratch.buffer
 
     @property
+    def window(self):
+        return self.scratch.window
+
+    @property
     def result(self):
         return self.state.result
 
@@ -113,10 +117,14 @@ class OutputMachineTransitions(MyoTransitions):
 
     @property
     def _set_content(self):
+        min_size = self.vim.vars.pi('output_window_min_size') | 10
+        max_size = self.vim.vars.pi('output_window_max_size') | 30
         def run(lines):
             text = lines / _.formatted
+            size = min(max_size, max(min_size, text.length))
             return (
                 self._with_sub(self.data, self.state.set(lines=lines)),
+                Task.call(self.window.cmd, 'resize {}'.format(size)) +
                 Task.call(self.buffer.set_content, text) +
                 Task.call(self.buffer.set_modifiable, False) +
                 self._run_syntax(lines)
