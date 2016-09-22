@@ -169,7 +169,7 @@ class OutputMachineTransitions(MyoTransitions):
     @handle(FirstError)
     def first_error(self):
         def set_cursor(a):
-            x, y = a if isinstance(a, tuple) else a, 1
+            x, y = a if isinstance(a, tuple) else (a, 1)
             return Task(lambda: self.vim.window.set_cursor(x + 1, y))
         special, custom = self.result.first_error.split_type(SpecialCallback)
         special_cb = special / _.name // self._special_jumps.get
