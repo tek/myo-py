@@ -15,6 +15,7 @@ class ShowSpec(CmdSpec):
         parser = 'py:foo.bar'
         shell = 'py'
         target = List(
+            'SC <test>',
             'S py: ⎡langs -> {}⎤'.format(langs.mk_string(',')),
             'SC test: ⎡parser -> {}⎤ ∘ ⎡shell -> {}⎤'.format(parser, shell),
         )
@@ -23,7 +24,7 @@ class ShowSpec(CmdSpec):
         self.json_cmd_sync('MyoShellCommand test', line='print(1)',
                            shell=shell, parser=parser)
         self.vim.cmd_sync('MyoCommandShow')
-        check = lambda: self._log_out.should_not.equal(target)
+        check = lambda: self._log_out.should.equal(target)
         later(check)
 
 __all__ = ('ShowSpec',)
