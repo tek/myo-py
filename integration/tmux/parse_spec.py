@@ -41,6 +41,7 @@ class ParseSpec(TmuxCmdSpec):
 
     def shell(self):
         self.vim.vars.set_p('jump_to_error', False)
+        self.vim.vars.set_p('lang_reifier', False)
         err = List.random_string()
         line = 'raise Exception(\'{}\')'.format(err)
         target = 'Exception: {}'.format(err)
@@ -73,7 +74,7 @@ class PythonVimTestSpec(TmuxCmdSpec):
         self.vim.cmd_sync('noswapfile edit {}'.format(self._fname))
         self.vim.buffer.vars.set_p('test_langs', ['python'])
         self.vim.vars.set_p('output_reifier',
-                            'myo.output.reifier.base.LiteralReifier')
+                            'py:myo.output.reifier.base.LiteralReifier')
 
     def _run_test(self):
         check = lambda: self._output.should.contain(self._target)

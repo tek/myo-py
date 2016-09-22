@@ -60,6 +60,9 @@ class ParseSpecBase(MyoIntegrationSpec):
         super()._pre_start()
         self.vim.vars.set_p('jump_to_error', False)
 
+    def _cursor(self, x, y):
+        later(lambda: self.vim.window.cursor.should.equal(List(x, y)))
+
 
 class PythonParseSpec(ParseSpecBase):
 
@@ -86,17 +89,22 @@ class PythonParseSpec(ParseSpecBase):
             '    return 1'
         )
 
-    @property
-    def _mk_trace(self):
+    def _frame(self, i):
         r = lambda: List.random_string(4)
         tmpl = '  File "{}", line 2, in {}'
-        frame = lambda i: List(
+        return List(
             tmpl.format(self._file, self._python_func_name),
             '    {}()'.format(r())
         )
-        t = List.range(_trace_len) // frame
+
+    def _mk_trace_with(self, length):
+        t = List.range(length) // self._frame
         err = 'AttributeError: butt'
         return t.cat(err)
+
+    @property
+    def _mk_trace(self):
+        return self._mk_trace_with(_trace_len)
 
     def _parse(self, output, parse_opt=Map()):
         cmd = Command(name='a', line='a', langs=List('python'))
@@ -119,7 +127,7 @@ class PythonParseSpec(ParseSpecBase):
 
     def _check_jumped(self):
         self.vim.window.buffer.name.should.equal(str(self._file))
-        self.vim.window.cursor.should.equal(List(2, 0))
+        self._cursor(2, 0)
 
     def jump(self):
         self._go()
@@ -159,6 +167,13 @@ class PythonParseSpec(ParseSpecBase):
         self.vim.vars.set_p('jump_to_error', True)
         self._init()
         self._check_jumped()
+
+    def lang_reifier(self):
+        self.vim.vars.set_p('output_reifier',
+                            'py:myo.output.reifier.python.Reifier')
+        trace1 = self._mk_trace_with(1)
+        self._parse(trace1)
+        self._cursor(1, 1)
 
     def _syntax(self):
         from amino import log
@@ -238,7 +253,7 @@ class SbtParseSpec(ParseSpecBase):
         self.root.send_sync(Mapping(output_machine.uuid, '%cr%'))
         self.vim.windows.should.have.length_of(2)
         self.vim.window.buffer.name.should.equal(str(self._scala_file))
-        self.vim.window.cursor.should.equal(List(3, 4))
+        self._cursor(3, 4)
 
     def filter_format(self):
         def check():

@@ -9,7 +9,8 @@ from ribosome.machine.state import Init
 from ribosome.record import field, list_field
 
 from amino.task import Task
-from amino import Map, _, L, Left, __, List, Either, Just, Try, Right
+from amino import Map, _, L, Left, __, List, Either, Just, Try, Right, Boolean
+from amino.lazy import lazy
 
 from myo.output.data import ParseResult, Location, OutputLine
 from myo.state import MyoTransitions, MyoHelpers
@@ -42,6 +43,10 @@ class ResultAdapter(Logging):
         self.syntaxes = syntaxes
         self.first_error = first_error
 
+    @lazy
+    def vim(self):
+        return self.buffer.root
+
     @property
     def filtered(self):
         return fold_callbacks(self.filters, self.result)
@@ -58,12 +63,13 @@ class ResultAdapter(Logging):
 
     @property
     def _lang_reifier(self):
+        want = self.vim.vars.pb('lang_reifier') | Boolean(True)
         def create(lang):
             return (
                 Either.import_name('myo.output.reifier.{}'.format(lang),
                                    'Reifier')
             )
-        return self.langs.find_map(create) / __(self.buffer)
+        return want.maybe(self.langs) // __.find_map(create) / __(self.buffer)
 
     @property
     def lines(self):
@@ -162,6 +168,9 @@ class OutputMachineTransitions(MyoTransitions):
 
     @handle(FirstError)
     def first_error(self):
+        def set_cursor(a):
+            x, y = a if isinstance(a, tuple) else a, 1
+            return Task(lambda: self.vim.window.set_cursor(x + 1, y))
         special, custom = self.result.first_error.split_type(SpecialCallback)
         special_cb = special / _.name // self._special_jumps.get
         jump = self.vim.vars.pb('jump_to_error') | True
@@ -169,7 +178,7 @@ class OutputMachineTransitions(MyoTransitions):
         return (
             (custom + special_cb)
             .find_map(__(self.lines))
-            .map2(L(Task.call)(self.vim.window.set_cursor, _, _))
+            .map(set_cursor)
             .map(__.replace(Just(next_step)))
         )
 
