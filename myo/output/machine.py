@@ -15,7 +15,7 @@ from myo.output.data import ParseResult, Location, OutputLine
 from myo.state import MyoTransitions, MyoHelpers
 from myo.logging import Logging
 from myo.record import Record
-from myo.util import parse_callback_spec
+from myo.util.callback import SpecialCallback
 from myo.output.reifier.base import Reifier, LiteralReifier
 from myo.output.syntax.base import LineGroups
 
@@ -32,13 +32,15 @@ class ResultAdapter(Logging):
 
     def __init__(self, buffer, result: ParseResult, filters: List[Callable],
                  reifier: Either[str, Reifier], formatters: List[Callable],
-                 syntaxes: List[Callable]) -> None:
+                 syntaxes: List[Callable], first_error: List[Callable]
+                 ) -> None:
         self.buffer = buffer
         self.result = result
         self.filters = filters
         self.reifier = reifier
         self.formatters = formatters
         self.syntaxes = syntaxes
+        self.first_error = first_error
 
     @property
     def filtered(self):
@@ -160,27 +162,15 @@ class OutputMachineTransitions(MyoTransitions):
 
     @handle(FirstError)
     def first_error(self):
-        spec = (
-            self.machine.options.get('first_error')
-            .o(self.vim.vars.pl('first_error')) |
-            List()
-        ).cat('default')
-        special, custom_spec = spec.split(self._special_jumps.contains)
-        special_cb = special // self._special_jumps.get
+        special, custom = self.result.first_error.split_type(SpecialCallback)
+        special_cb = special / _.name // self._special_jumps.get
         jump = self.vim.vars.pb('jump_to_error') | True
         next_step = Jump() if jump else Nop()
         return (
-            (
-                custom_spec /
-                parse_callback_spec /
-                _.ljoin
-            ).sequence(Either) // (
-                __
-                .add(special_cb)
-                .find_map(__(self.result))
-                .map2(L(Task.call)(self.vim.window.set_cursor, _, _))
-                .map(__.replace(Just(next_step)))
-            )
+            (custom + special_cb)
+            .find_map(__(self.lines))
+            .map2(L(Task.call)(self.vim.window.set_cursor, _, _))
+            .map(__.replace(Just(next_step)))
         )
 
     @handle(Jump)
@@ -258,8 +248,10 @@ class OutputMachine(ScratchMachine, MyoHelpers, Logging):
         reifier = self._callback('output_reifier')
         formatters = self._callbacks('output_formatters')
         syntaxes = self._callbacks('output_syntaxes', buffer)
+        first_error = (self._callbacks('first_error')
+                       .cat(SpecialCallback('default')))
         return ResultAdapter(buffer, self._result, filters, reifier,
-                             formatters, syntaxes)
+                             formatters, syntaxes, first_error)
 
     @property
     def prefix(self):

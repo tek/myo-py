@@ -6,7 +6,7 @@ from ribosome.machine.state import SubMachine, SubTransitions
 
 from myo.logging import Logging
 from myo.env import Env
-from myo.util import parse_callback_spec
+from myo.util.callback import parse_callback_spec
 from myo.util.callback import VimCallback
 
 

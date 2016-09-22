@@ -7,8 +7,7 @@ from myo.state import MyoComponent, MyoTransitions
 
 from amino import L, _, List, Try, __, Maybe, curried, Map, Right, I
 from myo.command import Command, VimCommand, ShellCommand, Shell
-from myo.util import (optional_params, parse_callback_spec, amend_options,
-                      bool_params)
+from myo.util import optional_params, amend_options, bool_params
 from myo.plugins.core.message import Parse, ParseOutput, StageI
 from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
                                          AddShellCommand, AddShell,
@@ -17,6 +16,7 @@ from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
                                          CommandAdded, CommandShow, RunLatest,
                                          LoadHistory, StoreHistory)
 from myo.plugins.command.util import assemble_vim_test_line
+from myo.util.callback import parse_callback_spec
 
 RunInShell = namedtuple('RunInShell', ['shell'])
 

@@ -1,6 +1,4 @@
-import re
-
-from amino import Right, Left, Map, Maybe, __, F, Either, List
+from amino import Right, Left, Map, Maybe, __, List
 
 
 def parse_int(i):
@@ -39,35 +37,9 @@ def pane_params(m: Map):
 def pane_bool_params(m: Map):
     return bool_params(m, 'pin', 'focus', 'kill')
 
-_py_callback_re = re.compile('^py:(.+)')
-_vim_callback_re = re.compile('^vim:(.+)')
-
-
-def _cb_err(data):
-    return 'invalid callback string: {}'.format(data)
-
-
-def parse_python_callback(data: str):
-    return (
-        Maybe(_py_callback_re.match(data)) /
-        __.group(1) /
-        Either.import_path
-    ).to_either(_cb_err(data))
-
-
-def parse_vim_callback(data: str):
-    return Left(_cb_err(data))
-
-
-def parse_callback_spec(data: str):
-    if not isinstance(data, str):
-        return Left('callback spec must be str, got {}'.format(type(data)))
-    else:
-        return parse_python_callback(data).or_else(F(parse_vim_callback, data))
-
 
 def amend_options(opt: Map, key: str, value: Maybe):
     return value / (lambda a: opt + (key, a)) | opt
 
 __all__ = ('parse_int', 'optional_params', 'view_params', 'parse_id',
-           'parse_callback_spec', 'pane_params')
+           'pane_params')

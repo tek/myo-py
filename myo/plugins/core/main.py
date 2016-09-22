@@ -9,7 +9,7 @@ from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.core.dispatch import VimDispatcher
 from myo.plugins.core.message import StageI, Initialized, ParseOutput
 from myo.output import VimCompiler, CustomOutputHandler, Parsing
-from myo.util import parse_callback_spec
+from myo.util.callback import parse_callback_spec
 
 
 class CoreTransitions(MyoTransitions):

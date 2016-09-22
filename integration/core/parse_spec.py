@@ -139,6 +139,15 @@ class PythonParseSpec(ParseSpecBase):
         self._go()
         self.vim.window.line.should.contain(_line_count - 1)
 
+    def initial_pos_default(self):
+        self._go()
+        self.vim.window.line.should.contain(_line_count - 3)
+
+    def initial_pos_first(self):
+        self.vim.vars.set_p('first_error', ['s:first'])
+        self._go()
+        self.vim.window.line.should.contain(3)
+
     def initial_pos_with_jump(self):
         self.vim.vars.set_p('jump_to_error', True)
         self.vim.vars.set_p('first_error',
@@ -219,7 +228,7 @@ class SbtParseSpec(ParseSpecBase):
 
     def complete(self):
         self.vim.vars.set_p('output_reifier',
-                            'myo.output.reifier.base.LiteralReifier')
+                            'py:myo.output.reifier.base.LiteralReifier')
         output = self._mk_scala_errors(1)
         self._parse(output)
         output_machine = self.root.sub[-1]
