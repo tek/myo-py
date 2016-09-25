@@ -8,6 +8,7 @@ from ribosome import command, NvimStatePlugin, msg_command, json_msg_command
 from ribosome.machine.scratch import Mapping
 from ribosome.request import msg_function
 import ribosome.nvim.components
+from ribosome.machine.state import UpdateRecord
 
 from myo.plugins.core.main import StageI
 from myo.main import Myo
@@ -163,6 +164,10 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
 
     @json_msg_command(RunVimTest)
     def myo_vim_test(self):
+        pass
+
+    @json_msg_command(UpdateRecord)
+    def myo_update(self):
         pass
 
     def _eval(self, args, go):

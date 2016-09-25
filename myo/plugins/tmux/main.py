@@ -137,6 +137,15 @@ class TmuxTransitions(MyoTransitions):
     def panes(self):
         return self.machine.panes
 
+    def record_lens(self, tpe, name):
+        return (
+            self._pane_lens(name)
+            if tpe == 'pane' else
+            self._layout_lens(name)
+            if tpe == 'layout' else
+            Empty()
+        )
+
     @may_handle(StageI)
     def stage_1(self):
         ''' Initialize the state. If it doesn't exist, Env will create
@@ -440,6 +449,19 @@ class TmuxTransitions(MyoTransitions):
 
     def _pack_path(self, path):
         return self.layouts.pack_path(path)
+
+    def _pane_lens(self, ident):
+        return self._view_lens(ident, __.pane_lens)
+
+    def _layout_lens(self, ident):
+        return self._view_lens(ident, __.layout_lens)
+
+    def _view_lens(self, ident, lens_cb):
+        return (
+            self.state.windows
+            .find_lens(lens_cb(__.has_ident(ident))) /
+            lens(self.state).windows.add_lens
+        )
 
     def _layout_lens_bound(self, ident):
         ll = lambda l: Just(lens()) if l.has_ident(ident) else sub(l)
