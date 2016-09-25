@@ -166,7 +166,6 @@ class OutputMachineTransitions(MyoTransitions):
 
     @may_handle(SetResult)
     def set_result(self):
-        self.log.verbose('set_result')
         result = self._adapter(self.msg.result)
         return self.with_sub(self.state.set(result=result)), DisplayLines()
 

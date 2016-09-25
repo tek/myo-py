@@ -13,7 +13,7 @@ class Command(Named):
     transient = bool_field()
     langs = list_field()
     kill = bool_field()
-    signals = list_field(str)
+    signals = list_field(str, initial=List('int', 'term', 'kill'))
 
     @property
     def desc(self):
