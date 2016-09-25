@@ -25,7 +25,8 @@ class Pane(View):
     session_id = either_field(int)
     log_path = maybe_field(Path)
     pin = bool_field()
-    focus = bool_field(False)
+    focus = bool_field()
+    kill = bool_field()
 
     @property
     def id_s(self):

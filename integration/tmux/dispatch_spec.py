@@ -103,4 +103,20 @@ class DispatchSpec(TmuxCmdSpec):
         later(lambda: pid().should.be.greater_than(0))
         later(lambda: pid().should_not.equal(pid1))
 
+    def pane_kill(self):
+        pid = lambda: self._panes.last // _.command_pid | 0
+        self.json_cmd('MyoShellCommand test', line='tee', signals=['int'])
+        self.json_cmd('MyoUpdate pane make', kill=True)
+        self._open_pane('make')
+        self._pane_count(2)
+        self._panes.last / __.send_keys('tail')
+        def check():
+            pid()
+            pid().should.be.greater_than(0)
+        later(check)
+        pid1 = pid()
+        self.vim.cmd_sync('MyoRun test')
+        later(check)
+        later(lambda: pid().should_not.equal(pid1))
+
 __all__ = ('DispatchSpec',)

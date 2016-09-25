@@ -63,17 +63,15 @@ class Layout(View):
     def find_view(self, ident: Ident):
         return self.find_pane(ident).or_else(self.find_layout(ident))
 
-    @staticmethod
-    def pane_lens(root, f: Callable[[Pane], bool]):
+    def pane_lens(self, f: Callable[[Pane], bool]):
         def g(l):
             return (
                 l.panes.lens(f)
                 .map(lens().panes.add_lens)
                 .or_else(lambda: h(l))
             )
-        def h(l):
-            return l.layouts.deep_lens(g) / lens().layouts.add_lens
-        return h(root) / lens(root).add_lens
+        h = lambda l: l.layouts.find_lens(g) / lens().layouts.add_lens
+        return h(self) / lens().add_lens
 
     def replace_pane(self, pane: Pane):
         panes = self.panes.replace_where(pane)(__.has_ident(pane.ident))

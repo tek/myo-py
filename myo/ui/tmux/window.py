@@ -1,10 +1,14 @@
-from amino import List, __, _
+from typing import Callable
+
+from lenses import lens
+
+from amino import List, __, _, Maybe
 from amino.lazy import lazy
 
 from ribosome.record import Record, field, maybe_field
 
 from myo.ui.tmux.adapter import Adapter
-from myo.ui.tmux.pane import PaneAdapter
+from myo.ui.tmux.pane import PaneAdapter, Pane
 from myo.ui.tmux.layout import Layout
 from myo.ui.tmux.util import parse_window_id
 
@@ -21,6 +25,9 @@ class Window(Record):
     @property
     def name(self):
         return self.root.name
+
+    def pane_lens(self, f: Callable[[Pane], Maybe]):
+        return self.root.pane_lens(f) / lens().root.add_lens
 
 
 class VimWindow(Window):

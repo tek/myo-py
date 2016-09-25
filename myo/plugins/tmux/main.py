@@ -402,9 +402,10 @@ class TmuxTransitions(MyoTransitions):
         kill = opt.get('kill') | command.kill
         signals = opt.get('signals') / List.wrap | command.signals
         def check_running(path):
+            pane_kill = path.view.kill
             return Task.now(Right(path)) if in_shell else (
-                self.panes.ensure_not_running(path.view, kill=kill,
-                                              signals=signals) /
+                self.panes.ensure_not_running(
+                    path.view, kill=kill or pane_kill, signals=signals) /
                 __.replace(path)
             )
         def pipe(path):
