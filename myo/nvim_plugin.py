@@ -142,7 +142,7 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
     def myo_run_in_shell(self):
         pass
 
-    @msg_command(RunLatest)
+    @json_msg_command(RunLatest)
     def myo_run_latest(self):
         pass
 
