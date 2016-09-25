@@ -1,7 +1,7 @@
 from integration._support.command import CmdSpec
 
 from amino.test import later
-from amino import __
+from amino import __, List
 
 
 class _DispatchBase(CmdSpec):
@@ -18,7 +18,7 @@ class _DispatchBase(CmdSpec):
 class DispatchSpec(_DispatchBase):
 
     def autocmd(self):
-        name = 'test'
+        name = List.random_string(5)
         self.vim.autocmd('User', 'MyoRunCommand',
                          'let g:c = g:myo_last_command.name').run_sync()
         self.json_cmd('MyoShellCommand {}'.format(name), line='')

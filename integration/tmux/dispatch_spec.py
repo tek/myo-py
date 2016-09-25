@@ -95,9 +95,11 @@ class DispatchSpec(TmuxCmdSpec):
         self.json_cmd('MyoShellCommand test', line='tee', kill=True,
                       signals=['int'])
         self.vim.cmd_sync('MyoRun test')
+        pid()
         later(lambda: pid().should.be.greater_than(0))
         pid1 = pid()
         self.vim.cmd_sync('MyoRun test')
+        pid()
         later(lambda: pid().should.be.greater_than(0))
         later(lambda: pid().should_not.equal(pid1))
 

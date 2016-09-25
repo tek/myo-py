@@ -109,15 +109,18 @@ class PythonParseSpec(ParseSpecBase):
     def _parse(self, output, parse_opt=Map()):
         cmd = Command(name='a', line='a', langs=List('python'))
         msg = ParseOutput(cmd, output, None, parse_opt)
-        self.plugin.myo_start()
         self.root.send_sync(msg)
         return output
+
+    def _run(self, output, parse_opt=Map()):
+        self.plugin.myo_start()
+        return self._parse(output, parse_opt)
 
     def _init(self, parse_opt=Map()):
         trace1 = self._mk_trace
         trace2 = self._mk_trace
         output = trace1 + trace2
-        return self._parse(output, parse_opt)
+        return self._run(output, parse_opt)
 
     def _go(self, line_count=_line_count, parse_opt=Map()):
         output = self._init(parse_opt)
@@ -172,7 +175,7 @@ class PythonParseSpec(ParseSpecBase):
         self.vim.vars.set_p('output_reifier',
                             'py:myo.output.reifier.python.Reifier')
         trace1 = self._mk_trace_with(1)
-        self._parse(trace1)
+        self._run(trace1)
         self._cursor(1, 1)
 
     def _syntax(self):
@@ -235,7 +238,7 @@ class SbtParseSpec(ParseSpecBase):
     def _mk_scala_errors(self, count):
         return List.gen(count, lambda: self._mk_scala_error)
 
-    def _parse(self, output):
+    def _run(self, output):
         cmd = Command(name='a', line='a', langs=List('sbt'))
         msg = ParseOutput(cmd, output, None, Map())
         self.plugin.myo_start()
@@ -245,7 +248,7 @@ class SbtParseSpec(ParseSpecBase):
         self.vim.vars.set_p('output_reifier',
                             'py:myo.output.reifier.base.LiteralReifier')
         output = self._mk_scala_errors(1)
-        self._parse(output)
+        self._run(output)
         output_machine = self.root.sub[-1]
         self.vim.buffer.content.should.contain(output[-1])
         self.vim.buffer.options('modifiable').should.contain(False)
@@ -267,14 +270,14 @@ class SbtParseSpec(ParseSpecBase):
         self.vim.vars.set_p('output_formatters', formatters)
         self.vim.vars.set_p('path_truncator', trunc)
         output = self._mk_scala_errors(4)
-        self._parse(output)
+        self._run(output)
         later(check)
 
     def _syntax(self):
         from amino import log
         self.vim.cmd_sync('hi Error cterm=bold ctermfg=1')
         output = self._mk_scala_errors(1)
-        self._parse(output)
+        self._run(output)
         self._wait(2)
         log.info(self.vim.cmd_output('syntax').join_lines)
 
