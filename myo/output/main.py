@@ -6,12 +6,12 @@ from amino.task import Task
 from amino.lazy import lazy
 
 from ribosome import NvimFacade
-from ribosome.machine.state import RunScratchMachine
+from ribosome.machine.state import RunScratchMachine, IfUnhandled
 from ribosome.machine import Nop, Message
 
 from myo.logging import Logging
 from myo.output.data import ParseResult
-from myo.output.machine import OutputMachine
+from myo.output.machine import OutputMachine, SetResult
 
 
 class OutputHandler(Logging, metaclass=abc.ABCMeta):
@@ -39,8 +39,10 @@ class CustomOutputHandler(OutputHandler):
     def display(self, result: ParseResult, options: Map[str, str]):
         ctor = L(OutputMachine)(self.vim, _, result, _, options)
         size = self.vim.vars.p('scratch_size') | 10
-        return Task.now(Just(RunScratchMachine(
-            ctor, options=Map(use_tab=False, size=Just(size), wrap=True)).pub))
+        msg = SetResult(result, options)
+        opt = Map(use_tab=False, size=Just(size), wrap=True, init=msg)
+        run = RunScratchMachine(ctor, options=opt)
+        return Task.just(IfUnhandled(msg, run).pub)
 
 
 class VimCompiler(OutputHandler):

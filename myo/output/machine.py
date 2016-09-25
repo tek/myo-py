@@ -1,12 +1,11 @@
 from operator import add
-from typing import Callable
 
-from ribosome.machine import message, may_handle, Machine, handle, Nop
+from ribosome.machine import (message, may_handle, Machine, handle, Nop,
+                              json_message)
 from ribosome.nvim import ScratchBuffer, NvimFacade
 from ribosome.machine.scratch import ScratchMachine, Quit
 from ribosome.machine.base import UnitTask
-from ribosome.machine.state import Init
-from ribosome.record import field, list_field
+from ribosome.record import field, list_field, either_field, any_field
 from ribosome.util.callback import SpecialCallback
 
 from amino.task import Task
@@ -23,25 +22,21 @@ from myo.output.syntax.base import LineGroups
 Jump = message('Jump')
 FirstError = message('FirstError')
 DisplayLines = message('DisplayLines')
+SetResult = json_message('SetResult', 'result')
 
 
 def fold_callbacks(cbs, z):
     return cbs.fold_left(Right(z))(lambda z, a: z // L(Try)(a, _))
 
 
-class ResultAdapter(Logging):
-
-    def __init__(self, buffer, result: ParseResult, filters: List[Callable],
-                 reifier: Either[str, Reifier], formatters: List[Callable],
-                 syntaxes: List[Callable], first_error: List[Callable]
-                 ) -> None:
-        self.buffer = buffer
-        self.result = result
-        self.filters = filters
-        self.reifier = reifier
-        self.formatters = formatters
-        self.syntaxes = syntaxes
-        self.first_error = first_error
+class ResultAdapter(Record):
+    buffer = any_field()
+    result = field(ParseResult)
+    filters = list_field()
+    reifier = either_field(Reifier)
+    formatters = list_field()
+    syntaxes = list_field()
+    first_error = list_field()
 
     @lazy
     def vim(self):
@@ -93,6 +88,18 @@ class OMState(Record):
 
 
 class OutputMachineTransitions(MyoTransitions):
+
+    def _adapter(self, result):
+        filters = self._callbacks('output_filters')
+        reifier = self._callback('output_reifier')
+        formatters = self._callbacks('output_formatters')
+        syntaxes = self._callbacks('output_syntaxes', self.buffer)
+        first_error = (self._callbacks('first_error')
+                       .cat(SpecialCallback('default')))
+        return ResultAdapter(buffer=self.buffer, result=result,
+                             filters=filters, reifier=reifier,
+                             formatters=formatters, syntaxes=syntaxes,
+                             first_error=first_error)
 
     @property
     def scratch(self):
@@ -157,9 +164,11 @@ class OutputMachineTransitions(MyoTransitions):
     def target_for_line(self, line):
         return self.lines.lift(line) / _.target
 
-    @may_handle(Init)
-    def init(self):
-        return self.with_sub(self.state), DisplayLines()
+    @may_handle(SetResult)
+    def set_result(self):
+        self.log.verbose('set_result')
+        result = self._adapter(self.msg.result)
+        return self.with_sub(self.state.set(result=result)), DisplayLines()
 
     @handle(DisplayLines)
     def display_lines(self):
@@ -251,18 +260,6 @@ class OutputMachine(ScratchMachine, Logging):
         return self._options
 
     @property
-    def result(self):
-        buffer = self.scratch.buffer
-        filters = self._callbacks('output_filters')
-        reifier = self._callback('output_reifier')
-        formatters = self._callbacks('output_formatters')
-        syntaxes = self._callbacks('output_syntaxes', buffer)
-        first_error = (self._callbacks('first_error')
-                       .cat(SpecialCallback('default')))
-        return ResultAdapter(buffer, self._result, filters, reifier,
-                             formatters, syntaxes, first_error)
-
-    @property
     def prefix(self):
         return 'Myo'
 
@@ -274,6 +271,7 @@ class OutputMachine(ScratchMachine, Logging):
         })
 
     def new_state(self):
-        return OMState(result=self.result)
+        return OMState(result=ResultAdapter(buffer=self.scratch.buffer,
+                                            result=ParseResult()))
 
 __all__ = ('OutputMachine',)
