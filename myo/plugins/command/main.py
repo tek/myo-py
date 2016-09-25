@@ -2,6 +2,7 @@ from collections import namedtuple
 
 from ribosome.machine import may_handle, handle
 from ribosome.machine.transition import Fatal
+from ribosome.util.callback import parse_callback_spec
 
 from myo.state import MyoComponent, MyoTransitions
 
@@ -16,7 +17,6 @@ from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
                                          CommandAdded, CommandShow, RunLatest,
                                          LoadHistory, StoreHistory)
 from myo.plugins.command.util import assemble_vim_test_line
-from myo.util.callback import parse_callback_spec
 
 RunInShell = namedtuple('RunInShell', ['shell'])
 

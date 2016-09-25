@@ -1,15 +1,15 @@
+import amino
+from amino import __, F, L, _, Right, Just, List, Left
+
 from ribosome.machine import may_handle, Error, RunTask, handle
 from ribosome.machine.base import io
 from ribosome.machine.transition import Fatal
-
-import amino
-from amino import __, F, L, _, Right, Just, List, Left
+from ribosome.util.callback import parse_callback_spec
 
 from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.core.dispatch import VimDispatcher
 from myo.plugins.core.message import StageI, Initialized, ParseOutput
 from myo.output import VimCompiler, CustomOutputHandler, Parsing
-from myo.util.callback import parse_callback_spec
 
 
 class CoreTransitions(MyoTransitions):

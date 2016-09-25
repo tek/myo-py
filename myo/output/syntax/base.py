@@ -4,8 +4,7 @@ from amino import Task
 from amino.lazy import lazy
 
 from ribosome.nvim.components import Syntax
-
-from myo.util.callback import VimCallback
+from ribosome.util.callback import VimCallback
 
 
 class OutputSyntax(VimCallback):

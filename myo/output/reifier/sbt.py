@@ -1,9 +1,10 @@
+from amino import List, L, _, Just, __
+
+from ribosome.util.callback import parse_callback_spec
+
 from myo.output.parser.sbt import SbtOutputEvent, FileEntry
 from myo.output.reifier.base import Reifier as ReifierBase
 from myo.output.data import OutputLine
-from myo.util.callback import parse_callback_spec
-
-from amino import List, L, _, Just, __
 
 
 class Reifier(ReifierBase):

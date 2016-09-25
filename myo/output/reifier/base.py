@@ -3,12 +3,13 @@ import abc
 from amino import List, __
 from amino.lazy import lazy
 
+from ribosome.machine.helpers import TransitionHelpers
+from ribosome.util.callback import VimCallback
+
 from myo.output.data import OutputLine, ParseResult
-from myo.util.callback import VimCallback
-from myo.state import MyoHelpers
 
 
-class Reifier(VimCallback, MyoHelpers):
+class Reifier(VimCallback, TransitionHelpers):
 
     @abc.abstractmethod
     def __call__(self, result: ParseResult) -> List[OutputLine]:

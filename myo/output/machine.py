@@ -7,16 +7,16 @@ from ribosome.machine.scratch import ScratchMachine, Quit
 from ribosome.machine.base import UnitTask
 from ribosome.machine.state import Init
 from ribosome.record import field, list_field
+from ribosome.util.callback import SpecialCallback
 
 from amino.task import Task
 from amino import Map, _, L, Left, __, List, Either, Just, Try, Right, Boolean
 from amino.lazy import lazy
 
 from myo.output.data import ParseResult, Location, OutputLine
-from myo.state import MyoTransitions, MyoHelpers
+from myo.state import MyoTransitions
 from myo.logging import Logging
 from myo.record import Record
-from myo.util.callback import SpecialCallback
 from myo.output.reifier.base import Reifier, LiteralReifier
 from myo.output.syntax.base import LineGroups
 
@@ -237,7 +237,7 @@ class OutputMachineTransitions(MyoTransitions):
             return win + edit
 
 
-class OutputMachine(ScratchMachine, MyoHelpers, Logging):
+class OutputMachine(ScratchMachine, Logging):
     Transitions = OutputMachineTransitions
 
     def __init__(self, vim: NvimFacade, scratch: ScratchBuffer,
