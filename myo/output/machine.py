@@ -91,7 +91,8 @@ class OutputMachineTransitions(MyoTransitions):
 
     def _adapter(self, result):
         filters = self._callbacks('output_filters')
-        reifier = self._callback('output_reifier')
+        reifier = (self._callback('output_reifier')
+                   .to_either('no reifier specified'))
         formatters = self._callbacks('output_formatters')
         syntaxes = self._callbacks('output_syntaxes', self.buffer)
         first_error = (self._callbacks('first_error')
@@ -216,7 +217,6 @@ class OutputMachineTransitions(MyoTransitions):
         return (
             lines
             .index_where(__.entry.exists(L(isinstance)(_, Location)))
-            .map(lambda a: (a + 1, 1))
         )
 
     def _jump_first(self, result):
@@ -224,8 +224,8 @@ class OutputMachineTransitions(MyoTransitions):
 
     def _jump_last(self, result):
         return (
-            self._location_index(self.lines.reversed)
-            .map2(lambda l, c: (self.lines.length - l, c))
+            self._location_index(self.lines.reversed) /
+            (self.lines.length - _ - 1)
         )
 
     def _open_file(self, path):

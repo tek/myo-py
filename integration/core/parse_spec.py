@@ -15,7 +15,8 @@ from myo.plugins.core.message import ParseOutput
 class ParseHelpers:
 
     def _modifiable(self, val):
-        self.vim.buffer.options('modifiable').should.contain(val)
+        later(lambda: self.vim.buffer.options('modifiable').should.contain(val)
+              )
 
 
 class ParseSpec(MyoIntegrationSpec, ParseHelpers):
@@ -148,11 +149,11 @@ class PythonParseSpec(ParseSpecBase):
         self.vim.vars.set_p('first_error',
                             ['py:integration.core.parse_spec._first_error'])
         self._go()
-        self.vim.window.line.should.contain(_line_count - 1)
+        self.vim.window.line.should.contain(_line_count - 2)
 
     def initial_pos_default(self):
         self._go()
-        self.vim.window.line.should.contain(_line_count - 3)
+        self.vim.window.line.should.contain(_line_count - 2)
 
     def initial_pos_first(self):
         self.vim.vars.set_p('first_error', ['s:first'])
@@ -196,7 +197,7 @@ def _filter1(result):
 
 
 def _first_error(a):
-    return Just((_line_count - 1, 1))
+    return Just((_line_count - 3, 1))
 
 
 class SbtParseSpec(ParseSpecBase):
