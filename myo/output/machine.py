@@ -141,6 +141,7 @@ class OutputMachineTransitions(MyoTransitions):
             return (
                 self._with_sub(self.data, self.state.set(lines=lines)),
                 Task.call(self.window.cmd, 'resize {}'.format(size)) +
+                Task.call(self.buffer.set_modifiable, True) +
                 Task.call(self.buffer.set_content, text) +
                 Task.call(self.buffer.set_modifiable, False) +
                 self._run_syntax(lines)

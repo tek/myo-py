@@ -179,6 +179,17 @@ class PythonParseSpec(ParseSpecBase):
         self._run(trace1)
         self._cursor(1, 1)
 
+    def twice(self):
+        t1 = self._mk_trace_with(1)
+        t2 = self._mk_trace_with(1)
+        def check(t):
+            later(lambda: self.vim.buffer.content.lift(-2)
+                  .should.equal(t.lift(-2)))
+        self._run(t1)
+        check(t1)
+        self._parse(t2)
+        check(t2)
+
     def _syntax(self):
         from amino import log
         self.vim.vars.set_p('output_reifier', '')
