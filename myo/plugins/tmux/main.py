@@ -28,7 +28,7 @@ from myo.ui.tmux.pane import Pane, VimPane
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
 from myo.ui.tmux.session import Session
 from myo.ui.tmux.server import Server, NativeServer
-from myo.util import parse_int, view_params, pane_params, pane_bool_params
+from myo.util import parse_int
 from myo.ui.tmux.window import VimWindow, Window
 from myo.ui.tmux.facade import LayoutFacade, PaneFacade, ViewFacade
 from myo.ui.tmux.view import View
@@ -214,16 +214,18 @@ class TmuxTransitions(MyoTransitions):
         opts = self.msg.options
         dir_s = opts.get('direction') | 'vertical'
         direction = LayoutDirections.parse(dir_s)
-        layout = Layout(name=self.msg.name, direction=direction,
-                        **view_params(opts))
-        return self._add_to_layout(opts.get('parent'), _.layouts, layout)
+        return (
+            self._from_opt(Layout, name=self.msg.name, direction=direction) //
+            L(self._add_layout_to_layout)(opts.get('parent'), _)
+        )
 
     @handle(TmuxCreatePane)
     def create_pane(self):
         opts = self.msg.options
-        pane = Pane(name=self.msg.name, **pane_params(opts),
-                    **pane_bool_params(opts))
-        return self._add_to_layout(opts.get('parent'), _.panes, pane)
+        return (
+            self._from_opt(Pane, name=self.msg.name) //
+            L(self._add_pane_to_layout)(opts.get('parent'), _)
+        )
 
     @may_handle(TmuxOpen)
     def open(self):
@@ -456,6 +458,12 @@ class TmuxTransitions(MyoTransitions):
             __.modify(__.cat(view)) /
             self.with_sub
         )
+
+    def _add_pane_to_layout(self, parent: Maybe[str], pane: Pane):
+        return self._add_to_layout(parent, _.panes, pane)
+
+    def _add_layout_to_layout(self, parent: Maybe[str], layout: Layout):
+        return self._add_to_layout(parent, _.layouts, layout)
 
     def _pane(self, ident: Ident):
         return self.state.pane(ident)

@@ -8,7 +8,7 @@ from myo.state import MyoComponent, MyoTransitions
 
 from amino import L, _, List, Try, __, Maybe, curried, Map, Right, I
 from myo.command import Command, VimCommand, ShellCommand, Shell
-from myo.util import optional_params, amend_options, bool_params
+from myo.util import amend_options
 from myo.plugins.core.message import Parse, ParseOutput, StageI
 from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
                                          AddShellCommand, AddShell,
@@ -24,38 +24,8 @@ RunInShell = namedtuple('RunInShell', ['shell'])
 class CommandTransitions(MyoTransitions):
     _test_cmd_name = '<test>'
 
-    @property
-    def _cmd_opt(self):
-        return List('parser')
-
-    @property
-    def _cmd_list_opt(self):
-        return List('langs', 'signals')
-
-    @property
-    def _cmd_bool_opt(self):
-        return List('kill')
-
-    def _create(self, tpe: type, mand_keys: List[str], opt_keys: List[str],
-                **strict):
-        o = self.msg.options
-        opt = optional_params(o, *opt_keys + self._cmd_opt)
-        opt_list = (optional_params(o, *self._cmd_list_opt)
-                    .valmap(_ / List.wrap | List()))
-        opt_bool = (bool_params(o, *self._cmd_bool_opt))
-        missing = lambda: mand_keys.filter_not(o.has_key)
-        err = lambda: 'cannot create {} without params: {}'.format(tpe,
-                                                                   missing())
-        mand = o.get_all_map(*mand_keys).to_either(err)
-        return mand / (lambda a: tpe(**a, **opt, **opt_list, **opt_bool,
-                                     **strict))
-
-    def _add(self, tpe: type, mand_keys: List[str], opt_keys: List[str],
-             **strict):
-        return (
-            self._create(tpe, mand_keys, opt_keys, **strict) /
-            self._add_command
-        )
+    def _add(self, tpe: type, **strict):
+        return self._from_opt(tpe, **strict) / self._add_command
 
     def _add_command(self, cmd: Command):
         return List(
@@ -107,24 +77,19 @@ class CommandTransitions(MyoTransitions):
 
     @handle(AddCommand)
     def add_command(self):
-        return self._add(Command, List('line'), List(),
-                         name=self.msg.name)
+        return self._add(Command, name=self.msg.name)
 
     @may_handle(AddVimCommand)
     def add_vim_command(self):
-        return self._add(VimCommand, List('line'), self._cmd_opt,
-                         name=self.msg.name)
+        return self._add(VimCommand, name=self.msg.name)
 
     @handle(AddShellCommand)
     def add_shell_command(self):
-        return self._add(ShellCommand, List('line'),
-                         self._cmd_opt.cat('shell'), name=self.msg.name)
+        return self._add(ShellCommand, name=self.msg.name)
 
     @handle(AddShell)
     def add_shell(self):
-        mand = List('line')
-        opt = List('target')
-        return self._create(Shell, mand, opt, name=self.msg.name) / (
+        return self._from_opt(Shell, name=self.msg.name) / (
             lambda shell: (
                 self._add_command(shell) +
                 (shell.target / L(SetShellTarget)(shell, _) / _.pub).to_list
