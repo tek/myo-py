@@ -6,20 +6,26 @@ from amino import List, _
 from ribosome.record import field, maybe_field
 
 from myo.output.data import (PositionEntry, OutputEntry, OutputEvent,
-                             Location, CodeEntry)
+                             Location, CodeEntry as CodeEntryBase)
 from myo.output.parser.base import EdgeData, SimpleParser
 
 
 class FileEntry(PositionEntry):
     error = field(str)
+    tag = field(str)
 
     @property
     def _str_extra(self):
         return super()._str_extra.cat(self.error)
 
 
+class CodeEntry(CodeEntryBase):
+    tag = field(str)
+
+
 class ColEntry(OutputEntry):
     ws = field(str)
+    tag = field(str)
 
     @property
     def _str_extra(self):
@@ -27,17 +33,17 @@ class ColEntry(OutputEntry):
 
     @property
     def col(self):
-        return len(self.ws) - 4
+        return len(self.ws)
 
 
-_msg_type = '\[\w+\]'
+_msg_type = '\[(?P<tag>\w+)\] '
 _file = EdgeData(
     r='^{}\s*(?P<path>[^:]+):(?P<line>\d+):\s*(?P<error>.*?);?$'
     .format(_msg_type),
     entry=FileEntry
 )
 _code = EdgeData(
-    r='^{}\s*(?P<code>.+)'.format(_msg_type),
+    r='^{}(?P<code>\s*.+)'.format(_msg_type),
     entry=CodeEntry
 )
 _col = EdgeData(

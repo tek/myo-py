@@ -1,5 +1,5 @@
 from myo.output.syntax.base import OutputSyntax
-from myo.output.data import CodeEntry
+from myo.output.parser.sbt import CodeEntry
 
 from amino import Task, Map, _
 
@@ -25,7 +25,7 @@ class Syntax(OutputSyntax):
         return line.entry // run
 
     def _code(self, index, line, entry):
-        col = (line.target.col / (_.col + 1) | 1) + line.indent
+        col = (line.target.col / (_.col + 1) | 1)
         rex = '\%{}c.'.format(col)
         return self._cont('ErrorMsg', self._line_re(index, rex), 'MyoCode')
 

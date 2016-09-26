@@ -1,10 +1,8 @@
-from amino import List, L, _, Just, __
-
-from ribosome.util.callback import parse_callback_spec
+from amino import List, L, _, Just
 
 from myo.output.parser.sbt import SbtOutputEvent, FileEntry
 from myo.output.reifier.base import Reifier as ReifierBase
-from myo.output.data import OutputLine
+from myo.output.data import OutputLine, EmptyLine
 
 
 class Reifier(ReifierBase):
@@ -19,13 +17,12 @@ class Reifier(ReifierBase):
         return entry.code
 
     def _sbt_event(self, event, code):
-        code_line = (code.format_lines(Just(event), self._format_code) /
-                     __.set(indent=4))
         return (
             event.file.format_lines(Just(event), self._format_file) +
             event.file.format_lines(Just(event), self._format_error,
                                     group=Just('Error')) +
-            code_line
+            code.format_lines(Just(event), self._format_code) +
+            List(EmptyLine.create(event))
         )
 
     def _event(self, event):
