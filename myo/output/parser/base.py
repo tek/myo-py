@@ -1,5 +1,6 @@
 from collections import namedtuple
 import abc
+from types import FunctionType
 
 from myo.logging import Logging
 from myo.output.data import OutputEvent, OutputEntry
@@ -21,7 +22,7 @@ class ParserBase(Logging, metaclass=abc.ABCMeta):
 
 class EdgeData(Record):
     r = re_field()
-    entry = field(type)
+    entry = field((type, FunctionType))
 
 Step = namedtuple('Step', ['node', 'data', 'weight'])
 
