@@ -21,7 +21,7 @@ from myo.plugins.tmux.message import (TmuxCreatePane, TmuxCreateSession,
                                       TmuxCreateLayout, TmuxSpawnSession,
                                       TmuxInfo, TmuxClosePane, TmuxPack,
                                       TmuxMinimize, TmuxRestore, TmuxToggle,
-                                      TmuxFocus, TmuxOpenOrToggle)
+                                      TmuxFocus, TmuxOpenOrToggle, TmuxKill)
 from myo.plugins.tmux import TmuxOpen
 from myo.plugins.core.message import Parse
 
@@ -133,6 +133,10 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
 
     @msg_command(TmuxFocus)
     def myo_tmux_focus(self):
+        pass
+
+    @json_msg_command(TmuxKill)
+    def myo_tmux_kill(self):
         pass
 
     @json_msg_command(Run)

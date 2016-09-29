@@ -119,4 +119,11 @@ class DispatchSpec(TmuxCmdSpec):
         later(check)
         later(lambda: pid().should_not.equal(pid1))
 
+    def manual_kill(self):
+        self.vim.cmd('MyoRunLine make tail')
+        later(lambda: self._output.exists(lambda a: 'tail' in a).should.be.ok)
+        self._cmd_pid(1).should.be.greater_than(0)
+        self.vim.cmd('MyoTmuxKill make')
+        later(lambda: self._cmd_pid(1).should.equal(0))
+
 __all__ = ('DispatchSpec',)

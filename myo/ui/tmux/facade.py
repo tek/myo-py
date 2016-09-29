@@ -370,8 +370,11 @@ class PaneFacade(Logging):
     def close_id(self, id: int):
         return self.server.cmd('kill-pane', '-t', '%{}'.format(id))
 
+    def kill_process(self, pane: Pane, signals):
+        return self.find(pane) / L(self._kill_process)(pane, _, signals)
+
     @task
-    def kill_process(self, pane, adapter, signals=List('kill')):
+    def _kill_process(self, pane, adapter, signals):
         def _wait_killed(timeout):
             start = time.time()
             while time.time() - start > timeout and adapter.running:
@@ -396,7 +399,7 @@ class PaneFacade(Logging):
             return (
                 Task.now(Right(True))
                 if pa.not_running else
-                self.kill_process(pane, pa, signals=signals)
+                self._kill_process(pane, pa, signals=signals)
                 if pane.kill or kill else
                 Task.now(Left('command already running'))
             )

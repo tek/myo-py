@@ -13,16 +13,16 @@ from ribosome.record import field, list_field, Record
 from ribosome.machine.base import UnitTask, DataTask
 
 from myo.state import MyoComponent, MyoTransitions
-from myo.plugins.tmux.message import (TmuxOpen, TmuxRunCommand,
-                                      TmuxCreatePane, TmuxCreateLayout,
-                                      TmuxCreateSession, TmuxSpawnSession,
-                                      TmuxFindVim, TmuxInfo, TmuxLoadDefaults,
-                                      TmuxClosePane, TmuxRunShell,
-                                      TmuxRunLineInShell, StartWatcher,
-                                      WatchCommand, QuitWatcher, SetCommandLog,
-                                      TmuxPack, TmuxPostOpen, TmuxFixFocus,
-                                      TmuxMinimize, TmuxRestore, TmuxToggle,
-                                      TmuxFocus, TmuxOpenOrToggle)
+from myo.plugins.tmux.message import (TmuxOpen, TmuxRunCommand, TmuxCreatePane,
+                                      TmuxCreateLayout, TmuxCreateSession,
+                                      TmuxSpawnSession, TmuxFindVim, TmuxInfo,
+                                      TmuxLoadDefaults, TmuxClosePane,
+                                      TmuxRunShell, TmuxRunLineInShell,
+                                      StartWatcher, WatchCommand, QuitWatcher,
+                                      SetCommandLog, TmuxPack, TmuxPostOpen,
+                                      TmuxFixFocus, TmuxMinimize, TmuxRestore,
+                                      TmuxToggle, TmuxFocus, TmuxOpenOrToggle,
+                                      TmuxKill)
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
@@ -37,7 +37,7 @@ from myo.plugins.tmux.dispatch import TmuxDispatcher
 from myo.ui.tmux.util import format_state, Ident
 from myo.ui.tmux.view_path import LayoutPathMod, PanePathMod, ViewPathMod
 from myo.plugins.command.message import SetShellTarget
-from myo.command import Command, Shell
+from myo.command import Command, Shell, default_signals
 from myo.plugins.tmux.watcher import Watcher, Terminated
 
 _is_vim_window = lambda a: isinstance(a, VimWindow)
@@ -372,6 +372,12 @@ class TmuxTransitions(MyoTransitions):
             self.views.is_open /
             __.cata(TmuxToggle(name), TmuxOpen(name))
         )
+
+    @handle(TmuxKill)
+    def kill(self):
+        signals = self.msg.options.get('signals') | default_signals
+        return (self._pane(self.msg.pane) //
+                L(self.panes.kill_process)(_, signals))
 
     def _minimize(self, f):
         return self._view_mod(self.msg.pane, f), TmuxPack().pub.at(1)

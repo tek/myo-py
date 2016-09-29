@@ -6,6 +6,9 @@ from myo.record import Record, Named
 from myo.ui.tmux.util import ident_field, Ident
 
 
+default_signals = List('int', 'term', 'kill')
+
+
 class Command(Named):
     line = field(str)
     log_path = maybe_field(Path)
@@ -13,7 +16,7 @@ class Command(Named):
     transient = bool_field()
     langs = list_field()
     kill = bool_field()
-    signals = list_field(str, initial=List('int', 'term', 'kill'))
+    signals = list_field(str, initial=default_signals)
 
     @property
     def desc(self):

@@ -2,7 +2,7 @@ from integration._support.base import MyoPluginIntegrationSpec
 from integration._support.command import CmdSpec
 
 from amino.test import later
-from amino import _
+from amino import _, __
 
 from myo.test.spec import TmuxSpecBase
 
@@ -70,5 +70,8 @@ class TmuxCmdSpec(TmuxIntegrationSpec, CmdSpec):
         self._create_pane('py', parent='main')
         self.json_cmd('MyoShell py', line='python', target='py',
                       langs=['python'])
+
+    def _cmd_pid(self, id):
+        return self._panes.find(__.id_i.contains(id)) // _.command_pid | 0
 
 __all__ = ('TmuxIntegrationSpec', 'DefaultLayoutSpec', 'TmuxCmdSpec')
