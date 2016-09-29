@@ -13,23 +13,35 @@ from myo.output.parser.base import EdgeData, SimpleParser
 
 
 class FileEntry(PositionEntry):
-    fun = field(str)
+    fun = maybe_field(str)
     code = maybe_field(CodeEntry)
 
     def lines(self, event: OutputEvent):
         x = self.code / L(OutputLine.create)(_.text, self)
         return super().lines(event) + x.to_list
 
+    @staticmethod
+    def create(text, path, line, fun=None):
+        return FileEntry(text=text, path=path, line=line, fun=Maybe(fun))
+
 
 class PyErrorEntry(ErrorEntry):
     exc = field(str)
 
+
+class ColEntry(OutputEntry):
+    ws = field(str)
+
+    def lines(self, event: OutputEvent):
+        return List()
+
 _file = EdgeData(
-    r='  File "(?P<path>.+)", line (?P<line>\d+), in (?P<fun>\S+)',
-    entry=FileEntry
+    r='  File "(?P<path>.+)", line (?P<line>\d+)(?:, in (?P<fun>\S+))?',
+    entry=FileEntry.create
 )
-_code = EdgeData(r='    (?P<code>.+)', entry=CodeEntry)
-_error = EdgeData(r='(?P<exc>\S+): (?P<error>.+)', entry=PyErrorEntry)
+_code = EdgeData(r='^    (?P<code>.+)', entry=CodeEntry)
+_error = EdgeData(r='^(?P<exc>\S+): (?P<error>.+)', entry=PyErrorEntry)
+_col = EdgeData(r='^    (?P<ws>\s+)\^', entry=ColEntry)
 
 
 class Parser(SimpleParser):
@@ -41,6 +53,8 @@ class Parser(SimpleParser):
         g.add_edge('file', 'code', data=_code)
         g.add_edge('code', 'file', data=_file)
         g.add_edge('code', 'error', data=_error)
+        g.add_edge('code', 'col', data=_col)
+        g.add_edge('col', 'error', data=_error)
         return g
 
     def event(self, entries: List[OutputEntry]):
