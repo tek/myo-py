@@ -26,6 +26,7 @@ class EdgeData(Record):
 Step = namedtuple('Step', ['node', 'data', 'weight'])
 
 
+# TODO log errors
 @curried
 def cons(entry, match):
     return Try(entry, text=match.string, **match.groupdict()).to_maybe
@@ -78,9 +79,13 @@ class SimpleParser(ParserBase, metaclass=abc.ABCMeta):
             new = current.empty.no.flat_maybe_call(L(self.event)(current))
             return result + new.to_list
         def parse_line(line: str, rest: List[str]):
+            self.log.debug('parsing line: {}'.format(line))
             def match(step: Step):
+                def dbg(a):
+                    self.log.debug('matched edge to {}'.format(step.node))
                 return (
-                    Maybe(step.data.r.match(line)) //
+                    Maybe(step.data.r.match(line)) %
+                    dbg //
                     cons(step.data.entry)
                 ) & Just(step.node)
             def cont(entry: OutputEntry, next_node: str):
