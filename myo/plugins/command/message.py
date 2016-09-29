@@ -1,6 +1,7 @@
 from ribosome.machine import message, json_message
 
 Run = json_message('Run', 'command')
+RunLine = message('RunLine', varargs='args')
 ShellRun = json_message('ShellRun', 'shell')
 RunLatest = json_message('RunLatest')
 RunTest = json_message('RunTest')
@@ -20,4 +21,4 @@ StoreHistory = message('StoreHistory')
 __all__ = ('Run', 'ShellRun', 'Dispatch', 'AddCommand', 'AddShellCommand',
            'AddShell', 'AddVimCommand', 'SetShellTarget', 'CommandExecuted',
            'RunTest', 'RunVimTest', 'CommandAdded', 'CommandShow', 'RunLatest',
-           'LoadHistory', 'StoreHistory')
+           'LoadHistory', 'StoreHistory', 'RunLine')

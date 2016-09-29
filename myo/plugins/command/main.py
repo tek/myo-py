@@ -15,7 +15,7 @@ from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
                                          AddVimCommand, SetShellTarget,
                                          CommandExecuted, RunTest, RunVimTest,
                                          CommandAdded, CommandShow, RunLatest,
-                                         LoadHistory, StoreHistory)
+                                         LoadHistory, StoreHistory, RunLine)
 from myo.plugins.command.util import assemble_vim_test_line
 
 RunInShell = namedtuple('RunInShell', ['shell'])
@@ -106,6 +106,14 @@ class CommandTransitions(MyoTransitions):
         return (
             self.data.command(self.msg.command) /
             L(Dispatch)(_, self.msg.options)
+        )
+
+    @handle(RunLine)
+    def run_line(self):
+        return self.msg.args.detach_head.map2(
+            lambda target, line:
+            Dispatch(ShellCommand(name='run_line', line=line.mk_string(' ')),
+                     Map(target=target))
         )
 
     @handle(ShellRun)
