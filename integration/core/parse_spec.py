@@ -249,8 +249,8 @@ class SbtParseSpec(ParseSpecBase):
         tmpl = '[error] {}:{}: butt'
         return List(
             tmpl.format(self._scala_file, self._line),
-            '[error]    {}()'.format(r()),
-            '[error]    {}^'.format(' ' * l),
+            '[error] {}()'.format(r()),
+            '[error] {}^'.format(' ' * l),
         )
 
     def _mk_scala_errors(self, count):
@@ -279,7 +279,7 @@ class SbtParseSpec(ParseSpecBase):
     def filter_format(self):
         def check():
             c = self.vim.buffer.content
-            c.should.have.length_of(6)
+            c.should.have.length_of(8)
             c.head.should.contain('{}  3'.format(self._scala_file.name))
         filters = List('py:integration.core.parse_spec._filter')
         formatters = List('py:integration.core.parse_spec._format')

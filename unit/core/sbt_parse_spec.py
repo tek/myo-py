@@ -1,5 +1,5 @@
-from myo.output.parser.sbt import Parser, FileEntry, ColEntry
-from myo.output.data import ParseResult, CodeEntry
+from myo.output.parser.sbt import Parser, FileEntry, ColEntry, CodeEntry
+from myo.output.data import ParseResult
 
 from unit._support.spec import UnitSpec
 
@@ -13,7 +13,7 @@ trace = '''
 [info] Compiling 1 Scala source to /path/to/file...
 [error] /path/to/file.scala:{line}: not found: value codeLine
 [error]     codeLine
-[error]{col}^
+[error] {col}^
 [error] path/to/file.scala:71: {err};
 [error]  found   : WrongType
 [error]     (which expands to)  ReallyWrongType
@@ -24,7 +24,7 @@ trace = '''
 [error] (compile:compileIncremental) Compilation failed
 [error] Total time: 0 s, completed Jan 1, 1900 00:00:00 AM
 >
-'''.format(err=_errmsg, line=_line, col=' ' * (_col + 4))
+'''.format(err=_errmsg, line=_line, col=' ' * (_col))
 
 
 class SbtParseSpec(UnitSpec):
