@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version_parts = (0, 15, 0)
+version_parts = (0, 15, 1)
 version = '.'.join(map(str, version_parts))
 
 setup(
@@ -13,7 +13,7 @@ setup(
     url='https://github.com/tek/myo',
     packages=find_packages(exclude=['unit', 'unit.*']),
     install_requires=[
-        'ribosome>=9.6.0',
+        'ribosome>=9.9.0',
         'libtmux',
         'psutil',
         'networkx',
