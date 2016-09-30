@@ -200,6 +200,12 @@ class PythonParseSpec(ParseSpecBase):
         log.info(self.vim.cmd_output('syntax').join_lines)
         self._check_jumped()
 
+    def duplicate(self):
+        t = self._mk_trace_with(2)
+        trace = t + t
+        self._run(trace)
+        later(lambda: self.vim.buffer.content[2:].should.equal(t))
+
 
 def _filter1(result):
     e = result.events

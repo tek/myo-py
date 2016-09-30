@@ -18,6 +18,7 @@ from myo.logging import Logging
 from myo.record import Record
 from myo.output.reifier.base import Reifier, LiteralReifier
 from myo.output.syntax.base import LineGroups
+from myo.output.filter.base import DuplicatesFilter
 
 Jump = message('Jump')
 FirstError = message('FirstError')
@@ -43,8 +44,12 @@ class ResultAdapter(Record):
         return self.buffer.root
 
     @property
+    def _filters(self):
+        return self.filters.cat(DuplicatesFilter(self.vim))
+
+    @property
     def filtered(self):
-        return fold_callbacks(self.filters, self.result)
+        return fold_callbacks(self._filters, self.result)
 
     def format(self, lines: List[OutputLine]):
         return fold_callbacks(self.formatters, lines)
