@@ -1,5 +1,5 @@
 import amino
-from amino import __, F, L, _, Right, Just, List, Left
+from amino import __, F, L, _, Right, Just, List, Left, Task
 
 from ribosome.machine import may_handle, Error, RunTask, handle
 from ribosome.machine.base import io
@@ -10,6 +10,8 @@ from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.core.dispatch import VimDispatcher
 from myo.plugins.core.message import StageI, Initialized, ParseOutput
 from myo.output import VimCompiler, CustomOutputHandler, Parsing
+
+error_no_output_events = 'no events in parse result'
 
 
 class CoreTransitions(MyoTransitions):
@@ -36,8 +38,14 @@ class CoreTransitions(MyoTransitions):
     def parse_output(self):
         opt = self.msg.options
         def handle(parser):
+            def display(result):
+                return (
+                    Task.now(Left(Fatal(error_no_output_events)))
+                    if result.events.empty else
+                    parser.display(result, opt)
+                )
             return RunTask(parser.parse(self.msg.output, self.msg.path) //
-                           L(parser.display)(_, opt))
+                           display)
         return self._error_handler(self.msg.command).join / handle
 
     def _error_handler(self, cmd):

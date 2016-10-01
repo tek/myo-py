@@ -10,6 +10,11 @@ from ribosome.machine.scratch import Mapping
 
 from myo.command import Command
 from myo.plugins.core.message import ParseOutput
+from myo.output.machine import error_filtered_result_empty
+from myo.plugins.core.main import error_no_output_events
+
+_trace_len = 3
+_line_count = _trace_len * 4 + 5
 
 
 class ParseHelpers:
@@ -17,60 +22,6 @@ class ParseHelpers:
     def _modifiable(self, val):
         later(lambda: self.vim.buffer.options('modifiable').should.contain(val)
               )
-
-
-class ParseSpec(MyoIntegrationSpec, ParseHelpers):
-
-    @main_looped
-    def native(self):
-        cmd = Command(name='a', line='a', parser=Just('compiler'))
-        fix = fixture_path('parse', 'err1')
-        output = List.wrap(fix.read_text().splitlines())
-        errorformat = List(
-            '%AIn %f:%l',
-            '%C  %.%#',
-            '%+Z%.%#Error: %.%#'
-        ).mk_string(',')
-        self.vim.buffer.options.set('errorformat', errorformat)
-        msg = ParseOutput(cmd, output, fix, Map())
-        self.plugin.myo_start()
-        self.root.send(msg)
-        self._await()
-        qf = self.vim.call('getqflist') | []
-        qf.should_not.be.empty
-
-    def twice(self):
-        cmd = Command(name='a', line='a', langs=List('python'))
-        msg = ParseOutput(cmd, List(), None, Map())
-        self.plugin.myo_start()
-        self.root.send_sync(msg)
-        output_machine = self.root.sub[-1]
-        self._modifiable(False)
-        self.root.send_sync(Mapping(output_machine.uuid, 'q'))
-        self._modifiable(True)
-        self.root.send_sync(msg)
-        self._modifiable(False)
-
-_trace_len = 3
-_line_count = _trace_len * 4 + 5
-
-
-class ParseSpecBase(MyoIntegrationSpec):
-
-    def _pre_start(self):
-        super()._pre_start()
-        self.vim.vars.set_p('jump_to_error', False)
-
-    def _cursor(self, x, y):
-        later(lambda: self.vim.window.cursor.should.equal(List(x, y)))
-
-
-class PythonParseSpec(ParseSpecBase):
-
-    def _pre_start(self):
-        super()._pre_start()
-        self.vim.vars.set_p('output_reifier',
-                            'py:myo.output.reifier.base.LiteralReifier')
 
     @lazy
     def _file(self):
@@ -106,6 +57,69 @@ class PythonParseSpec(ParseSpecBase):
     @property
     def _mk_trace(self):
         return self._mk_trace_with(_trace_len)
+
+
+class ParseSpec(MyoIntegrationSpec, ParseHelpers):
+
+    @main_looped
+    def native(self):
+        cmd = Command(name='a', line='a', parser=Just('compiler'))
+        fix = fixture_path('parse', 'err1')
+        output = List.wrap(fix.read_text().splitlines())
+        errorformat = List(
+            '%AIn %f:%l',
+            '%C  %.%#',
+            '%+Z%.%#Error: %.%#'
+        ).mk_string(',')
+        self.vim.buffer.options.set('errorformat', errorformat)
+        msg = ParseOutput(cmd, output, fix, Map())
+        self.plugin.myo_start()
+        self.root.send(msg)
+        self._await()
+        qf = self.vim.call('getqflist') | []
+        qf.should_not.be.empty
+
+    @main_looped
+    def twice(self):
+        self.vim.vars.set_p('jump_to_error', False)
+        cmd = Command(name='a', line='a', langs=List('python'))
+        msg = ParseOutput(cmd, self._mk_trace, None, Map())
+        self.plugin.myo_start()
+        self.root.send_sync(msg)
+        output_machine = self.root.sub[-1]
+        self._modifiable(False)
+        self.root.send_sync(Mapping(output_machine.uuid, 'q'))
+        self._modifiable(True)
+        self.root.send_sync(msg)
+        self._modifiable(False)
+
+    @main_looped
+    def empty(self):
+        cmd = Command(name='a', line='a', langs=List('python'))
+        msg = ParseOutput(cmd, List(), None, Map())
+        self.plugin.myo_start()
+        self.root.send_sync(msg)
+        later(lambda:
+              self.vim.messages.should.contain(error_no_output_events))
+        self.vim.windows.should.have.length_of(1)
+
+
+class ParseSpecBase(MyoIntegrationSpec, ParseHelpers):
+
+    def _pre_start(self):
+        super()._pre_start()
+        self.vim.vars.set_p('jump_to_error', False)
+
+    def _cursor(self, x, y):
+        later(lambda: self.vim.window.cursor.should.equal(List(x, y)))
+
+
+class PythonParseSpec(ParseSpecBase):
+
+    def _pre_start(self):
+        super()._pre_start()
+        self.vim.vars.set_p('output_reifier',
+                            'py:myo.output.reifier.base.LiteralReifier')
 
     def _parse(self, output, parse_opt=Map()):
         cmd = Command(name='a', line='a', langs=List('python'))
@@ -206,11 +220,23 @@ class PythonParseSpec(ParseSpecBase):
         self._run(trace)
         later(lambda: self.vim.buffer.content[2:].should.equal(t))
 
+    def _empty_filtered(self):
+        filters = List('py:integration.core.parse_spec._filter_empty')
+        self.vim.vars.set_p('output_reifier',
+                            'py:myo.output.reifier.python.Reifier')
+        self._init(Map(output_filters=filters))
+        later(lambda:
+              self.vim.messages.should.contain(error_filtered_result_empty))
+
 
 def _filter1(result):
     e = result.events
     e2 = e[:1] + e[1 + _trace_len * 2 + 2:]
     return result.set(events=e2)
+
+
+def _filter_empty(result):
+    return result.set(events=List())
 
 
 def _first_error(a):

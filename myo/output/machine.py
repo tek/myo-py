@@ -7,6 +7,7 @@ from ribosome.machine.scratch import ScratchMachine, Quit
 from ribosome.machine.base import UnitTask
 from ribosome.record import field, list_field, either_field, any_field
 from ribosome.util.callback import SpecialCallback
+from ribosome.machine.transition import Fatal
 
 from amino.task import Task
 from amino import Map, _, L, Left, __, List, Either, Just, Try, Right, Boolean
@@ -24,6 +25,8 @@ Jump = message('Jump')
 FirstError = message('FirstError')
 DisplayLines = message('DisplayLines')
 SetResult = json_message('SetResult', 'result')
+
+error_filtered_result_empty = 'filtered result is empty'
 
 
 def fold_callbacks(cbs, z):
@@ -151,7 +154,13 @@ class OutputMachineTransitions(MyoTransitions):
                 Task.call(self.buffer.set_modifiable, False) +
                 self._run_syntax(lines)
             )
-        return self.result.lines / run
+        def check(lines):
+            return (
+                Left(Fatal(error_filtered_result_empty))
+                if lines.empty else
+                Right(run(lines))
+            )
+        return self.result.lines // check
 
     @property
     def _syntax(self):
