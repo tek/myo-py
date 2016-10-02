@@ -1,13 +1,15 @@
-from integration._support.base import MyoPluginIntegrationSpec
+from integration._support.base import (MyoPluginIntegrationSpec,
+                                       MyoIntegrationSpec)
 from integration._support.command import CmdSpec
 
 from amino.test import later
-from amino import _, __
+from amino import _, __, Map
 
 from myo.test.spec import TmuxSpecBase
+from myo.plugins.tmux.message import TmuxCreateLayout, TmuxCreatePane
 
 
-class TmuxIntegrationSpec(MyoPluginIntegrationSpec, TmuxSpecBase):
+class TmuxIntegrationSpecBase(TmuxSpecBase):
 
     def _pre_start_neovim(self):
         super()._pre_start_neovim()
@@ -30,14 +32,6 @@ class TmuxIntegrationSpec(MyoPluginIntegrationSpec, TmuxSpecBase):
         self._debug = True
         return super()._plugins.cons('myo.plugins.tmux')
 
-    def _create_pane(self, name, **kw):
-        self.json_cmd_sync('MyoTmuxCreatePane {}'.format(name), **kw)
-        self._wait(.1)
-
-    def _open_pane(self, name, **kw):
-        self.json_cmd_sync('MyoTmuxOpen {}'.format(name), **kw)
-        self._wait(.1)
-
     def _pane_count(self, count: int):
         return later(lambda: self._panes.should.have.length_of(count))
 
@@ -49,6 +43,38 @@ class TmuxIntegrationSpec(MyoPluginIntegrationSpec, TmuxSpecBase):
 
     def _width(self, id, h):
         return self._size(_.width, id, h)
+
+
+class ExternalTmuxIntegrationSpec(TmuxIntegrationSpecBase,
+                                  MyoIntegrationSpec):
+
+    @property
+    def tmux(self):
+        return (self.root.sub.find(_.title == 'tmux')
+                .get_or_fail('no tmux plugin'))
+
+    @property
+    def state(self):
+        def fail():
+            raise Exception('no tmux state yet')
+        return self.root.data.sub_state('tmux', lambda: fail)
+
+    def _create_layout(self, name, **options):
+        self.root.send_sync(TmuxCreateLayout(name, options=Map(options)))
+
+    def _create_pane(self, name, **options):
+        self.root.send_sync(TmuxCreatePane(name, options=Map(options)))
+
+
+class TmuxIntegrationSpec(TmuxIntegrationSpecBase, MyoPluginIntegrationSpec):
+
+    def _create_pane(self, name, **kw):
+        self.json_cmd_sync('MyoTmuxCreatePane {}'.format(name), **kw)
+        self._wait(.1)
+
+    def _open_pane(self, name, **kw):
+        self.json_cmd_sync('MyoTmuxOpen {}'.format(name), **kw)
+        self._wait(.1)
 
 
 class DefaultLayoutSpec(TmuxIntegrationSpec):

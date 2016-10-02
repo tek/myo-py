@@ -1,7 +1,31 @@
-from integration._support.tmux import DefaultLayoutSpec, TmuxIntegrationSpec
-
 from amino.test import later
 from amino import _
+
+from integration._support.tmux import (DefaultLayoutSpec, TmuxIntegrationSpec,
+                                       ExternalTmuxIntegrationSpec)
+
+
+class CreateLayoutSpec(ExternalTmuxIntegrationSpec):
+
+    def create(self):
+        self.plugin.myo_start()
+        name = 'lay'
+        self._create_layout(name, parent='root')
+        l = self.state.sessions.head // _.windows.head // _.root.layouts.last
+        (l / _.name).should.contain(name)
+
+
+class CreatePaneSpec(ExternalTmuxIntegrationSpec):
+
+    def create(self):
+        self.plugin.myo_start()
+        lname = 'lay'
+        pname = 'pan'
+        self._create_layout(lname, parent='root')
+        self._create_pane(pname, parent=lname)
+        p = (self.state.sessions.head // _.windows.head //
+             _.root.layouts.last // _.panes.head)
+        (p / _.name).should.contain(pname)
 
 
 class OpenSpec(TmuxIntegrationSpec):

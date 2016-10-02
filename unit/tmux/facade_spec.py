@@ -1,8 +1,16 @@
-from myo.ui.tmux.facade import LayoutFacade
+from myo.ui.tmux.facade.view import LayoutFacade
+from myo.ui.tmux.data import TmuxState
+from myo.ui.tmux.facade.main import TmuxFacade
+from myo.ui.tmux.server import Server
+from myo.ui.tmux.pane import Pane
+from myo.ui.tmux.layout import Layout
+from myo.ui.tmux.window import Window
+from myo.ui.tmux.session import Session
 
 from unit._support.spec import UnitSpec
 
-from amino import Empty, List, Just
+from amino import Empty, List, Just, _, __
+from amino.lazy import lazy
 
 
 class LayoutFacadeSpec(UnitSpec):
@@ -43,5 +51,48 @@ class LayoutFacadeSpec(UnitSpec):
         total = 60
         res = self.f._balance_sizes(min_s, max_s, weights, total)
         res.should.equal(List(10, 20, 10, 20))
+
+
+class TmuxFacadeSpec(UnitSpec):
+
+    @lazy
+    def state(self):
+        pane = Pane(id=Just(9), name='pan')
+        lay = Layout(name='lay', panes=[pane])
+        par = Layout(name='par', layouts=[lay])
+        win = Window(name='vim', id=Just(0), root=par)
+        sess = Session(name='vim', id=Just(0), windows=[win])
+        return TmuxState(server=Server(None), sessions=List(sess))
+
+    @lazy
+    def tmux(self):
+        return TmuxFacade(self.state)
+
+    def layout_lens(self):
+        name = 'new'
+        s = self.state.layout_lens_ident('lay') / __.modify(__.set(name=name))
+        l = s // _.sessions.head // _.windows.head // _.root.layouts.head
+        (l / _.name).should.contain(name)
+
+    def pane_lens(self):
+        name = 'new'
+        s = self.state.pane_lens_ident('pan') / __.modify(__.set(name=name))
+        p = (s // _.sessions.head // _.windows.head // _.root.layouts.head //
+             _.panes.head)
+        (p / _.name).should.contain(name)
+
+    def add_layout_to_layout(self):
+        layout = Layout(name='lay2')
+        s = self.tmux.add_layout_to_layout(Just('lay'), layout)
+        l = (s // _.sessions.head // _.windows.head // _.root.layouts.head //
+             _.layouts.head)
+        l.should.contain(layout)
+
+    def add_pane_to_layout(self):
+        pane = Pane(name='pan2')
+        s = self.tmux.add_pane_to_layout(Just('lay'), pane)
+        p = (s // _.sessions.head // _.windows.head // _.root.layouts.head //
+             _.panes.last)
+        p.should.contain(pane)
 
 __all__ = ('LayoutFacadeSpec',)

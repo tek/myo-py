@@ -21,6 +21,22 @@ class IntegrationCommon:
     def _prefix(self):
         return 'myo'
 
+    def _post_start_neovim(self):
+        super()._post_start_neovim()
+        self._set_vars()
+
+    def _set_vars(self):
+        self.vim.vars.set_p('config_path', str(self._config_path))
+        self.vim.vars.set_p('plugins', self._plugins)
+
+    @property
+    def _config_path(self):
+        return Path('/dev/null')
+
+    @property
+    def _plugins(self):
+        return List()
+
 
 class MyoIntegrationSpec(IntegrationCommon, ExternalIntegrationSpec):
     pass
@@ -34,21 +50,5 @@ class MyoPluginIntegrationSpec(IntegrationCommon, PluginIntegrationSpec, Spec,
         self.vim.cmd_sync('MyoStart')
         self._wait_for(lambda: self.vim.vars.p('started').is_just)
         self.vim.cmd('MyoPostStartup')
-
-    def _post_start_neovim(self):
-        super()._post_start_neovim()
-        self._set_vars()
-
-    def _set_vars(self):
-        self.vim.vars.set_p('config_path', str(self._config_path))
-        self.vim.vars.set_p('plugins', self._plugins)
-
-    @property
-    def _plugins(self):
-        return List()
-
-    @property
-    def _config_path(self):
-        return Path('/dev/null')
 
 __all__ = ('MyoIntegrationSpec', 'MyoPluginIntegrationSpec')

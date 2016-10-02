@@ -1,15 +1,11 @@
 from typing import Callable
 
-from lenses import lens
-
-from amino import (List, _, __, Just, Maybe, Map, Right, Empty, Either,
-                   Boolean, I)
+from amino import List, _, __, Just, Map, Right, Empty, Either, Boolean, I
 from amino.lazy import lazy
 from amino.task import Task
 from amino.anon import L
 
 from ribosome.machine import may_handle, handle, Quit, Nop
-from ribosome.record import field, list_field, Record
 from ribosome.machine.base import UnitTask, DataTask
 
 from myo.state import MyoComponent, MyoTransitions
@@ -26,96 +22,37 @@ from myo.plugins.tmux.message import (TmuxOpen, TmuxRunCommand, TmuxCreatePane,
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
-from myo.ui.tmux.session import Session
+from myo.ui.tmux.session import Session, VimSession
 from myo.ui.tmux.server import Server, NativeServer
 from myo.util import parse_int
 from myo.ui.tmux.window import VimWindow, Window
-from myo.ui.tmux.facade import LayoutFacade, PaneFacade, ViewFacade
+from myo.ui.tmux.facade.view import LayoutFacade, PaneFacade, ViewFacade
 from myo.ui.tmux.view import View
 from myo.plugins.core.message import AddDispatcher
 from myo.plugins.tmux.dispatch import TmuxDispatcher
 from myo.ui.tmux.util import format_state, Ident
 from myo.ui.tmux.view_path import LayoutPathMod, PanePathMod, ViewPathMod
+from myo.ui.tmux.data import TmuxState
 from myo.plugins.command.message import SetShellTarget
 from myo.command import Command, Shell, default_signals
 from myo.plugins.tmux.watcher import Watcher, Terminated
-
-_is_vim_window = lambda a: isinstance(a, VimWindow)
-_is_vim_layout = lambda a: isinstance(a, VimLayout)
-_is_vim_pane = lambda a: isinstance(a, VimPane)
-
-
-def _ident_ppm(ident: Ident):
-    return PanePathMod(pred=__.has_ident(ident))
-
-
-def _ident_lpm(ident: Ident):
-    return LayoutPathMod(pred=__.has_ident(ident))
-
-
-def _ident_vpm(ident: Ident):
-    return ViewPathMod(pred=__.has_ident(ident))
-
-
-class TmuxState(Record):
-    server = field(Server)
-    sessions = list_field()
-    windows = list_field()
-    instance_id = field(str, initial='', factory=L(List.random_string)(5))
-
-    @property
-    def vim_window(self):
-        return self.windows.find(_is_vim_window)
-
-    @property
-    def vim_window_lens(self):
-        return (self.windows.find_lens_pred(_is_vim_window) /
-                lens(self).windows.add_lens)
-
-    @property
-    def vim_layout(self):
-        return self.vim_window // __.root.layouts.find(_is_vim_layout)
-
-    @property
-    def vim_layout_lens(self):
-        return (
-            self.vim_layout //
-            __.layouts.find_lens_pred(_is_vim_layout) /
-            lens(self).windows.add_lens
-        )
-
-    @property
-    def vim_pane(self):
-        return self.vim_layout / _.panes / _.head
-
-    @property
-    def all_panes(self):
-        return self.windows // _.root.all_panes
-
-    def pane(self, ident):
-        return self.all_panes.find(__.has_ident(ident))
-
-    @property
-    def possibly_open_panes(self):
-        return (
-            self.all_panes
-            .filter(_.id.is_just)
-            .filter(lambda a: not _is_vim_pane(a))
-        )
-
-    def find_view(self, view: View):
-        return self.windows.find_map(__.root.find_view(view))
+from myo.ui.tmux.facade.main import TmuxFacade
 
 
 class TmuxTransitions(MyoTransitions):
+
+    @property
+    def tmux(self):
+        return TmuxFacade(self.state)
 
     def _with_root(self, data, state, root):
         l = state.vim_window_lens / _.root
         new_state = l / __.set(root) | state
         return self._with_sub(data, new_state)
 
-    def _with_vim_window(self, data, state, win):
-        new_state = state.vim_window_lens / __.set(win) | state
+    def _with_window(self, ident, data, state, win):
+        new_state = (state.window_lens_ident(ident) / __.set(win) |
+                     state)
         return self._with_sub(data, new_state)
 
     def with_sub_and_msgs(self, state, msgs):
@@ -139,9 +76,9 @@ class TmuxTransitions(MyoTransitions):
 
     def record_lens(self, tpe, name):
         return (
-            self._pane_lens(name)
+            self.state.pane_lens_ident(name)
             if tpe == 'pane' else
-            self._layout_lens(name)
+            self.state.layout_lens_ident(name)
             if tpe == 'layout' else
             Empty()
         )
@@ -188,7 +125,8 @@ class TmuxTransitions(MyoTransitions):
                       direction=LayoutDirections.horizontal,
                       layouts=List(vim_layout))
         win = VimWindow(id=wid.to_maybe, root=root)
-        new_state = self.state.append1.windows(win)
+        session = VimSession(id=sid.to_maybe, windows=List(win))
+        new_state = self.state.append1.sessions(session)
         return self.with_sub(new_state)
 
     @may_handle(TmuxLoadDefaults)
@@ -225,7 +163,8 @@ class TmuxTransitions(MyoTransitions):
         direction = LayoutDirections.parse(dir_s)
         return (
             self._from_opt(Layout, name=self.msg.name, direction=direction) //
-            L(self._add_layout_to_layout)(opts.get('parent'), _)
+            L(self.tmux.add_layout_to_layout)(opts.get('parent'), _) /
+            self.with_sub
         )
 
     @handle(TmuxCreatePane)
@@ -233,7 +172,8 @@ class TmuxTransitions(MyoTransitions):
         opts = self.msg.options
         return (
             self._from_opt(Pane, name=self.msg.name) //
-            L(self._add_pane_to_layout)(opts.get('parent'), _)
+            L(self.tmux.add_pane_to_layout)(opts.get('parent'), _) /
+            self.with_sub
         )
 
     @may_handle(TmuxOpen)
@@ -382,25 +322,28 @@ class TmuxTransitions(MyoTransitions):
     def _minimize(self, f):
         return self._view_mod(self.msg.pane, f), TmuxPack().pub.at(1)
 
-    def _window_task(self, f: Callable[[Window], Task[Either[str, Window]]]):
-        return DataTask(_ // L(self._wrap_window)(_, f))
+    def _window_task(self, f: Callable[[Window], Task[Either[str, Window]]],
+                     options=Map()):
+        return DataTask(_ // L(self._wrap_window)(_, f, options))
 
-    def _wrap_window(self, data, callback):
+    def _wrap_window(self, data, callback, options):
+        window = options.get('window') | 'vim'
         state = self._state(data)
-        win = Task.from_maybe(state.vim_window, 'no vim window')
-        update = __.map(L(self._with_vim_window)(data, state, _))
+        win = Task.from_maybe(state.window(window),
+                              'no such window: {}'.format(window))
+        update = __.map(L(self._with_window)(window, data, state, _))
         return win // callback / update
 
     def _run_vpm(self, vpm):
-        return self._window_task(vpm.run)
+        return self._window_task(vpm.run, self.msg.options)
 
     def _open_pane_ppm(self, name: Ident):
         # cannot reference self.layouts.pack_path directly, because panes
         # are cached
-        return _ident_vpm(name) / self._open_pane
+        return self._ident_vpm(name) / self._open_pane
 
     def _close_pane_ppm(self, name: Ident):
-        return _ident_ppm(name) / self._close_pane / self._pack_path
+        return self._ident_ppm(name) / self._close_pane / self._pack_path
 
     def _run_command_ppm(self, command, opt: Map):
         in_shell = Boolean('shell' in opt)
@@ -457,43 +400,6 @@ class TmuxTransitions(MyoTransitions):
     def _pack_path(self, path):
         return self.layouts.pack_path(path)
 
-    def _pane_lens(self, ident):
-        return self._view_lens(ident, __.pane_lens)
-
-    def _layout_lens(self, ident):
-        return self._view_lens(ident, __.layout_lens)
-
-    def _view_lens(self, ident, lens_cb):
-        return (
-            self.state.windows
-            .find_lens(lens_cb(__.has_ident(ident))) /
-            lens(self.state).windows.add_lens
-        )
-
-    def _layout_lens_bound(self, ident):
-        ll = lambda l: Just(lens()) if l.has_ident(ident) else sub(l)
-        sub = __.layouts.find_lens(ll).map(lens().layouts.add_lens)
-        return (
-            self.state.windows
-            .find_lens(lambda a: ll(a.root) / lens().root.add_lens) /
-            lens(self.state).windows.add_lens
-        )
-
-    def _add_to_layout(self, parent: Maybe[str], target: Callable, view: View):
-        name = parent | 'root'
-        return (
-            self._layout_lens_bound(name) /
-            target /
-            __.modify(__.cat(view)) /
-            self.with_sub
-        )
-
-    def _add_pane_to_layout(self, parent: Maybe[str], pane: Pane):
-        return self._add_to_layout(parent, _.panes, pane)
-
-    def _add_layout_to_layout(self, parent: Maybe[str], layout: Layout):
-        return self._add_to_layout(parent, _.layouts, layout)
-
     def _pane(self, ident: Ident):
         return self.state.pane(ident)
 
@@ -511,10 +417,10 @@ class TmuxTransitions(MyoTransitions):
         return 'make'
 
     def _pane_mod(self, ident: Ident, f: Callable[[Pane], Pane]):
-        return self._mod(_ident_ppm, ident, f)
+        return self._mod(self._ident_ppm, ident, f)
 
     def _view_mod(self, ident: Ident, f: Callable[[View], View]):
-        return self._mod(_ident_vpm, ident, f)
+        return self._mod(self._ident_vpm, ident, f)
 
     def _mod(self, ctor: Callable, ident: Ident, f: Callable[[View], View]):
         def g(path):
@@ -548,11 +454,23 @@ class TmuxTransitions(MyoTransitions):
             add = (List() if sub.empty and target.empty else
                    l.panes.filter(_.pin))
             return sub + add
-        return (self.state.windows / _.root // layout) / _.ident
+        return (self.state.all_windows / _.root // layout) / _.ident
 
     def _main_command(self, cmd_ident: Ident):
         holder = lambda cmd: cmd.shell // self.data.shell | cmd
         return self.data.command(cmd_ident) / holder
+
+    def _ident_pm(self, tpe: type, ident: Ident):
+        return tpe(pred=__.has_ident(ident), options=self.options)
+
+    def _ident_ppm(self, ident: Ident):
+        return self._ident_pm(PanePathMod, ident)
+
+    def _ident_lpm(self, ident: Ident):
+        return self._ident_pm(LayoutPathMod, ident)
+
+    def _ident_vpm(self, ident: Ident):
+        return self._ident_pm(ViewPathMod, ident)
 
 
 class Plugin(MyoComponent):

@@ -2,6 +2,8 @@ from uuid import UUID
 
 from ribosome.record import Record as RecordBase, uuid_field, field
 
+from amino import List
+
 from myo.ui.tmux.util import Ident
 
 
@@ -20,9 +22,8 @@ class Named(Record):
         attr = self.uuid if isinstance(ident, UUID) else self.name
         return attr == ident
 
-    def __repr__(self):
-        return '{}({})'.format(self.__class__.__name__, self.name)
-
-    __str__ = __repr__
+    @property
+    def _str_extra(self):
+        return List(self.name)
 
 __all__ = ('Record',)

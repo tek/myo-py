@@ -45,7 +45,7 @@ def format_window(win):
 
 
 def format_state(state) -> List[str]:
-    return state.windows // format_window
+    return state.all_windows // format_window
 
 Ident = Union[str, UUID]
 

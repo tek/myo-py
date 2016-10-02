@@ -6,7 +6,7 @@ from myo.ui.tmux.util import Ident
 
 from lenses import lens
 
-from amino import _, __, List
+from amino import _, __, List, Just
 from amino.lazy import lazy
 
 from ribosome.record import dfield, list_field, field, Record
@@ -63,15 +63,22 @@ class Layout(View):
     def find_view(self, ident: Ident):
         return self.find_pane(ident).or_else(self.find_layout(ident))
 
-    def pane_lens(self, f: Callable[[Pane], bool]):
+    def view_lens(self, attr: Callable[['Layout'], List[View]],
+                  f: Callable[[View], bool]):
+        h = lambda l: l.layouts.find_lens(g) / lens().layouts.add_lens
         def g(l):
             return (
-                l.panes.lens(f)
-                .map(lens().panes.add_lens)
+                attr(l).lens(f)
+                .map(attr(lens()).add_lens)
                 .or_else(lambda: h(l))
             )
-        h = lambda l: l.layouts.find_lens(g) / lens().layouts.add_lens
-        return h(self) / lens().add_lens
+        return g(self)
+
+    def layout_lens(self, f: Callable[['Layout'], bool]):
+        return Just(lens()) if f(self) else self.view_lens(_.layouts, f)
+
+    def pane_lens(self, f: Callable[[Pane], bool]):
+        return self.view_lens(_.panes, f)
 
     def replace_pane(self, pane: Pane):
         panes = self.panes.replace_where(pane)(__.has_ident(pane.ident))

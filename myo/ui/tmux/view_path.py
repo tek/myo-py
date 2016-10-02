@@ -6,9 +6,9 @@ from lenses import Lens, lens
 from amino import Either, List, F, _, L, Left, __, Right, I
 from amino.lens.tree import path_lens_unbound_pre
 
-from ribosome.record import Record, field, list_field
+from ribosome.record import Record, field, list_field, map_field
 from ribosome.machine import Message
-from ribosome.machine.transition import Error
+from ribosome.machine.transition import Fatal
 
 from myo.ui.tmux.window import Window
 from myo.logging import Logging
@@ -72,10 +72,7 @@ class ViewPathLens(Record):
     def run(self, win: Window, f: PPTrans) -> Task[Either[Any, Window]]:
         bound = self.lens.bind(win)
         path = ViewPath.try_create(List.wrap(bound.get()))
-        def update(pp):
-            return bound.set(pp.to_list)
-        def apply(pp):
-            return f(pp) / (_ / update)
+        apply = F(f) / (_ / _.to_list / bound.set)
         return Task.from_either(path) // apply
 
 
@@ -86,6 +83,7 @@ def _initial_ppm_f(pp, window) -> Task[Either[Any, Window]]:
 class ViewPathMod(Logging, Message):
     pred = field(Callable)
     _f = field(Callable, initial=(lambda: _initial_ppm_f))
+    options = map_field()
 
     @property
     def attr(self):
@@ -131,7 +129,7 @@ class ViewPathMod(Logging, Message):
         return (
             Task.from_maybe(
                 path_lens_unbound_pre(window, sub, self.attr, pre),
-                Error('lens path failed for {}'.format(self.pred))
+                Fatal('lens path failed for {}'.format(self.pred))
             ) /
             ViewPathLens.create
         )
