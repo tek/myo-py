@@ -3,7 +3,7 @@ from typing import Callable
 
 import amino.logging
 import ribosome.logging
-from ribosome.logging import ribosome_logger
+from ribosome.logging import ribosome_logger, pr
 
 from amino.lazy import lazy
 
@@ -20,6 +20,10 @@ class Logging(amino.logging.Logging):
     @lazy
     def _log(self) -> amino.logging.Logger:  # type: ignore
         return myo_logger(self.__class__.__name__)
+
+    def _p(self, a):
+        pr(a)
+        return a
 
 
 def print_info(out: Callable[[str], None]):

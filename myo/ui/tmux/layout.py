@@ -6,7 +6,7 @@ from myo.ui.tmux.util import Ident
 
 from lenses import lens
 
-from amino import _, __, List, Just
+from amino import _, __, List, Just, Maybe
 from amino.lazy import lazy
 
 from ribosome.record import dfield, list_field, field, Record
@@ -57,7 +57,7 @@ class Layout(View):
     def find_layout(self, ident: Ident):
         return self.find_sub(_.layouts, ident)
 
-    def find_pane(self, ident: Ident):
+    def find_pane(self, ident: Ident) -> Maybe[Pane]:
         return self.find_sub(_.panes, ident)
 
     def find_view(self, ident: Ident):

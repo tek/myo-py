@@ -62,11 +62,11 @@ class TmuxFacadeSpec(UnitSpec):
         par = Layout(name='par', layouts=[lay])
         win = Window(name='vim', id=Just(0), root=par)
         sess = Session(name='vim', id=Just(0), windows=[win])
-        return TmuxState(server=Server(None), sessions=List(sess))
+        return TmuxState(sessions=List(sess))
 
     @lazy
     def tmux(self):
-        return TmuxFacade(self.state)
+        return TmuxFacade(self.state, Server(None))
 
     def layout_lens(self):
         name = 'new'

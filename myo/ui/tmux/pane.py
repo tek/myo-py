@@ -44,8 +44,17 @@ class Pane(View):
         return self.set(id=pa.id_i.to_maybe, shell_pid=pa.pid.to_maybe,
                         session_id=pa.session_id_i, window_id=pa.window_id_i)
 
+    @property
+    def _str_extra(self):
+        return self.id.to_list + super()._str_extra
+
 
 class VimPane(Pane):
+    pane_name = '<vim>'
+
+    def __new__(cls, *a, name=None, **kw):
+        n = Maybe(name) | VimPane.pane_name
+        return super().__new__(cls, *a, name=n, **kw)
 
     @property
     def desc(self):

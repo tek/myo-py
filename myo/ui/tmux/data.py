@@ -22,7 +22,6 @@ _is_vim_pane = lambda a: isinstance(a, VimPane)
 
 
 class TmuxState(Record):
-    server = field(Server)
     sessions = list_field()
     instance_id = field(str, initial='', factory=L(List.random_string)(5))
 

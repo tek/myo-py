@@ -28,6 +28,19 @@ class CreatePaneSpec(ExternalTmuxIntegrationSpec):
         (p / _.name).should.contain(pname)
 
 
+class XOpenSpec(ExternalTmuxIntegrationSpec):
+
+    def create(self):
+        self.vim.vars.set_p('tmux_no_watcher', True)
+        self.plugin.myo_start()
+        lname = 'lay'
+        pname = 'pan'
+        self._create_layout(lname, parent='root')
+        self._create_pane(pname, parent=lname)
+        self._open_pane(pname)
+        self._pane_count(2)
+
+
 class OpenSpec(TmuxIntegrationSpec):
 
     def open(self):

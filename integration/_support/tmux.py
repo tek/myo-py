@@ -7,30 +7,61 @@ from amino import _, __, Map
 
 from myo.test.spec import TmuxSpecBase
 from myo.plugins.tmux.message import TmuxCreateLayout, TmuxCreatePane
+from myo.plugins.tmux import TmuxOpen
 
 
 class TmuxIntegrationSpecBase(TmuxSpecBase):
 
     def _pre_start_neovim(self):
         super()._pre_start_neovim()
+        self._debug = True
         self._setup_server()
 
     def _post_start_neovim(self):
         super()._post_start_neovim()
-        self.vim.vars.set_p('tmux_socket', self.socket)
-        id = self.session.windows[0].panes[0].id_i | -1
-        wid = self.session.windows[0].id_i | -1
-        self.vim.vars.set_p('tmux_force_vim_pane_id', id)
-        self.vim.vars.set_p('tmux_force_vim_win_id', wid)
+        if self.external_server:
+            self.vim.vars.set_p('tmux_socket', self.socket)
+            id = self.session.windows[0].panes[0].id_i | -1
+            wid = self.session.windows[0].id_i | -1
+            sid = self.session.id_i | -1
+            self.vim.vars.set_p('tmux_force_vim_pane_id', id)
+            self.vim.vars.set_p('tmux_force_vim_win_id', wid)
+            self.vim.vars.set_p('tmux_force_vim_session_id', sid)
+        else:
+            self._create_window()
 
     def teardown(self):
         super().teardown()
         self._teardown_server()
+        if not self.external_server:
+            self._close_window()
 
     @property
     def _plugins(self):
-        self._debug = True
         return super()._plugins.cons('myo.plugins.tmux')
+
+    @property
+    def _window_name(self):
+        return 'myo-spec-vim'
+
+    def _create_window(self):
+        self._vim_window = self.session.new_window(
+            window_name=self._window_name)
+        self._vim_pane = self._vim_window.panes[0]
+        self.vim.vars.set_p('tmux_force_vim_win_id',
+                            self._vim_window.id_i | -1)
+        self.vim.vars.set_p('tmux_force_vim_pane_id', self._vim_pane.id_i | -1)
+
+    def _close_window(self):
+        self._vim_window.kill()
+
+    @property
+    def _window(self):
+        return (
+            super()._window if self.external_server else
+            self.session.windows.find(_.name == self._window_name)
+            .get_or_fail('no window')
+        )
 
     def _pane_count(self, count: int):
         return later(lambda: self._panes.should.have.length_of(count))
@@ -64,6 +95,9 @@ class ExternalTmuxIntegrationSpec(TmuxIntegrationSpecBase,
 
     def _create_pane(self, name, **options):
         self.root.send_sync(TmuxCreatePane(name, options=Map(options)))
+
+    def _open_pane(self, name, **options):
+        self.root.send_sync(TmuxOpen(name, options=Map(options)))
 
 
 class TmuxIntegrationSpec(TmuxIntegrationSpecBase, MyoPluginIntegrationSpec):

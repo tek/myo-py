@@ -4,7 +4,6 @@ from amino import List, Just, __, _
 from amino.lazy import lazy
 
 from myo.plugins.tmux.main import TmuxState
-from myo.ui.tmux.server import Server
 from myo.ui.tmux.session import Session
 from myo.ui.tmux.window import Window
 from myo.ui.tmux.layout import Layout, LayoutDirections
@@ -19,7 +18,7 @@ class StateSpec(UnitSpec):
         lay = Layout(name='lay', panes=[pane])
         win = Window(name='vim', id=Just(0), root=lay)
         sess = Session(name='vim', id=Just(0), windows=[win])
-        return TmuxState(server=Server(None), sessions=List(sess))
+        return TmuxState(sessions=List(sess))
 
     def session_lens(self):
         s = (self.state.session_lens(__.has_ident('vim')) /

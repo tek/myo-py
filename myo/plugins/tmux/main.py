@@ -43,7 +43,7 @@ class TmuxTransitions(MyoTransitions):
 
     @property
     def tmux(self):
-        return TmuxFacade(self.state)
+        return TmuxFacade(self.state, self.server)
 
     def _with_root(self, data, state, root):
         l = state.vim_window_lens / _.root
@@ -60,7 +60,7 @@ class TmuxTransitions(MyoTransitions):
 
     @property
     def server(self):
-        return self.state.server
+        return self.machine.server
 
     @property
     def layouts(self):
@@ -90,7 +90,9 @@ class TmuxTransitions(MyoTransitions):
         '''
         default = self.pflags.tmux_use_defaults.maybe(TmuxLoadDefaults())
         msgs = List(AddDispatcher(), self.with_sub(self.state), TmuxFindVim())
-        return msgs + default.to_list + List(StartWatcher())
+        watcher = (List() if self.vim.vars.p('tmux_no_watcher').true else
+                   List(StartWatcher()))
+        return msgs + default.to_list + watcher
 
     @may_handle(AddDispatcher)
     def add_dispatcher(self):
@@ -115,9 +117,9 @@ class TmuxTransitions(MyoTransitions):
             .to_either('no vim session id')
         )
         vim_w = self.vim.vars.p('tmux_vim_width').or_else(Just(88))
-        pane = VimPane(id=id.to_maybe, name='vim', pid=vim_pid.to_maybe,
-                       window_id=wid, session_id=sid)
-        vim_layout = VimLayout(name='vim',
+        pane = VimPane(id=id.to_maybe, pid=vim_pid.to_maybe, window_id=wid,
+                       session_id=sid)
+        vim_layout = VimLayout(name=VimPane.pane_name,
                                direction=LayoutDirections.vertical,
                                panes=List(pane), min_size=vim_w,
                                weight=Just(0.0001))
@@ -197,20 +199,12 @@ class TmuxTransitions(MyoTransitions):
 
     @handle(TmuxFixFocus)
     def fix_focus(self):
-        return (
-            self._pane(self.msg.pane) // (
-                lambda a:
-                a.focus.cata(Just(a), self._vim_pane) //
-                self._focus_pane
-            )
-        )
+        return (self.tmux.fix_focus(self.msg.pane, VimPane.pane_name) /
+                UnitTask)
 
     @handle(TmuxFocus)
     def focus(self):
-        return self._pane(self.msg.pane) // self._focus_pane
-
-    def _focus_pane(self, pane: Pane):
-        return self.panes.find(pane) / _.focus / Task / UnitTask
+        return self.tmux.focus(self.msg.pane) / UnitTask
 
     @may_handle(TmuxClosePane)
     def close(self):
@@ -327,7 +321,7 @@ class TmuxTransitions(MyoTransitions):
         return DataTask(_ // L(self._wrap_window)(_, f, options))
 
     def _wrap_window(self, data, callback, options):
-        window = options.get('window') | 'vim'
+        window = options.get('window') | VimWindow.window_name
         state = self._state(data)
         win = Task.from_maybe(state.window(window),
                               'no such window: {}'.format(window))
@@ -408,7 +402,7 @@ class TmuxTransitions(MyoTransitions):
 
     @property
     def _vim_pane(self):
-        return self._pane('vim')
+        return self._pane(VimPane.pane_name)
 
     def _pane_uuid(self, ident: Ident):
         return self._pane(ident) / _.uuid
@@ -501,7 +495,7 @@ class Plugin(MyoComponent):
         return ViewFacade(self.server)
 
     def new_state(self):
-        return TmuxState(server=self.server)
+        return TmuxState()
 
     @lazy
     def watcher(self):

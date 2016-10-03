@@ -32,9 +32,11 @@ class Window(Named):
 
 
 class VimWindow(Window):
+    window_name = '<vim>'
 
-    def __new__(cls, *a, name='vim', **kw):
-        return super().__new__(cls, *a, name=name, **kw)
+    def __new__(cls, *a, name=None, **kw):
+        n = Maybe(name) | VimWindow.window_name
+        return super().__new__(cls, *a, name=n, **kw)
 
     @property
     def desc(self):
@@ -65,5 +67,12 @@ class WindowAdapter(Adapter):
     @property
     def active_pane(self):
         return self.panes.find(_.active)
+
+    def kill(self):
+        self.native.kill_window()
+
+    @property
+    def name(self):
+        return self.native.name
 
 __all__ = ('WindowAdapter', 'Window')

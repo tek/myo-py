@@ -1,13 +1,11 @@
 from amino import List, __, _
 from amino.test import later
-from amino.test.spec import profiled
 
 from integration._support.tmux import TmuxIntegrationSpec, DefaultLayoutSpec
 
 
 class CutSizeSpec(TmuxIntegrationSpec):
 
-    # @profiled
     def cut_size(self):
         def check():
             diff = (

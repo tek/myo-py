@@ -14,6 +14,8 @@ from myo.ui.tmux.window import Window
 from myo.logging import Logging
 from myo.ui.tmux.view import View
 from myo.ui.tmux.layout import Layout
+from myo.ui.tmux.pane import Pane
+from myo.ui.tmux.session import Session
 
 
 class ViewPath(Record):
@@ -151,5 +153,19 @@ class LayoutPathMod(ViewPathMod):
 
 def ppm_id(path: ViewPathMod):
     return Task.now(Right(path))
+
+
+class PaneLoc(Record):
+    pane = field(Pane)
+    window = field(Window)
+    session = field(Session)
+
+    @staticmethod
+    def create(session, window, pane):
+        return PaneLoc(pane=pane, window=window, session=session)
+
+    @property
+    def _str_extra(self):
+        return List(self.session, self.window, self.pane)
 
 __all__ = ('ViewPath', 'ViewPathLens', 'ViewPathMod', 'ppm_id')

@@ -2,7 +2,7 @@ import libtmux
 
 from ribosome.record import list_field, maybe_field, field
 
-from amino import List, __
+from amino import List, __, Maybe
 from amino.lazy import lazy
 
 from myo.ui.tmux.adapter import Adapter
@@ -27,9 +27,11 @@ class Session(Named):
 
 
 class VimSession(Session):
+    session_name = '<vim>'
 
-    def __new__(cls, *a, name='vim', **kw):
-        return super().__new__(cls, *a, name=name, **kw)
+    def __new__(cls, *a, name=None, **kw):
+        n = Maybe(name) | VimSession.session_name
+        return super().__new__(cls, *a, name=n, **kw)
 
     @property
     def desc(self):
@@ -64,5 +66,12 @@ class SessionAdapter(Adapter):
 
     def find_pane_by_id(self, id: int):
         return self.windows.find_map(__.pane_by_id(id))
+
+    def new_window(self, **kw):
+        return WindowAdapter(self.native.new_window(**kw))
+
+    @property
+    def attached(self):
+        return int(self.native['session_attached']) > 0
 
 __all__ = ('Session',)

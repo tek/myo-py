@@ -5,7 +5,7 @@ from libtmux.exc import LibTmuxException
 
 import amino.test
 from amino.test.path import fixture_path
-from amino import List, _, __
+from amino import _, __
 from amino.test import later
 from amino.lazy import lazy
 
@@ -27,19 +27,29 @@ class TmuxSpecBase(Spec):
     def socket(self):
         return 'myo_spec'
 
+    @property
+    def _socket_name(self):
+        return self.socket if self.external_server else None
+
+    @property
+    def native_server(self):
+        return libtmux.Server(socket_name=self._socket_name)
+
     def _find_server(self):
-        if self.native_server is None:
-            try:
-                self.native_server = libtmux.Server(socket_name=self.socket)
-            except LibTmuxException:
-                pass
-        return self.native_server is not None
+        try:
+            return self.native_server is not None
+        except LibTmuxException:
+            pass
 
     def _find_session(self):
         try:
             return self.session is not None
         except LibTmuxException:
             pass
+
+    @property
+    def external_server(self):
+        return True
 
     @property
     def external_terminal(self):
@@ -62,34 +72,39 @@ class TmuxSpecBase(Spec):
         return Popen(args, stdout=PIPE, stderr=STDOUT)
 
     def _setup_server(self):
-        self.native_server = None
-        self.term
-        self._wait_for(self._find_server)
+        if self.external_server:
+            self.term
+            self._wait_for(self._find_server)
         self._wait_for(self._find_session)
 
     def _teardown_server(self):
-        self.term.kill()
-        self.server.kill()
+        if self.external_server:
+            self.term.kill()
+            self.server.kill()
 
     @property
     def server(self):
         return Server(self.native_server)
 
     @property
-    def session(self):
-        return self.server.sessions[0]
-
-    @property
     def sessions(self):
         return self.server.sessions
 
     @property
+    def session(self):
+        if self.external_server:
+            return self.sessions[0]
+        else:
+            return (self.sessions.find(_.attached)
+                    .get_or_fail('no attached session'))
+
+    @property
     def _window(self):
-        return self.sessions.head // _.windows.head
+        return (self.session.windows.last).get_or_fail('no window')
 
     @property
     def _panes(self):
-        return self._window / _.panes | List()
+        return self._window.panes
 
     def _pane_with_id(self, id):
         return self._panes.find(__.id_i.contains(id))
