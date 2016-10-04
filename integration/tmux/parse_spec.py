@@ -14,8 +14,11 @@ _event_head = 'event 1:'
 
 
 def _parse_echo(data):
+    from ribosome.logging import log
+    log.verbose(data)
     matcher = re.compile('^line (\d+)')
     matches = data / matcher.match // Maybe / __.group(1)
+    log.verbose(matches)
     entries = matches / (lambda a: OutputEntry(text='entry {}'.format(a)))
     event = OutputEvent(head=List(_event_head), entries=entries)
     return ParseResult(head=List(_parse_head), events=List(event))
@@ -24,20 +27,20 @@ def _parse_echo(data):
 class ParseSpec(TmuxCmdSpec):
 
     def custom(self):
-        l1 = 'line 1'
-        lines = List(l1, 'line 2', 'line 3')
+        l3 = 'line 3'
+        lines = List('line 1', 'line 2', l3)
         s = lines.mk_string('\\n')
         heads = List(_parse_head, _event_head)
         target = heads + lines / __.replace('line', 'entry')
-        check2 = lambda: self.vim.buffer.content.should.equal(target)
         self.json_cmd('MyoShellCommand com', line="echo '{}'".format(s),
                       target='make',
                       parser='py:integration.tmux.parse_spec._parse_echo')
         self._open_pane('make')
         self.json_cmd('MyoRun com')
-        self._output_contains(l1)
+        self._output_contains(l3)
         self.json_cmd('MyoParse')
-        later(check2)
+        check = lambda: self.vim.buffer.content.should.equal(target)
+        later(check)
 
     def shell(self):
         self.vim.vars.set_p('jump_to_error', False)

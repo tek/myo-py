@@ -284,7 +284,7 @@ class TmuxTransitions(MyoTransitions):
 
     @may_handle(TmuxPack)
     def pack(self):
-        return self._window_task(self.layouts.pack_window)
+        return UnitTask(self.tmux.pack_sessions)
 
     @may_handle(TmuxMinimize)
     def minimize(self):
@@ -307,11 +307,10 @@ class TmuxTransitions(MyoTransitions):
             __.cata(TmuxToggle(name), TmuxOpen(name))
         )
 
-    @handle(TmuxKill)
+    @may_handle(TmuxKill)
     def kill(self):
         signals = self.msg.options.get('signals') | default_signals
-        return (self._pane(self.msg.pane) //
-                L(self.panes.kill_process)(_, signals))
+        return self.tmux.kill_process(self.msg.pane, signals)
 
     def _minimize(self, f):
         return self._view_mod(self.msg.pane, f), TmuxPack().pub.at(1)
@@ -328,8 +327,14 @@ class TmuxTransitions(MyoTransitions):
         update = __.map(L(self._with_window)(window, data, state, _))
         return win // callback / update
 
+    def _state_task(self, f: Callable[[TmuxState],
+                                      Task[Either[str, TmuxState]]],
+                    options=Map()):
+        cb = lambda d: f(self._state(d)) / __.map(L(self._with_sub)(d, _))
+        return DataTask(_ // cb)
+
     def _run_vpm(self, vpm):
-        return self._window_task(vpm.run, self.msg.options)
+        return self._state_task(vpm.run, self.msg.options)
 
     def _open_pane_ppm(self, name: Ident):
         # cannot reference self.layouts.pack_path directly, because panes
@@ -347,8 +352,8 @@ class TmuxTransitions(MyoTransitions):
         def check_running(path):
             pane_kill = path.view.kill
             return Task.now(Right(path)) if in_shell else (
-                self.panes.ensure_not_running(
-                    path.view, kill=kill or pane_kill, signals=signals) /
+                self.tmux.ensure_not_running(
+                    path.loc, kill=kill or pane_kill, signals=signals) /
                 __.replace(path)
             )
         def pipe(path):
@@ -359,12 +364,12 @@ class TmuxTransitions(MyoTransitions):
             )
         def run(path):
             return (
-                self._run_command_line(command.line, path.view, opt) /
+                self._run_command_line(command.line, path.loc, opt) /
                 (lambda a: Right(path))
             )
         def pid(path):
             return (
-                self.panes.command_pid(path.view) /
+                self.tmux.command_pid(path.loc) /
                 (lambda a: path.map_view(__.set(pid=a))) /
                 Right
             )
@@ -386,7 +391,7 @@ class TmuxTransitions(MyoTransitions):
         return set_log.to_list.cons(runner).cat(TmuxPostOpen(pane_ident, opt))
 
     def _open_pane(self, path):
-        return self.layouts.open_pane(path)
+        return self.tmux.open_pane(path)
 
     def _close_pane(self, w):
         return self.layouts.close_pane_path(w)
@@ -428,8 +433,8 @@ class TmuxTransitions(MyoTransitions):
     def _find_vim_pane(self, vim_pid):
         return self.server.pane_data.find(__.command_pid.contains(vim_pid))
 
-    def _run_command_line(self, line, pane, options):
-        return self.panes.run_command_line(pane, line)
+    def _run_command_line(self, line, loc, options):
+        return self.tmux.run_command_line(loc, line)
 
     def _run_command(self, command, options):
         return self._run_command_ppm(command, options)

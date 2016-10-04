@@ -21,10 +21,6 @@ class Logging(amino.logging.Logging):
     def _log(self) -> amino.logging.Logger:  # type: ignore
         return myo_logger(self.__class__.__name__)
 
-    def _p(self, a):
-        pr(a)
-        return a
-
 
 def print_info(out: Callable[[str], None]):
     lname = lambda l: logging.getLevelName(l.getEffectiveLevel())

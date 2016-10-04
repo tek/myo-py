@@ -3,10 +3,10 @@ from typing import Callable, Any
 from amino.task import Task
 
 from lenses import Lens, lens
-from amino import Either, List, F, _, L, Left, __, Right, I
-from amino.lens.tree import path_lens_unbound_pre
+from amino import Either, List, F, _, L, Left, __, Right, I, Just, Boolean
+from amino.lens.tree import path_lens_unbound
 
-from ribosome.record import Record, field, list_field, map_field
+from ribosome.record import field, list_field, map_field
 from ribosome.machine import Message
 from ribosome.machine.transition import Fatal
 
@@ -16,30 +16,30 @@ from myo.ui.tmux.view import View
 from myo.ui.tmux.layout import Layout
 from myo.ui.tmux.pane import Pane
 from myo.ui.tmux.session import Session
+from myo.ui.tmux.data import TmuxState
+from myo.record import Record
 
 
 class ViewPath(Record):
+    session = field(Session)
     window = field(Window)
     view = field(View)
     layout = field(Layout)
     outer = list_field()
 
     @staticmethod
-    def create(window, view, layout, outer):
-        return ViewPath(window=window, view=view, layout=layout, outer=outer)
+    def create(session, window, view, layout, outer):
+        return ViewPath(session=session, window=window, view=view,
+                        layout=layout, outer=outer)
 
     @staticmethod
-    def try_create(views: List[View]) -> Either[str, 'ViewPath']:
-        def try_create2(view, win, layouts):
-            return (
-                layouts.detach_last.map2(F(ViewPath.create, win, view))
-                .to_either('ViewPath.create: last item is not View')
-            )
+    def try_create(session: Session, window: Window, views: List[View]
+                   ) -> Either[str, 'ViewPath']:
         def try_create1(view, layouts):
             return (
-                layouts.detach_head
-                .to_either('ViewPath.create: last item is not View')
-                .flat_map2(F(try_create2, view))
+                layouts.detach_last
+                .to_either('ViewPath.create: only two items in views')
+                .map2(L(ViewPath.create)(session, window, view, _, _))
             )
         return (
             views.detach_last.to_either('ViewPath.create: empty List[View]')
@@ -52,14 +52,23 @@ class ViewPath(Record):
 
     @property
     def to_list(self):
-        return self.layouts.cat(self.view).cons(self.window)
+        return self.layouts.cat(self.view)
 
     def map(self, fp: Callable[[View], View], fl: Callable[[Layout], Layout]):
         return ViewPath.create(
-            self.window, fp(self.view), fl(self.layout), self.outer / fl)
+            self.session, self.window, fp(self.view), fl(self.layout),
+            self.outer / fl)
 
     def map_view(self, f: Callable[[View], View]):
         return self.map(f, I)
+
+    @property
+    def is_pane(self):
+        return Boolean(isinstance(self.view, Pane))
+
+    @property
+    def loc(self):
+        return ViewLoc.create(self.session, self.window, self.view)
 
 PPTrans = Callable[[ViewPath], Task[Either[Any, ViewPath]]]
 
@@ -71,11 +80,12 @@ class ViewPathLens(Record):
     def create(lens: Lens):
         return ViewPathLens(lens=lens)
 
-    def run(self, win: Window, f: PPTrans) -> Task[Either[Any, Window]]:
-        bound = self.lens.bind(win)
-        path = ViewPath.try_create(List.wrap(bound.get()))
-        apply = F(f) / (_ / _.to_list / bound.set)
-        return Task.from_either(path) // apply
+    def run(self, state: TmuxState, f: PPTrans) -> Task[Either[Any, Window]]:
+        bound = self.lens.bind(state)
+        session, (window, views) = bound.get()
+        path = ViewPath.try_create(session, window, List.wrap(views))
+        set = lambda a: bound.set((session, (window, a)))
+        return Task.from_either(path) // F(f) / (_ / _.to_list / set)
 
 
 def _initial_ppm_f(pp, window) -> Task[Either[Any, Window]]:
@@ -107,8 +117,8 @@ class ViewPathMod(Logging, Message):
         )
 
     def _chain(self, f: PPTrans, g: Callable):
-        h = lambda pp: L(pp.run)(_, f)
-        chain = lambda pp, win: self._f(pp, win) // g(win, h(pp))
+        h = lambda vp: L(vp.run)(_, f)
+        chain = lambda vp, win: self._f(vp, win) // g(win, h(vp))
         return type(self)(pred=self.pred, _f=chain)  # type: ignore
 
     def map(self, f: PPTrans) -> Task[Either[Any, Window]]:
@@ -122,19 +132,22 @@ class ViewPathMod(Logging, Message):
 
     __add__ = and_then
 
-    def run(self, window: Window) -> Task:
-        return self._lens(window) // L(self._f)(_, window)
+    def run(self, state: TmuxState) -> Task:
+        return self._lens(state) // L(self._f)(_, state)
 
-    def _lens(self, window):
-        sub = _.layouts
-        pre = _.root
-        return (
-            Task.from_maybe(
-                path_lens_unbound_pre(window, sub, self.attr, pre),
-                Fatal('lens path failed for {}'.format(self.pred))
-            ) /
-            ViewPathLens.create
-        )
+    def _lens(self, state):
+        err = Fatal('view lens path failed for {}'.format(self.pred))
+        def main_lens(w):
+            return ((Just(lens()) &
+                     path_lens_unbound(w.root, _.layouts, self.attr)
+                     .map(lens().root.add_lens)
+                     )
+                    .map2(lens().tuple_))
+        def s_lens(s):
+            return ((Just(lens()) & s.attr_lens(_.windows, main_lens))
+                    .map2(lens().tuple_))
+        st_lens = state.attr_lens(_.sessions, s_lens)
+        return Task.from_maybe(st_lens, err) / ViewPathLens.create
 
 
 class PanePathMod(ViewPathMod):
@@ -155,17 +168,17 @@ def ppm_id(path: ViewPathMod):
     return Task.now(Right(path))
 
 
-class PaneLoc(Record):
-    pane = field(Pane)
+class ViewLoc(Record):
+    view = field(View)
     window = field(Window)
     session = field(Session)
 
     @staticmethod
-    def create(session, window, pane):
-        return PaneLoc(pane=pane, window=window, session=session)
+    def create(session, window, view):
+        return ViewLoc(view=view, window=window, session=session)
 
     @property
     def _str_extra(self):
-        return List(self.session, self.window, self.pane)
+        return List(self.session, self.window, self.view)
 
 __all__ = ('ViewPath', 'ViewPathLens', 'ViewPathMod', 'ppm_id')
