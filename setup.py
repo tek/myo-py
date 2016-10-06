@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version_parts = (0, 18, 0)
+version_parts = (0, 18, 1)
 version = '.'.join(map(str, version_parts))
 
 setup(
@@ -14,6 +14,7 @@ setup(
     packages=find_packages(exclude=['unit', 'unit.*']),
     install_requires=[
         'ribosome>=9.9.0',
+        'amino>=8.8.0',
         'libtmux',
         'psutil',
         'networkx',
