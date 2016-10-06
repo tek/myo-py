@@ -14,11 +14,8 @@ _event_head = 'event 1:'
 
 
 def _parse_echo(data):
-    from ribosome.logging import log
-    log.verbose(data)
     matcher = re.compile('^line (\d+)')
     matches = data / matcher.match // Maybe / __.group(1)
-    log.verbose(matches)
     entries = matches / (lambda a: OutputEntry(text='entry {}'.format(a)))
     event = OutputEvent(head=List(_event_head), entries=entries)
     return ParseResult(head=List(_parse_head), events=List(event))
