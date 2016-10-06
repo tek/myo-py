@@ -1,45 +1,32 @@
 from functools import singledispatch  # type: ignore
 from operator import ne, sub
 
-from amino import Either, Task, L, _, Right, __, List, Boolean
+from amino import Either, Task, L, _, Right, __, List, Boolean, Just
 
 from myo.logging import Logging
-from myo.ui.tmux.session import Session
 from myo.ui.tmux.window import Window
 from myo.ui.tmux.pane import Pane
 from myo.ui.tmux.layout import Layout
-from myo.ui.tmux.view_path import ViewLoc
+from myo.ui.tmux.facade.window import WindowFacade
+from myo.ui.tmux.view import View
 
 
 class WindowPacker(Logging):
 
-    def __init__(self, tmux, session: Session, window: Window) -> None:
-        self.tmux = tmux
-        self.session = session
+    def __init__(self, window: WindowFacade) -> None:
         self.window = window
 
     @property
     def run(self) -> Task[Either[str, Window]]:
+        w, h = self.window.window_size
         return (
-            self._window_size
-            .flat_map2(L(self._pack_layout)(self.window.root, _, _)) /
+            self._pack_layout(self.window.root, w, h) /
             Right /
             __.replace(self.window)
         )
 
-    @property
-    def _window_adapter(self):
-        return (
-            Task.call(self.tmux.find_window, self.session, self.window) //
-            L(Task.from_maybe)(_, 'window not found: {}'.format(self.window))
-        )
-
-    @property
-    def _window_size(self):
-        return self._window_adapter / _.size
-
     def _loc(self, pane: Pane):
-        return ViewLoc.create(self.session, self.window, pane)
+        return self.window.loc(pane)
 
     def _pack_layout(self, l, w, h):
         nop = Task.now(List())
@@ -57,11 +44,11 @@ class WindowPacker(Logging):
             return (
                 self._pack_layout(v, *sub_size)
                 .flat_replace(
-                    self.tmux.layouts.ref_pane_fatal(v) //
+                    self.window.ref_pane_fatal(v) //
                     L(self._apply_size)(_, size, horizontal) if multi else nop
                 )
             )
-        views = self.tmux.layouts.open_views(l)
+        views = self.window.open_views(l)
         count = views.length
         if count > 0:
             # each pane spacer takes up one cell
@@ -121,7 +108,7 @@ class WindowPacker(Logging):
     def _apply_size(self, pane, size, horizontal):
         self.log.debug('resize {!r} to {} ({})'.format(pane, size, horizontal))
         return (
-            self.tmux.find_loc_task(self._loc(pane)) //
+            self.window.find_pane_task(pane) //
             __.resize(size, horizontal)
         )
 
@@ -148,17 +135,9 @@ class WindowPacker(Logging):
     def _ref_adapters(self, views):
         return views // self._ref_adapter
 
-    def _ref_adapter(self, view):
-        @singledispatch
-        def adapter(v):
-            pass
-        @adapter.register(Pane)
-        def pane(v):
-            return self.tmux.find_loc(self._loc(v))
-        @adapter.register(Layout)
-        def layout(v):
-            return self._ref_pane(v) / self._loc // self.tmux.find_loc
-        return adapter(view)
+    def _ref_adapter(self, view: View):
+        ref = Just(view) if isinstance(view, Pane) else self._ref_pane(view)
+        return ref // self.window.find_pane
 
 
 def _pos(a):

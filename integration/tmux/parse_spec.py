@@ -24,7 +24,7 @@ def _parse_echo(data):
     return ParseResult(head=List(_parse_head), events=List(event))
 
 
-class ParseSpec(TmuxCmdSpec):
+class TmuxParseSpec(TmuxCmdSpec):
 
     def custom(self):
         l3 = 'line 3'
@@ -114,4 +114,4 @@ class PythonVimTestSpec(TmuxCmdSpec):
         self._run_test()
         self._run_parse()
 
-__all__ = ('ParseSpec',)
+__all__ = ('TmuxParseSpec', 'PythonVimTestSpec')

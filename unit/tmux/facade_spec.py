@@ -1,7 +1,5 @@
-from myo.ui.tmux.facade.view import LayoutFacade
 from myo.ui.tmux.data import TmuxState
 from myo.ui.tmux.facade.main import TmuxFacade
-from myo.ui.tmux.server import Server
 from myo.ui.tmux.pane import Pane
 from myo.ui.tmux.layout import Layout
 from myo.ui.tmux.window import Window
@@ -27,7 +25,7 @@ class TmuxFacadeSpec(UnitSpec):
 
     @lazy
     def tmux(self):
-        return TmuxFacade(self.state, Server(None))
+        return TmuxFacade(self.state, None)
 
     def layout_lens(self):
         name = 'new'
@@ -61,7 +59,7 @@ class WindowPackerSpec(UnitSpec):
 
     @lazy
     def wp(self):
-        return WindowPacker(None, None, None)
+        return WindowPacker(None)
 
     def distribute(self):
         min_s = List(10, 0)
@@ -96,4 +94,4 @@ class WindowPackerSpec(UnitSpec):
         res = self.wp._balance_sizes(min_s, max_s, weights, total)
         res.should.equal(List(10, 20, 10, 20))
 
-__all__ = ('LayoutFacadeSpec',)
+__all__ = ('TmuxFacadeSpec',)

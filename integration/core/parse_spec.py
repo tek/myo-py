@@ -59,7 +59,7 @@ class ParseHelpers:
         return self._mk_trace_with(_trace_len)
 
 
-class ParseSpec(MyoIntegrationSpec, ParseHelpers):
+class BasicParseSpec(MyoIntegrationSpec, ParseHelpers):
 
     @main_looped
     def native(self):

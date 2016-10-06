@@ -1,49 +1,79 @@
-import time
-import signal
-from typing import Callable
-
-from psutil import Process
-
-from ribosome.machine.state import Info
+from typing import Callable, Tuple
 
 from myo.logging import Logging
 from myo.ui.tmux.data import TmuxState
 from myo.ui.tmux.view import View
-from myo.ui.tmux.pane import Pane, PaneAdapter
+from myo.ui.tmux.pane import Pane
 from myo.ui.tmux.layout import Layout
 from myo.ui.tmux.util import Ident
-from myo.ui.tmux.server import Server
-from myo.ui.tmux.view_path import ViewLoc, ViewPath
-from myo.ui.tmux.facade.view import PaneFacade, LayoutFacade
+from myo.ui.tmux.server import Server, NativeServer
+from myo.ui.tmux.view_path import (ViewLoc, ViewPath, PanePathMod,
+                                   LayoutPathMod, ViewPathMod)
 from myo.ui.tmux.session import Session
 from myo.ui.tmux.window import Window
-from myo.ui.tmux.pack import WindowPacker
+from myo.ui.tmux.facade.window import WindowFacade
 
-from amino import (Maybe, __, _, Just, F, Task, Either, I, Right, Left, L,
-                   List)
-from amino.lazy import lazy
-from amino.task import task
-
-from ribosome.machine.transition import Fatal, NothingToDo
+from amino import Maybe, __, _, Just, Task, Either, F, L, Right, List, Map
 
 
 class TmuxFacade(Logging):
 
-    def __init__(self, state: TmuxState, server: Server) -> None:
+    def __init__(self, state: TmuxState, socket=None, options: Map=Map()
+                 ) -> None:
         self.state = state
-        self.server = server
+        self.socket = socket
+        self.options = options
 
-    @lazy
-    def layouts(self):
-        return LayoutFacade(self.server)
+    @property
+    def native_server(self):
+        return NativeServer(socket_name=self.socket)
 
-    @lazy
-    def panes(self):
-        return PaneFacade(self.server)
+    @property
+    def _fresh_server(self):
+        return Server(self.native_server)
 
-    @lazy
+    @property
+    def server(self):
+        return self._fresh_server
+
+    @property
     def sessions(self):
         return self.server.sessions
+
+    def native_session(self, id: int):
+        return self.sessions.find(__.id_i.contains(id))
+
+    def native_window(self, session, window):
+        win = lambda s: window.id // s.window_by_id
+        return ((session.id // self.native_session // win)
+                .to_either('no native window for {}'.format(window)))
+
+    def _view_loc(self, ident: Ident, attr: Callable, desc: str, tpe: type
+                  ) -> Either[str, ViewLoc]:
+        win = lambda w: Just(w) & attr(w.root)(ident)
+        sess = lambda s: s.windows.find_map(win).map2(lambda a, b: (s, a, b))
+        return (
+            self.state.sessions
+            .find_map(sess)
+            .to_either('{} not found: {}'.format(desc, ident))
+            .map3(ViewLoc.create)
+        )
+
+    def pane_loc(self, ident: Ident) -> Either[str, ViewLoc]:
+        return self._view_loc(ident, _.find_pane, 'pane', ViewLoc)
+
+    def view_loc(self, ident: Ident) -> Either[str, ViewLoc]:
+        return self._view_loc(ident, _.find_view, 'view', ViewLoc)
+
+    def window(self, session: Session, window: Window):
+        return (self.native_window(session, window) /
+                L(WindowFacade)(session, window, _))
+
+    def window_task(self, session, window) -> Task[WindowFacade]:
+        return Task.call(self.window, session, window).join_either
+
+    def loc_window(self, loc: ViewLoc) -> WindowFacade:
+        return self.window(loc.session, loc.window)
 
     def add_to_layout(self, parent: Maybe[str], target: Callable, view: View):
         name = parent | 'root'
@@ -59,82 +89,36 @@ class TmuxFacade(Logging):
     def add_layout_to_layout(self, parent: Maybe[str], layout: Layout):
         return self.add_to_layout(parent, _.layouts, layout)
 
-    def pane_loc(self, ident: Ident):
-        win = lambda w: Just(w) & w.root.find_pane(ident)
-        sess = lambda s: s.windows.find_map(win).map2(lambda a, b: (s, a, b))
-        return self.state.sessions.find_map(sess).map3(ViewLoc.create)
+    def pane_window(self, ident: Ident
+                    ) -> Either[str, Tuple[WindowFacade, ViewLoc]]:
+        f = lambda loc: self.loc_window(loc) & Right(loc.view)
+        return self.pane_loc(ident) // f
 
-    def _focus(self, ident: Ident, f: Callable):
-        def run(a):
-            return (
-                self.find_loc(a)
-                .task('pane not found for focus: {}'.format(a)) /
-                __.focus()
-            )
-        return self.pane_loc(ident) // f / run
+    def pane_window_task(self, ident: Ident
+                         ) -> Task[Tuple[WindowFacade, ViewLoc]]:
+        return Task.call(self.pane_window, ident).join_either
+
+    def view_window(self, ident: Ident
+                    ) -> Either[str, Tuple[WindowFacade, ViewLoc]]:
+        f = lambda loc: self.loc_window(loc) & Right(loc.view)
+        return self.view_loc(ident) // f
+
+    def path_window(self, path: ViewPath) -> Maybe[WindowFacade]:
+        return self.window(path.session, path.window)
+
+    def path_window_task(self, path: ViewPath) -> Task[WindowFacade]:
+        return self.window_task(path.session, path.window)
 
     def focus(self, ident: Ident):
         return self._focus(ident, Just)
 
     def fix_focus(self, ident: Ident, alt: Ident):
-        def check(a):
-            return a.view.focus.c(Just(a), F(self.pane_loc, alt))
+        check = lambda a: a.view.focus.c(Just(a), F(self.pane_loc, alt))
         return self._focus(ident, check)
 
-    def find_loc(self, loc: ViewLoc):
-        pane = lambda w: loc.view.id // w.pane_by_id
-        win = lambda s: loc.window.id // s.window_by_id
-        return loc.session.id // self.find_session // win // pane
-
-    def find_loc_task(self, loc: ViewLoc):
-        return (Task.call(self.find_loc, loc)
-                .merge_maybe('view not found: {}'.format(loc)))
-
-    def find_session(self, id: int):
-        return self.sessions.find(__.id_i.contains(id))
-
-    def find_window(self, session, window):
-        win = lambda s: window.id // s.window_by_id
-        return session.id // self.find_session // win
-
-    def open_pane(self, path: ViewPath) -> Task[Either[str, ViewPath]]:
-        v = path.view
-        def open(pane):
-            def apply(layout):
-                set = path.is_pane.cata(I, lambda a: v.replace_pane(a))
-                return (
-                    self._split_pane(path, layout, pane) /
-                    set /
-                    path.setter.view /
-                    Right
-                )
-            return (self._pane_opener(path, pane).eff(Either) // apply).value
-        view = (Task.now(v) if path.is_pane else
-                v.panes.head.task('{} has no panes'.format(v)))
-        return view // open
-
-    def _pane_opener(self, path: ViewPath, pane: Pane
-                     ) -> Task[Either[str, Layout]]:
-        def find_layout():
-            return (path.layouts.reversed.find(self.layouts.layout_open)
-                    .to_either(
-                        Fatal('no open layout when trying to open pane')))
-        return Task.now(
-            self.panes.is_open(pane).no.flat_either_call(
-                Left(NothingToDo('{!r} already open'.format(pane))),
-                find_layout,
-            )
-        )
-
-    def _split_pane(self, path, layout, pane) -> Task[Pane]:
-        return self.layouts.ref_pane_fatal(layout) / (
-            lambda a:
-            self.find_loc(ViewLoc.create(path.session, path.window, a)) /
-            __.split(layout.horizontal) /
-            PaneAdapter /
-            pane.open |
-            pane
-        )
+    def _focus(self, ident: Ident, f: Callable):
+        run = lambda l: self.loc_window(l) / __.focus(l.view)
+        return self.pane_loc(ident) // f // run
 
     @property
     def pack_sessions(self):
@@ -143,61 +127,105 @@ class TmuxFacade(Logging):
     def pack_windows(self, session: Session):
         return session.windows.traverse(L(self.pack_window)(session, _), Task)
 
-    def pack_path(self, path: ViewPath):
-        return self.pack_window(path.session, path.window) / __.replace(path)
-
     def pack_window(self, session: Session, window: Window
                     ) -> Task[Either[str, Window]]:
-        return WindowPacker(self, session, window).run
+        return (self.window_task(session, window) //
+                _.pack)
 
-    def run_command_line(self, loc: ViewLoc, line: str):
-        return (
-            self.find_loc_task(loc) /
-            __.run_command(line)
-        )
-
-    def ensure_not_running(self, loc: ViewLoc, kill=False,
-                           signals=List('kill')):
-        def handle(pa):
-            return (
-                Task.now(Right(True))
-                if pa.not_running else
-                self._kill_process(pa, signals=signals)
-                if loc.view.kill or kill else
-                Task.now(Left('command already running'))
-            )
-        return self.find_loc_task(loc) // handle
-
-    def command_pid(self, loc: ViewLoc):
-        return self.find_loc_task(loc) / _.command_pid
+    def open_pane(self, path: ViewPath) -> Task[Either[str, ViewPath]]:
+        return self.path_window_task(path) // __.open_pane(path)
 
     def kill_process(self, ident: Ident, signals):
+        run = lambda win, pane: win.kill_process(pane, signals)
+        return self.pane_window_task(ident).flat_map2(run)
+
+    def close_all(self):
+        return self.state.possibly_open_panes // _.id / self.panes.close_id
+
+    def view_open(self, ident: Ident):
+        return self.view_window(ident).map2(lambda w, v: w.view_open(v))
+
+    def _run_vpm(self, vpm):
+        return self._state_task(vpm.run, self.options)
+
+    def _ident_pm(self, tpe: type, ident: Ident):
+        return tpe(pred=__.has_ident(ident), options=self.options)
+
+    def _ident_ppm(self, ident: Ident):
+        return self._ident_pm(PanePathMod, ident)
+
+    def _ident_lpm(self, ident: Ident):
+        return self._ident_pm(LayoutPathMod, ident)
+
+    def _ident_vpm(self, ident: Ident):
+        return self._ident_pm(ViewPathMod, ident)
+
+    def open_pane_ppm(self, name: Ident):
+        # cannot reference self.layouts.pack_path directly, because panes
+        # are cached
+        return self._ident_vpm(name) / self.open_pane
+
+    def close_pane_ppm(self, ident: Ident):
+        def run(w, v):
+            return self._ident_ppm(ident) / w.close_pane_path / w.pack_path
+        return self.pane_window(ident).map2(run)
+
+    def run_command_ppm(self, pane_ident: Ident, line: str, in_shell: bool,
+                        kill: bool, signals: List[str]):
+        win = lambda path: self.path_window_task(path)
+        def check_running(path):
+            pane_kill = path.view.kill
+            return Task.now(Right(path)) if in_shell else (
+                win(path) //
+                __.ensure_not_running(
+                    path.view, kill=kill or pane_kill, signals=signals) /
+                __.replace(path)
+            )
+        def pipe(path):
+            return (
+                win(path) //
+                __.pipe(path.view, self.state.instance_id) /
+                path.setter.view /
+                Right
+            )
+        def run(path):
+            return (
+                win(path) //
+                __.run_command_line(path.view, line)
+                .replace(Right(path))
+            )
+        def pid(path):
+            return (
+                win(path) //
+                __.command_pid(path.view) /
+                (lambda a: path.map_view(__.set(pid=a))) /
+                Right
+            )
         return (
-            Task.from_maybe(self.pane_loc(ident),
-                            'pane not found: {}'.format(ident)) //
-            self.find_loc_task //
-            L(self._kill_process)(_, signals)
+            (self.open_pane_ppm(pane_ident) + check_running) /
+            pipe /
+            run /
+            pid
         )
 
-    @task
-    def _kill_process(self, adapter, signals):
-        def _wait_killed(timeout):
-            start = time.time()
-            while time.time() - start > timeout and adapter.running:
-                time.sleep(.1)
-        def kill(signame):
-            if adapter.running:
-                sig = getattr(signal, 'SIG{}'.format(signame.upper()),
-                              signal.SIGINT)
-                adapter.command_pid / Process / __.send_signal(sig)
-                _wait_killed(3)
-            return adapter.not_running
-        return (
-            signals.find(kill) /
-            'process killed by signal {}'.format /
-            Info /
-            Right |
-            Left(Fatal('could not kill running process'))
-        )
+    def pane_mod(self, ident: Ident, f: Callable[[Pane], Pane]):
+        return self._mod(self._ident_ppm, ident, f)
+
+    def view_mod(self, ident: Ident, f: Callable[[View], View]):
+        return self._mod(self._ident_vpm, ident, f)
+
+    def _mod(self, ctor: Callable, ident: Ident, f: Callable[[View], View]):
+        def g(path):
+            return Task.now(Right(path.map_view(f)))
+        return ctor(ident) / g
+
+    def pinned_panes(self, ident):
+        def layout(l):
+            target = l.panes.find(__.has_ident(ident))
+            sub = (l.layouts // layout)
+            add = (List() if sub.empty and target.empty else
+                   l.panes.filter(_.pin))
+            return sub + add
+        return (self.state.all_windows / _.root // layout) / _.ident
 
 __all__ = ('TmuxFacade',)

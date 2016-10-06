@@ -106,7 +106,4 @@ class TmuxState(Record):
             .filter(lambda a: not _is_vim_pane(a))
         )
 
-    def find_view(self, view: View):
-        return self.all_windows.find_map(__.root.find_view(view))
-
 __all__ = ('TmuxState',)

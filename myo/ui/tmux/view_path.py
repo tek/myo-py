@@ -51,7 +51,7 @@ class ViewPath(Record):
         return self.outer.cat(self.layout)
 
     @property
-    def to_list(self):
+    def view_list(self):
         return self.layouts.cat(self.view)
 
     def map(self, fp: Callable[[View], View], fl: Callable[[Layout], Layout]):
@@ -80,12 +80,26 @@ class ViewPathLens(Record):
     def create(lens: Lens):
         return ViewPathLens(lens=lens)
 
+    def _check_result_type(self, result):
+        if (
+                not isinstance(result, Either) or (
+                    result.is_right and
+                    not result.exists(L(isinstance)(_, ViewPath))
+                )
+        ):
+            msg = ('invalid ViewPath transition result type, must be' +
+                   ' Either[..., ViewPath]: {}')
+            raise Exception(msg.format(result))
+
     def run(self, state: TmuxState, f: PPTrans) -> Task[Either[Any, Window]]:
         bound = self.lens.bind(state)
         session, (window, views) = bound.get()
         path = ViewPath.try_create(session, window, List.wrap(views))
         set = lambda a: bound.set((session, (window, a)))
-        return Task.from_either(path) // F(f) / (_ / _.to_list / set)
+        def result(r):
+            self._check_result_type(r)
+            return r / _.view_list / set
+        return Task.from_either(path) // F(f) / result
 
 
 def _initial_ppm_f(pp, window) -> Task[Either[Any, Window]]:
@@ -180,5 +194,12 @@ class ViewLoc(Record):
     @property
     def _str_extra(self):
         return List(self.session, self.window, self.view)
+
+    def with_view(self, v: View):
+        return self.set(view=v)
+
+
+class LayoutLoc(ViewLoc):
+    view = field(Layout)
 
 __all__ = ('ViewPath', 'ViewPathLens', 'ViewPathMod', 'ppm_id')
