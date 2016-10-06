@@ -48,6 +48,8 @@ class TmuxIntegrationSpecBase(TmuxSpecBase):
         self._vim_window = self.session.new_window(
             window_name=self._window_name)
         self._vim_pane = self._vim_window.panes[0]
+        self.vim.vars.set_p('tmux_force_vim_session_id', self.session.id_i |
+                            -1)
         self.vim.vars.set_p('tmux_force_vim_win_id',
                             self._vim_window.id_i | -1)
         self.vim.vars.set_p('tmux_force_vim_pane_id', self._vim_pane.id_i | -1)
