@@ -1,5 +1,7 @@
 from typing import Callable, Tuple
 
+from amino import Maybe, __, _, Just, Task, Either, F, L, Right, List, Map
+
 from myo.logging import Logging
 from myo.ui.tmux.data import TmuxState
 from myo.ui.tmux.view import View
@@ -12,8 +14,6 @@ from myo.ui.tmux.view_path import (ViewLoc, ViewPath, PanePathMod,
 from myo.ui.tmux.session import Session
 from myo.ui.tmux.window import Window
 from myo.ui.tmux.facade.window import WindowFacade
-
-from amino import Maybe, __, _, Just, Task, Either, F, L, Right, List, Map
 
 
 class TmuxFacade(Logging):
@@ -139,8 +139,15 @@ class TmuxFacade(Logging):
         run = lambda win, pane: win.kill_process(pane, signals)
         return self.pane_window_task(ident).flat_map2(run)
 
+    @property
     def close_all(self):
-        return self.state.possibly_open_panes // _.id / self.panes.close_id
+        return (
+            self.state.possibly_open_panes //
+            _.id
+        ).traverse(self.close_id, Task)
+
+    def close_id(self, id: int):
+        return self.server.cmd('kill-pane', '-t', '%{}'.format(id))
 
     def view_open(self, ident: Ident):
         return self.view_window(ident).map2(lambda w, v: w.view_open(v))

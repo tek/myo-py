@@ -19,7 +19,6 @@ from myo.ui.tmux.view_path import ViewPath
 from myo.ui.tmux.layout import Layout
 from myo.command import ShellCommand
 from myo.ui.tmux.view import View
-from myo.ui.tmux.facade.pane import PanesFacade
 
 
 class WindowFacade(Logging):
@@ -41,10 +40,6 @@ class WindowFacade(Logging):
     @property
     def root(self):
         return self.window.root
-
-    @property
-    def panes_facade(self):
-        return PanesFacade(self)
 
     def ref_pane_fatal(self, layout: Layout) -> Task[Pane]:
         ''' A pane in the layout to be used to open a pane.
