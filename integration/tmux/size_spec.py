@@ -78,6 +78,19 @@ class DistributeSizeSpec(TmuxIntegrationSpec):
         self._open_pane('pan3')
         later(check)
 
+    def close(self):
+        self.json_cmd('MyoTmuxCreateLayout test', parent='root')
+        self._create_pane('pan1', parent='test', weight=1)
+        self._create_pane('pan2', parent='test', weight=1)
+        self._create_pane('pan3', parent='test', weight=1)
+        self._open_pane('pan1')
+        self._open_pane('pan2')
+        self._open_pane('pan3')
+        self._height(3, 13)
+        self.vim.cmd_sync('MyoTmuxClosePane pan2')
+        self._pane_count(3)
+        self._height(3, 20)
+
 
 class DefaultLayoutDistributeSizeSpec(DefaultLayoutSpec):
 

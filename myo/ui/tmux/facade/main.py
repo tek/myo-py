@@ -167,7 +167,7 @@ class TmuxFacade(Logging):
 
     def close_pane_ppm(self, ident: Ident):
         def run(w, v):
-            return self._ident_ppm(ident) / w.close_pane_path / w.pack_path
+            return self._ident_ppm(ident) / w.close_pane_path
         return self.pane_window(ident).map2(run)
 
     def run_command_ppm(self, pane_ident: Ident, line: str, in_shell: bool,

@@ -197,7 +197,8 @@ class TmuxTransitions(MyoTransitions):
 
     @handle(TmuxClosePane)
     def close(self):
-        return self.tmux.close_pane_ppm(self.msg.name)
+        return (self.tmux.close_pane_ppm(self.msg.name) &
+                Right(TmuxPack().pub.at(1)))
 
     @may_handle(TmuxRunCommand)
     def run_command(self):
