@@ -146,6 +146,12 @@ class ViewPathMod(Logging, Message):
 
     __add__ = and_then
 
+    def foreach(self, f: PPTrans):
+        run = lambda path: f(path).replace(Right(path))
+        return self.map(run)
+
+    __mod__ = foreach
+
     def run(self, state: TmuxState) -> Task:
         return self._lens(state) // L(self._f)(_, state)
 

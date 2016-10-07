@@ -188,12 +188,7 @@ class TmuxFacade(Logging):
                 path.setter.view /
                 Right
             )
-        def run(path):
-            return (
-                win(path) //
-                __.run_command_line(path.view, line)
-                .replace(Right(path))
-            )
+        run = lambda path: (win(path) // __.run_command_line(path.view, line))
         def pid(path):
             return (
                 win(path) //
@@ -202,9 +197,7 @@ class TmuxFacade(Logging):
                 Right
             )
         return (
-            (self.open_pane_ppm(pane_ident) + check_running) /
-            pipe /
-            run /
+            (((self.open_pane_ppm(pane_ident) + check_running) / pipe) % run) /
             pid
         )
 

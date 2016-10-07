@@ -341,10 +341,9 @@ class TmuxTransitions(MyoTransitions):
             msg = WatchCommand(command, path.view)
             return (
                 Task.call(self.machine.watcher.send, msg)
-                .replace(Right(path))
             )
         runner = self.tmux.run_command_ppm(pane_ident, command.line, in_shell,
-                                           kill, signals) / watch
+                                           kill, signals) % watch
         set_log = command.transient.no.maybe(
             SetCommandLog(command.uuid, pane_ident))
         return set_log.to_list.cons(runner).cat(TmuxPostOpen(pane_ident, opt))
