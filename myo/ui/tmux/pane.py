@@ -3,9 +3,12 @@ from pathlib import Path
 import tempfile
 import os
 
+from psutil import Process
+
+from libtmux.pane import Pane as LTPane
+
 from amino.task import task
 
-from psutil import Process
 from amino import __, List, Boolean, Maybe, _, Map, Just, Try
 from amino.lazy import lazy
 
@@ -122,6 +125,22 @@ class PaneData(PaneI):
     @property
     def _raw_pid(self):
         return self.data.get('pane_pid')
+
+
+class NativePane(LTPane):
+
+    def __init__(self, window=None, **kwargs):
+        if not window:
+            raise ValueError('Pane must have ``Window`` object')
+        self.window = window
+        self.session = self.window.session
+        self.server = self.session.server
+        self._pane_id = kwargs['pane_id']
+        self._data = Map(kwargs)
+
+    @property
+    def _info(self):
+        return self._data
 
 
 class PaneAdapter(Adapter, PaneI):

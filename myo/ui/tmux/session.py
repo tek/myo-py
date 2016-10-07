@@ -1,14 +1,17 @@
-import libtmux
+from libtmux import formats
+from libtmux.session import Session as LTSession
+from libtmux.common import EnvironmentMixin
 
 from ribosome.record import list_field, maybe_field, field
 
-from amino import List, __, Maybe
+from amino import List, __, Maybe, Map
 from amino.lazy import lazy
 
 from myo.ui.tmux.adapter import Adapter
-from myo.ui.tmux.window import WindowAdapter, Window
+from myo.ui.tmux.window import WindowAdapter, Window, NativeWindow
 from myo.ui.tmux.util import parse_session_id
 from myo.record import Named
+from myo.logging import Logging
 
 
 class Session(Named):
@@ -38,13 +41,36 @@ class VimSession(Session):
         return 'V{}'.format(super().desc)
 
 
-class SessionHandler:
+class NativeSession(LTSession, Logging):
 
-    def __init__(self, server: libtmux.Server) -> None:
+    def __init__(self, server=None, **kwargs):
+        EnvironmentMixin.__init__(self)
         self.server = server
+        if 'session_id' not in kwargs:
+            raise ValueError('Session requires a `session_id`')
+        self._session_id = kwargs['session_id']
+        self._data = Map(kwargs) + ('id', self._session_id)
 
-    def create_pane(self, pane):
-        pass
+    @property
+    def _info(self):
+        return self._data
+
+    def _list_windows(self):
+        wformats = ['session_name', 'session_id'] + formats.WINDOW_FORMATS
+        tmux_formats = ['#{%s}' % format for format in wformats]
+        proc = self.cmd('list-windows', '-F%s' % '\t'.join(tmux_formats))
+        windows = proc.stdout
+        wformats = ['session_name', 'session_id'] + formats.WINDOW_FORMATS
+        windows = [dict(zip(
+            wformats, window.split('\t'))) for window in windows]
+        windows = [
+            dict((k, v) for k, v in window.items() if v) for window in windows
+        ]
+        return windows
+
+    def list_windows(self):
+        return [NativeWindow(session=self, **window) for window in
+                self._windows]
 
 
 class SessionAdapter(Adapter):

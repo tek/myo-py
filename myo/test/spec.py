@@ -9,7 +9,7 @@ from amino import _, __
 from amino.test import later
 from amino.lazy import lazy
 
-from myo.ui.tmux.server import Server
+from myo.ui.tmux.server import Server, NativeServer
 
 
 class Spec(amino.test.Spec):
@@ -33,7 +33,7 @@ class TmuxSpecBase(Spec):
 
     @property
     def native_server(self):
-        return libtmux.Server(socket_name=self._socket_name)
+        return NativeServer(socket_name=self._socket_name)
 
     def _find_server(self):
         try:

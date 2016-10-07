@@ -2,9 +2,8 @@ import libtmux
 import libtmux.formats
 
 from myo.logging import Logging
-from myo.ui.tmux.session import SessionAdapter
+from myo.ui.tmux.session import SessionAdapter, NativeSession
 from myo.ui.tmux.pane import PaneData
-
 from amino import _, List, __, Map
 from amino.task import task
 from amino.lazy import lazy
@@ -17,10 +16,8 @@ libtmux.formats.PANE_FORMATS += [
 
 class NativeServer(libtmux.Server):
 
-    def _update_panes(self):
-        if not self._panes:
-            super()._update_panes()
-        return self
+    def list_sessions(self):
+        return [NativeSession(server=self, **s) for s in self._sessions]
 
 
 class Server(Logging):
