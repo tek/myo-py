@@ -92,15 +92,13 @@ class WindowFacade(Logging):
             )
         )
 
-    # TODO lambda unnecessary?
     def _split_pane(self, layout, pane) -> Task[Pane]:
-        return self.ref_pane_fatal(layout) / (
-            lambda a:
-            self.find_pane(a) /
+        return (
+            self.ref_pane_fatal(layout) //
+            self.find_pane_task /
             __.split(layout.horizontal) /
             PaneAdapter /
-            pane.open |
-            pane
+            pane.open
         )
 
     def pack_path(self, path: ViewPath):
