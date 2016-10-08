@@ -168,8 +168,6 @@ class TmuxFacade(Logging):
         return self._ident_pm(ViewPathMod, ident)
 
     def open_pane_ppm(self, name: Ident):
-        # cannot reference self.layouts.pack_path directly, because panes
-        # are cached
         return self._ident_vpm(name) / self.open_pane
 
     def close_pane_ppm(self, ident: Ident):
@@ -203,10 +201,10 @@ class TmuxFacade(Logging):
                 (lambda a: path.map_view(__.set(pid=a))) /
                 Right
             )
-        return (
-            (((self.open_pane_ppm(pane_ident) + check_running) / pipe) % run) /
-            pid
-        )
+        ppm = (self._ident_vpm
+               if self.pane_open(pane_ident) else
+               self.open_pane_ppm)
+        return (((ppm(pane_ident) + check_running) / pipe) % run) / pid
 
     def pane_mod(self, ident: Ident, f: Callable[[Pane], Pane]):
         return self._mod(self._ident_ppm, ident, f)
@@ -227,5 +225,8 @@ class TmuxFacade(Logging):
                    l.panes.filter(_.pin))
             return sub + add
         return (self.state.all_windows / _.root // layout) / _.ident
+
+    def pane_open(self, ident: Ident):
+        return self.pane_window(ident).map2(__.pane_open(_)).true
 
 __all__ = ('TmuxFacade',)
