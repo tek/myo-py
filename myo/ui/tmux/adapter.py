@@ -23,7 +23,9 @@ class Adapter(Logging):
         c = self.native.cmd(*a)
         if c.stderr:
             self.log.error(List.wrap(c.stderr).join_lines)
-        self.log.ddebug('tmux cmd `{}` took %.4fs'.format(time.time() - start))
+        self.log.ddebug(
+            'tmux cmd `{}` took {:.4f}'.format(' '.join(a),
+                                               time.time() - start))
         return c.stdout
 
     def cmd_async(self, *a):
