@@ -106,7 +106,8 @@ class WindowPacker(Logging):
         return sizes1 if rest <= 0 else dist_rest()
 
     def _apply_size(self, pane, size, horizontal):
-        self.log.debug('resize {!r} to {} ({})'.format(pane, size, horizontal))
+        self.log.debug('resize {} to {} ({})'.format(pane, size,
+                                                     bool(horizontal)))
         return (
             self.window.find_pane_task(pane) //
             __.resize(size, horizontal)

@@ -4,6 +4,18 @@ from amino.test import later
 from integration._support.tmux import TmuxIntegrationSpec, DefaultLayoutSpec
 
 
+class OpenPaneSizeSpec(TmuxIntegrationSpec):
+
+    def _pre_start(self):
+        self.vim.vars.set_p('tmux_vim_width', 20)
+        super()._pre_start()
+
+    def open_pane_size(self):
+        self._create_pane('pan1', parent='root', fixed_size=20)
+        self._open_pane('pan1')
+        self._width(1, 20)
+
+
 class CutSizeSpec(TmuxIntegrationSpec):
 
     def cut_size(self):

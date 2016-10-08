@@ -175,17 +175,15 @@ class TmuxTransitions(MyoTransitions):
         pinned = opt.get('pinned').exists(I)
         return (
             self.tmux.open_pane_ppm(name),
-            (Nop() if pinned else TmuxPostOpen(name, opt - 'pinned'))
+            (Nop() if pinned else TmuxPostOpen(name, opt - 'pinned').pub)
         )
 
-    @handle(TmuxPostOpen)
+    @may_handle(TmuxPostOpen)
     def open_pinned(self):
-        def go(pane):
-            return (
-                self.tmux.pinned_panes(self.msg.ident) /
-                L(TmuxOpen)(_, Map(pinned=True))
-            ) + List(TmuxFixFocus(pane.ident), TmuxPack().pub.at(1))
-        return self._pane(self.msg.ident) / go
+        return (
+            self.tmux.pinned_panes(self.msg.ident) /
+            L(TmuxOpen)(_, Map(pinned=True))
+        ) + List(TmuxFixFocus(self.msg.ident), TmuxPack().pub.at(1))
 
     @handle(TmuxFixFocus)
     def fix_focus(self):
@@ -339,9 +337,7 @@ class TmuxTransitions(MyoTransitions):
         signals = opt.get('signals') / List.wrap | command.signals
         def watch(path):
             msg = WatchCommand(command, path.view)
-            return (
-                Task.call(self.machine.watcher.send, msg)
-            )
+            return Task.call(self.machine.watcher.send, msg)
         runner = self.tmux.run_command_ppm(pane_ident, command.line, in_shell,
                                            kill, signals) % watch
         set_log = command.transient.no.maybe(

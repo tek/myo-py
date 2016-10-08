@@ -4,7 +4,10 @@ from amino import Maybe, List, __, _
 from amino.test import later
 from amino.test.path import fixture_path
 
+from ribosome.machine import state
+
 from myo.output.data import OutputEntry, OutputEvent, ParseResult
+from myo.plugins.command.message import RunVimTest
 
 from integration._support.tmux import TmuxCmdSpec
 from integration._support.vimtest import vimtest
@@ -68,13 +71,14 @@ class PythonVimTestSpec(TmuxCmdSpec):
         return 'RuntimeError: supernova'
 
     def _pre_start(self):
-        super()._pre_start()
+        self.vim.vars.set_p('tmux_no_watcher', True)
         self.vim.vars.set_p('jump_to_error', False)
         self.vim.vars.set('test#python#runner', 'nose')
-        self.vim.cmd_sync('noswapfile edit {}'.format(self._fname))
-        self.vim.buffer.vars.set_p('test_langs', ['python'])
         self.vim.vars.set_p('output_reifier',
                             'py:myo.output.reifier.base.LiteralReifier')
+        super()._pre_start()
+        self.vim.cmd_sync('noswapfile edit {}'.format(self._fname))
+        self.vim.buffer.vars.set_p('test_langs', ['python'])
 
     def _run_test(self):
         check = lambda: self._output.should.contain(self._target)
