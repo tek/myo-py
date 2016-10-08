@@ -1,6 +1,6 @@
 from integration._support.base import (MyoPluginIntegrationSpec,
                                        MyoIntegrationSpec)
-from integration._support.command import CmdSpec
+from integration._support.command import CmdSpecConf
 
 from amino.test import later
 from amino import _, __, Map
@@ -120,7 +120,7 @@ class DefaultLayoutSpec(TmuxIntegrationSpec):
         self.vim.vars.set_p('tmux_use_defaults', True)
 
 
-class TmuxCmdSpec(TmuxIntegrationSpec, CmdSpec):
+class TmuxCmdConf(CmdSpecConf):
 
     def _set_vars(self):
         super()._set_vars()
@@ -136,4 +136,13 @@ class TmuxCmdSpec(TmuxIntegrationSpec, CmdSpec):
     def _cmd_pid(self, id):
         return self._panes.find(__.id_i.contains(id)) // _.command_pid | 0
 
-__all__ = ('TmuxIntegrationSpec', 'DefaultLayoutSpec', 'TmuxCmdSpec')
+
+class TmuxCmdSpec(TmuxCmdConf, TmuxIntegrationSpec):
+    pass
+
+
+class XTmuxCmdSpec(TmuxCmdConf, ExternalTmuxIntegrationSpec):
+    pass
+
+__all__ = ('TmuxIntegrationSpec', 'DefaultLayoutSpec', 'TmuxCmdSpec',
+           'XTmuxCmdSpec')

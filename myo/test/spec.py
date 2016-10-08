@@ -1,6 +1,5 @@
 from subprocess import Popen, PIPE, STDOUT
 
-import libtmux
 from libtmux.exc import LibTmuxException
 
 import amino.test
@@ -18,10 +17,13 @@ class Spec(amino.test.Spec):
 
 class TmuxSpecBase(Spec):
 
-    def setup(self):
-        self.win_width = 100
-        self.win_height = 40
-        super().setup()
+    @property
+    def win_width(self):
+        return 100
+
+    @property
+    def win_height(self):
+        return 40
 
     @property
     def socket(self):
