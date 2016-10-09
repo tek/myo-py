@@ -141,7 +141,7 @@ class OutputMachineTransitions(MyoTransitions):
 
     @property
     def _set_content(self):
-        min_size = self.vim.vars.pi('output_window_min_size') | 10
+        min_size = self.vim.vars.pi('output_window_min_size') | 3
         max_size = self.vim.vars.pi('output_window_max_size') | 30
         def run(lines):
             text = lines / _.formatted
