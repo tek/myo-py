@@ -26,7 +26,7 @@ class Command(Named):
 
     @property
     def _info_fields(self):
-        return List('langs', 'parser')
+        return List('langs', 'parser', 'log_path')
 
     @property
     def _info(self) -> List[str]:
