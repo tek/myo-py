@@ -21,6 +21,9 @@ from myo.command import ShellCommand
 from myo.ui.tmux.view import View
 
 
+pane_not_found_error = 'pane not found: {}'
+
+
 class WindowFacade(Logging):
 
     def __init__(self, session: Session, window: Window, adapter:
@@ -55,12 +58,18 @@ class WindowFacade(Logging):
             .o(layout.layouts.find_map(self._ref_pane))
         )
 
-    def find_pane(self, pane: Pane):
-        return ((pane.id // self.adapter.pane_by_id)
-                .to_either(('pane not found: {}'.format(pane))))
+    def native_ref_pane(self, layout: Layout):
+        return self.ref_pane_fatal(layout) // self.native_pane_task_fatal
 
-    def find_pane_task(self, pane: Pane):
-        return Task.call(self.find_pane, pane).join_either
+    def native_pane(self, pane: Pane):
+        return ((pane.id // self.adapter.pane_by_id)
+                .to_either((pane_not_found_error.format(pane.name))))
+
+    def native_pane_task(self, pane: Pane):
+        return Task.call(self.native_pane, pane)
+
+    def native_pane_task_fatal(self, pane: Pane):
+        return self.native_pane_task(pane).join_either
 
     def open_pane(self, path: ViewPath) -> Task[Either[str, ViewPath]]:
         v = path.view
@@ -94,8 +103,7 @@ class WindowFacade(Logging):
 
     def _split_pane(self, layout, pane) -> Task[Pane]:
         return (
-            self.ref_pane_fatal(layout) //
-            self.find_pane_task /
+            self.native_ref_pane(layout) /
             __.split(layout.horizontal) /
             PaneAdapter /
             pane.open
@@ -111,7 +119,7 @@ class WindowFacade(Logging):
 
     def run_command_line(self, pane: Pane, line: str):
         return (
-            self.find_pane_task(pane) /
+            self.native_pane_task_fatal(pane) /
             __.run_command(line)
         )
 
@@ -124,13 +132,14 @@ class WindowFacade(Logging):
                 if pane.kill or kill else
                 Task.now(Left('command already running'))
             )
-        return self.find_pane_task(pane) // handle
+        return self.native_pane_task_fatal(pane) // handle
 
     def command_pid(self, pane: Pane):
-        return self.find_pane_task(pane) / _.command_pid
+        return self.native_pane_task_fatal(pane) / _.command_pid
 
     def kill_process(self, pane, signals):
-        return self.find_pane_task(pane) // L(self._kill_process)(_, signals)
+        return (self.native_pane_task_fatal(pane) //
+                L(self._kill_process)(_, signals))
 
     @task
     def _kill_process(self, adapter, signals):
@@ -157,7 +166,7 @@ class WindowFacade(Logging):
         lg = lambda p: self.log.debug(
             'piping {} to {}'.format(p.name, p.log_path | 'nowhere'))
         return (
-            self.find_pane_task(pane) /
+            self.native_pane_task_fatal(pane) /
             __.pipe(base) /
             pane.setter.log_path %
             lg
@@ -205,7 +214,7 @@ class WindowFacade(Logging):
 
     def close_pane_path(self, path: ViewPath):
         new_path = path.map_view(__.set(id=Empty()))
-        return self.close(path.view) / __.replace(new_path)
+        return self.close(path.view) / __.lmap(Fatal).replace(new_path)
 
     def _opened_panes(self, panes):
         return panes.filter(self.is_open)
@@ -214,11 +223,12 @@ class WindowFacade(Logging):
         return self.run_command_line(pane, command.line)
 
     def close(self, pane: Pane):
-        return (self.find_pane_task(pane) // __.kill.map(Right))
+        return (self.native_pane_task(pane).eff(Either) //
+                __.kill.map(Right)).value
 
     def focus(self, pane: Pane):
         return (
-            self.find_pane(pane)
+            self.native_pane(pane)
             .task('pane not found for focus: {}'.format(pane)) /
             __.focus()
         )

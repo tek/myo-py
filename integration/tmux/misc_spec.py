@@ -1,6 +1,9 @@
 from amino.test import later
 from amino import _
 
+from myo.ui.tmux.facade.window import pane_not_found_error
+from myo.plugins.tmux.main import invalid_pane_name
+
 from integration._support.tmux import (DefaultLayoutSpec, TmuxIntegrationSpec,
                                        ExternalTmuxIntegrationSpec)
 
@@ -41,28 +44,33 @@ class XOpenSpec(ExternalTmuxIntegrationSpec):
         self._pane_count(2)
 
 
-class OpenSpec(TmuxIntegrationSpec):
+class OpenPaneSpec(TmuxIntegrationSpec):
 
     def open(self):
+        pan = 'pan'
         self.json_cmd('MyoTmuxCreateLayout lay', parent='root')
-        self._create_pane('pan', parent='lay')
-        self._open_pane('pan')
+        self._create_pane(pan, parent='lay')
+        self._open_pane(pan)
         self._pane_count(2)
+        pan1 = 'pan1'
+        self._open_pane(pan1)
+        self._log_contains(invalid_pane_name.format(pan1))
 
 
 class ClosePaneSpec(DefaultLayoutSpec):
 
     def close(self):
-        self._open_pane('make')
+        pane = 'make'
+        self._open_pane(pane)
         self._pane_count(2)
-        self.vim.cmd('MyoTmuxClosePane make')
+        self._close_pane(pane)
         self._pane_count(1)
-        self.vim.cmd('MyoTmuxClosePane make')
-        self._wait(0.1)
+        self._close_pane(pane)
         self._pane_count(1)
-        self._open_pane('make')
+        self._log_contains(pane_not_found_error.format(pane))
+        self._open_pane(pane)
         self._pane_count(2)
-        self.vim.cmd('MyoTmuxClosePane make')
+        self._close_pane(pane)
         self._pane_count(1)
 
     def auto_close(self):

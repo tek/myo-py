@@ -7,6 +7,7 @@ from amino.anon import L
 
 from ribosome.machine import may_handle, handle, Quit, Nop
 from ribosome.machine.base import UnitTask, DataTask
+from ribosome.machine.transition import Fatal, Error
 
 from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.tmux.message import (TmuxOpen, TmuxRunCommand, TmuxCreatePane,
@@ -35,6 +36,9 @@ from myo.plugins.command.message import SetShellTarget
 from myo.command import Command, Shell, default_signals
 from myo.plugins.tmux.watcher import Watcher, Terminated
 from myo.ui.tmux.facade.main import TmuxFacade
+
+
+invalid_pane_name = 'invalid pane name: {}'
 
 
 class TmuxTransitions(MyoTransitions):
@@ -173,9 +177,15 @@ class TmuxTransitions(MyoTransitions):
         name = self.msg.name
         opt = self.msg.options
         pinned = opt.get('pinned').exists(I)
+        def open():
+            return (
+                self.tmux.open_pane_ppm(name),
+                (Nop() if pinned else TmuxPostOpen(name, opt - 'pinned').pub)
+            )
         return (
-            self.tmux.open_pane_ppm(name),
-            (Nop() if pinned else TmuxPostOpen(name, opt - 'pinned').pub)
+            open()
+            if self.tmux.pane_exists(name) else
+            Error(invalid_pane_name.format(name))
         )
 
     @may_handle(TmuxPostOpen)

@@ -8,7 +8,6 @@ from amino.lens.tree import path_lens_unbound
 
 from ribosome.record import field, list_field, map_field
 from ribosome.machine import Message
-from ribosome.machine.transition import Fatal
 
 from myo.ui.tmux.window import Window
 from myo.logging import Logging
@@ -156,7 +155,7 @@ class ViewPathMod(Logging, Message):
         return self._lens(state) // L(self._f)(_, state)
 
     def _lens(self, state):
-        err = Fatal('view lens path failed for {}'.format(self.pred))
+        err = 'view lens path failed for {}'.format(self.pred)
         def main_lens(w):
             return ((Just(lens()) &
                      path_lens_unbound(w.root, _.layouts, self.attr)

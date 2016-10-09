@@ -109,7 +109,7 @@ class WindowPacker(Logging):
         self.log.debug('resize {} to {} ({})'.format(pane, size,
                                                      bool(horizontal)))
         return (
-            self.window.find_pane_task(pane) //
+            self.window.native_pane_task_fatal(pane) //
             __.resize(size, horizontal)
         )
 

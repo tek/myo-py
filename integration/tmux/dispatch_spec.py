@@ -111,7 +111,6 @@ class DispatchSpec(TmuxCmdSpec):
         self._pane_count(2)
         self._panes.last / __.send_keys('tail')
         def check():
-            pid()
             pid().should.be.greater_than(0)
         later(check)
         pid1 = pid()

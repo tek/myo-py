@@ -229,4 +229,7 @@ class TmuxFacade(Logging):
     def pane_open(self, ident: Ident):
         return self.pane_window(ident).map2(__.pane_open(_)).true
 
+    def pane_exists(self, ident: Ident):
+        return self.pane_loc(ident).present
+
 __all__ = ('TmuxFacade',)

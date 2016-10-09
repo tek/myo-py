@@ -112,6 +112,9 @@ class TmuxIntegrationSpec(TmuxIntegrationSpecBase, MyoPluginIntegrationSpec):
         self.json_cmd_sync('MyoTmuxOpen {}'.format(name), **kw)
         self._wait(.1)
 
+    def _close_pane(self, name):
+        self.vim.cmd_sync('MyoTmuxClosePane {}'.format(name))
+        self._wait(.1)
 
 class DefaultLayoutSpec(TmuxIntegrationSpec):
 
