@@ -1,4 +1,4 @@
-from amino import List, L, _, Just
+from amino import List, Just, __
 
 from myo.output.parser.sbt import SbtOutputEvent, FileEntry
 from myo.output.reifier.base import Reifier as ReifierBase
@@ -16,19 +16,16 @@ class Reifier(ReifierBase):
     def _format_code(self, entry):
         return entry.code
 
-    def _sbt_event(self, event, code):
+    def _sbt_event(self, event):
         return (
             event.file.format_lines(Just(event), self._format_file) +
             event.file.format_lines(Just(event), self._format_error,
                                     group=Just('Error')) +
-            code.format_lines(Just(event), self._format_code) +
+            (event.code // __.format_lines(Just(event), self._format_code)) +
             List(EmptyLine.create(event))
         )
 
-    def _event(self, event):
-        return event.code / L(self._sbt_event)(event, _) | List()
-
     def __call__(self, result) -> List[OutputLine]:
-        return result.events.filter_type(SbtOutputEvent) // self._event
+        return result.events.filter_type(SbtOutputEvent) // self._sbt_event
 
 __all__ = ('Reifier',)

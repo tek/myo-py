@@ -307,6 +307,7 @@ class SbtParseSpec(ParseSpecBase):
             c = self.vim.buffer.content
             c.should.have.length_of(8)
             c.head.should.contain('{}  3'.format(self._scala_file.name))
+            self.vim.window.height.should.contain(8)
         filters = List('py:integration.core.parse_spec._filter')
         formatters = List('py:integration.core.parse_spec._format')
         trunc = 'py:integration.core.parse_spec._trunc'
@@ -337,4 +338,4 @@ def _format(r):
 def _trunc(path):
     return path.name
 
-__all__ = ('ParseSpec',)
+__all__ = ('BasicParseSpec', 'PythonParseSpec', 'SbtParseSpec')

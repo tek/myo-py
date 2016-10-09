@@ -66,7 +66,7 @@ class SbtOutputEvent(OutputEvent, Location):
 
     @property
     def code(self):
-        return self.entries.find_type(CodeEntry)
+        return self.entries.filter_type(CodeEntry)
 
 
 class Parser(SimpleParser):
