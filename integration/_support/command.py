@@ -1,4 +1,4 @@
-from ribosome.test import VimIntegrationSpec
+from integration._support.base import MyoPluginIntegrationSpec
 
 
 class CmdSpecConf:
@@ -8,7 +8,7 @@ class CmdSpecConf:
         return super()._plugins.cat('myo.plugins.command')
 
 
-class CmdSpec(CmdSpecConf, VimIntegrationSpec):
+class CmdSpec(CmdSpecConf, MyoPluginIntegrationSpec):
     pass
 
 __all__ = ('CmdSpec', 'CmdSpecConf')
