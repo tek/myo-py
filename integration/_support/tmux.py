@@ -3,7 +3,7 @@ from integration._support.base import (MyoPluginIntegrationSpec,
 from integration._support.command import CmdSpecConf
 
 from amino.test import later
-from amino import _, __, Map
+from amino import _, __, Map, Maybe
 
 from myo.test.spec import TmuxSpecBase
 from myo.plugins.tmux.message import TmuxCreateLayout, TmuxCreatePane
@@ -82,15 +82,27 @@ class ExternalTmuxIntegrationSpec(TmuxIntegrationSpecBase,
                                   MyoIntegrationSpec):
 
     @property
+    def _tmux(self):
+        return self.root.sub.find(_.title == 'tmux')
+
+    @property
     def tmux(self):
         return (self.root.sub.find(_.title == 'tmux')
                 .get_or_fail('no tmux plugin'))
 
     @property
+    def _state(self):
+        return Maybe(self.root.data.sub_state('tmux', None))
+
+    @property
     def state(self):
-        def fail():
-            raise Exception('no tmux state yet')
-        return self.root.data.sub_state('tmux', lambda: fail)
+        return self._state.get_or_fail('no tmux state yet')
+
+    def wait_for_tmux(self):
+        self._wait_for(lambda: self._tmux.present)
+
+    def wait_for_state(self):
+        self._wait_for(lambda: self._state.present)
 
     def _create_layout(self, name, **options):
         self.root.send_sync(TmuxCreateLayout(name, options=Map(options)))
@@ -115,6 +127,7 @@ class TmuxIntegrationSpec(TmuxIntegrationSpecBase, MyoPluginIntegrationSpec):
     def _close_pane(self, name):
         self.vim.cmd_sync('MyoTmuxClosePane {}'.format(name))
         self._wait(.1)
+
 
 class DefaultLayoutSpec(TmuxIntegrationSpec):
 
