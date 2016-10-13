@@ -197,7 +197,7 @@ class TmuxFacade(Logging):
             return (
                 win(path) //
                 __.command_pid(path.view) /
-                (lambda a: path.map_view(__.set(pid=a))) /
+                (lambda a: path.map_view(__.set(pid=a.to_maybe))) /
                 Right
             )
         ppm = (self._ident_vpm
