@@ -9,7 +9,8 @@ class Reifier(ReifierBase):
 
     def _format_file(self, entry: FileEntry):
         fun = entry.fun / ' {}'.format | ''
-        return '{}  {}{}'.format(self._truncate(entry.path), entry.line, fun)
+        return '{}  {}{}'.format(str(self._truncate(entry.path)), entry.line,
+                                   fun)
 
     def _format_error(self, entry):
         return '{} {}'.format(entry.exc, entry.error)
