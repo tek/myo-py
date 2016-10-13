@@ -8,8 +8,8 @@ from amino import List, Just, __
 class Reifier(ReifierBase):
 
     def _format_file(self, entry: FileEntry):
-        return '{}  {} {}'.format(str(self._truncate(entry.path)), entry.line,
-                                   entry.fun)
+        fun = entry.fun / ' {}'.format | ''
+        return '{}  {}{}'.format(self._truncate(entry.path), entry.line, fun)
 
     def _format_error(self, entry):
         return '{} {}'.format(entry.exc, entry.error)
