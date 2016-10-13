@@ -148,10 +148,10 @@ class OutputMachineTransitions(MyoTransitions):
             size = min(max_size, max(min_size, text.length))
             return (
                 self._with_sub(self.data, self.state.set(lines=lines)),
-                Task.call(self.window.cmd, 'resize {}'.format(size)) +
-                Task.call(self.buffer.set_modifiable, True) +
-                Task.call(self.buffer.set_content, text) +
-                Task.call(self.buffer.set_modifiable, False) +
+                Task.delay(self.window.cmd, 'resize {}'.format(size)) +
+                Task.delay(self.buffer.set_modifiable, True) +
+                Task.delay(self.buffer.set_content, text) +
+                Task.delay(self.buffer.set_modifiable, False) +
                 self._run_syntax(lines)
             )
         def check(lines):
@@ -194,7 +194,7 @@ class OutputMachineTransitions(MyoTransitions):
     def first_error(self):
         def set_cursor(a):
             x, y = a if isinstance(a, tuple) else (a, 1)
-            return Task(lambda: self.vim.window.set_cursor(x + 1, y))
+            return Task.delay(lambda: self.vim.window.set_cursor(x + 1, y))
         special, custom = self.result.first_error.split_type(SpecialCallback)
         special_cb = special / _.name // self._special_jumps.get
         jump = self.vim.vars.pb('jump_to_error') | True
@@ -208,8 +208,8 @@ class OutputMachineTransitions(MyoTransitions):
 
     @handle(Jump)
     def jump(self):
-        # cannot use Task.call for set_cursor because then the window is fixed
-        # to what is active before opening the file
+        # cannot use Task.delay for set_cursor because then the window is
+        # fixed to what is active before opening the file
         target = (
             self.vim.window.line /
             (_ - 1) //
@@ -218,9 +218,10 @@ class OutputMachineTransitions(MyoTransitions):
         open_file = target / L(self._open_file)(_.file_path)
         set_line = (
             (target / _.coords)
-            .map2(lambda a, b: Task(lambda: self.vim.window.set_cursor(a, b)))
+            .map2(lambda a, b: Task.delay(
+                lambda: self.vim.window.set_cursor(a, b)))
         )
-        post = Task(lambda: self.vim.cmd('normal! zvzz'))
+        post = Task.delay(self.vim.cmd, 'normal! zvzz')
         return (open_file & set_line).map2(add) / (_ + post) / UnitTask
 
     @property
@@ -256,7 +257,7 @@ class OutputMachineTransitions(MyoTransitions):
                 .task('could not get a window') /
                 __.focus()
             )
-            edit = Task.call(self.vim.edit, path) / __.run_async()
+            edit = Task.delay(self.vim.edit, path) / __.run_async()
             return win + edit
 
 

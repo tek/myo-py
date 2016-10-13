@@ -1,7 +1,7 @@
 from functools import singledispatch  # type: ignore
 from operator import ne, sub
 
-from amino import Either, Task, L, _, Right, __, List, Boolean, Just
+from amino import Either, Task, L, _, Right, __, List, Boolean, Just, Empty
 
 from myo.logging import Logging
 from myo.ui.tmux.window import Window
@@ -29,7 +29,7 @@ class WindowPacker(Logging):
         return self.window.loc(pane)
 
     def _pack_layout(self, l, w, h):
-        nop = Task.now(List())
+        nop = Task.now(Empty())
         horizontal = l.horizontal
         total = w if horizontal else h
         @singledispatch
@@ -131,14 +131,14 @@ class WindowPacker(Logging):
                 return correct.detach_head.map2(rec)
             return Task.call(setpos, current, adapters)
         else:
-            return Task.now(None)
+            return Task.now(Empty())
 
     def _ref_adapters(self, views):
         return views // self._ref_adapter
 
     def _ref_adapter(self, view: View):
         ref = Just(view) if isinstance(view, Pane) else self._ref_pane(view)
-        return ref // self.window.find_pane
+        return ref // self.window.native_pane
 
 
 def _pos(a):

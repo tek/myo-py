@@ -4,7 +4,8 @@ from typing import Tuple
 
 from psutil import Process
 
-from amino import L, Task, _, Maybe, F, __, Either, I, Right, Left, List, Empty
+from amino import (L, Task, _, Maybe, F, __, Either, I, Right, Left, List,
+                   Empty, Try)
 from amino.lazy import lazy
 from amino.task import task
 
@@ -151,7 +152,7 @@ class WindowFacade(Logging):
             if adapter.running:
                 sig = getattr(signal, 'SIG{}'.format(signame.upper()),
                               signal.SIGINT)
-                adapter.command_pid / Process / __.send_signal(sig)
+                adapter.command_pid / Process / L(Try)(__.send_signal, sig)
                 _wait_killed(3)
             return adapter.not_running
         return (

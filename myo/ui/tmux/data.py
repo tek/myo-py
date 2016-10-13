@@ -1,19 +1,17 @@
 from typing import Callable
 
-from amino import L, List, __, _
+from amino import List, __, _
 
 from lenses import lens
 
 from ribosome.record import field, list_field
 
 from myo.record import Record
-from myo.ui.tmux.server import Server
 from myo.ui.tmux.session import Session, VimSession
 from myo.ui.tmux.window import VimWindow, Window
 from myo.ui.tmux.layout import VimLayout, Layout
 from myo.ui.tmux.pane import VimPane
 from myo.ui.tmux.util import Ident
-from myo.ui.tmux.view import View
 
 _is_vim_session = lambda a: isinstance(a, VimSession)
 _is_vim_window = lambda a: isinstance(a, VimWindow)
@@ -23,7 +21,8 @@ _is_vim_pane = lambda a: isinstance(a, VimPane)
 
 class TmuxState(Record):
     sessions = list_field()
-    instance_id = field(str, initial='', factory=L(List.random_string)(5))
+    instance_id = field(str, initial='',
+                        factory=lambda a: a if a else List.random_string(5))
 
     @property
     def _str_extra(self):

@@ -7,7 +7,7 @@ from amino.anon import L
 
 from ribosome.machine import may_handle, handle, Quit, Nop
 from ribosome.machine.base import UnitTask, DataTask
-from ribosome.machine.transition import Fatal, Error
+from ribosome.machine.transition import Error
 
 from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.tmux.message import (TmuxOpen, TmuxRunCommand, TmuxCreatePane,
@@ -135,7 +135,7 @@ class TmuxTransitions(MyoTransitions):
 
     @may_handle(StartWatcher)
     def start_watcher(self):
-        return UnitTask(Task(self.machine.watcher.start))
+        return UnitTask(Task.delay(self.machine.watcher.start))
 
     @handle(TmuxCreateSession)
     def create_session(self):
@@ -184,7 +184,7 @@ class TmuxTransitions(MyoTransitions):
             )
         return (
             open()
-            if self.tmux.pane_exists(name) else
+            if self.tmux.view_exists(name) else
             Error(invalid_pane_name.format(name))
         )
 
@@ -258,7 +258,7 @@ class TmuxTransitions(MyoTransitions):
 
     @may_handle(QuitWatcher)
     def quit_watcher(self):
-        return UnitTask(Task(self.machine.watcher.stop))
+        return UnitTask(Task.delay(self.machine.watcher.stop))
 
     @may_handle(TmuxInfo)
     def info(self):

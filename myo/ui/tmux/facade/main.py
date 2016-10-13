@@ -129,8 +129,7 @@ class TmuxFacade(Logging):
 
     def pack_window(self, session: Session, window: Window
                     ) -> Task[Either[str, Window]]:
-        return (self.window_task(session, window) //
-                _.pack)
+        return self.window_task(session, window) // _.pack
 
     def open_pane(self, path: ViewPath) -> Task[Either[str, ViewPath]]:
         return self.path_window_task(path) // __.open_pane(path)
@@ -229,7 +228,7 @@ class TmuxFacade(Logging):
     def pane_open(self, ident: Ident):
         return self.pane_window(ident).map2(__.pane_open(_)).true
 
-    def pane_exists(self, ident: Ident):
-        return self.pane_loc(ident).present
+    def view_exists(self, ident: Ident):
+        return self.view_loc(ident).present
 
 __all__ = ('TmuxFacade',)
