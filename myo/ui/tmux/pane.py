@@ -9,7 +9,7 @@ from libtmux.pane import Pane as LTPane
 
 from amino.task import task
 
-from amino import __, List, Boolean, Maybe, _, Map, Just, Try
+from amino import __, List, Boolean, Maybe, _, Map, Just, Try, L
 from amino.lazy import lazy
 
 from ribosome.record import maybe_field, either_field, bool_field
@@ -77,8 +77,8 @@ class PaneI(metaclass=abc.ABCMeta):
     @property
     def command_pid(self) -> Maybe[int]:
         return (
-            self.pid /
-            Process /
+            self.pid //
+            L(Try)(Process, _) /
             __.children() /
             List.wrap //
             _.head /

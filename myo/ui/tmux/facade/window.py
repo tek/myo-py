@@ -152,7 +152,11 @@ class WindowFacade(Logging):
             if adapter.running:
                 sig = getattr(signal, 'SIG{}'.format(signame.upper()),
                               signal.SIGINT)
-                adapter.command_pid / Process / L(Try)(__.send_signal, sig)
+                (
+                    adapter.command_pid //
+                    L(Try)(Process, _) //
+                    L(Try)(__.send_signal, sig)
+                )
                 _wait_killed(3)
             return adapter.not_running
         return (
