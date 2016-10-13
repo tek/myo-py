@@ -4,7 +4,7 @@ from amino import List, __, _
 
 from lenses import lens
 
-from ribosome.record import field, list_field
+from ribosome.record import field, list_field, bool_field
 
 from myo.record import Record
 from myo.ui.tmux.session import Session, VimSession
@@ -20,6 +20,7 @@ _is_vim_pane = lambda a: isinstance(a, VimPane)
 
 
 class TmuxState(Record):
+    initialized = bool_field()
     sessions = list_field()
     instance_id = field(str, initial='',
                         factory=lambda a: a if a else List.random_string(5))
@@ -33,7 +34,7 @@ class TmuxState(Record):
 
     @property
     def vim_session(self):
-        return self.sessions.find(_is_vim_session)
+        return self.sessions.find(_is_vim_session).to_either('no vim session')
 
     @property
     def vim_session_lens(self):
@@ -42,14 +43,20 @@ class TmuxState(Record):
 
     def window_lens(self, pred: Callable[[Window], bool]):
         sub = __.attr_lens_pred(_.windows, pred)
-        return self.attr_lens(_.sessions, sub) / __.bind(self)
+        return (
+            (self.attr_lens(_.sessions, sub) / __.bind(self))
+            .to_either('no such window: {}'.format(pred))
+        )
 
     def window_lens_ident(self, ident: Ident):
         return self.window_lens(__.has_ident(ident))
 
     @property
     def vim_window(self):
-        return self.vim_session // __.windows.find(_is_vim_window)
+        return (
+            (self.vim_session // __.windows.find(_is_vim_window))
+            .to_either('no vim window')
+        )
 
     @property
     def vim_window_lens(self):

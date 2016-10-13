@@ -109,6 +109,11 @@ class TmuxFacade(Logging):
     def path_window_task(self, path: ViewPath) -> Task[WindowFacade]:
         return self.window_task(path.session, path.window)
 
+    @property
+    def native_vim_window(self):
+        return ((self.state.vim_session & self.state.vim_window)
+                .flat_map2(self.native_window))
+
     def focus(self, ident: Ident):
         return self._focus(ident, Just)
 

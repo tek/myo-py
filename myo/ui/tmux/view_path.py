@@ -56,7 +56,8 @@ class ViewPath(Record):
     def map(self, fp: Callable[[View], View], fl: Callable[[Layout], Layout]):
         return ViewPath.create(
             self.session, self.window, fp(self.view), fl(self.layout),
-            self.outer / fl)
+            self.outer / fl
+        )
 
     def map_view(self, f: Callable[[View], View]):
         return self.map(f, I)

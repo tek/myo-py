@@ -35,6 +35,9 @@ class Size(Record):
     def tuple(self):
         return self.width, self.height
 
+    def __iter__(self):
+        return iter((self.width, self.height))
+
 
 class Window(Named):
     id = maybe_field(int)
@@ -178,7 +181,7 @@ class WindowAdapter(Adapter):
 
     @lazy
     def size(self):
-        return int(self.native.width), int(self.native.height)
+        return Size.create(int(self.native.width), int(self.native.height))
 
     @property
     def active_pane(self):

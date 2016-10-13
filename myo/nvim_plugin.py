@@ -23,7 +23,7 @@ from myo.plugins.tmux.message import (TmuxCreatePane, TmuxCreateSession,
                                       TmuxMinimize, TmuxRestore, TmuxToggle,
                                       TmuxFocus, TmuxOpenOrToggle, TmuxKill)
 from myo.plugins.tmux import TmuxOpen
-from myo.plugins.core.message import Parse
+from myo.plugins.core.message import Parse, Resized
 
 
 class MyoNvimPlugin(NvimStatePlugin, Logging):
@@ -199,6 +199,11 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
     def vim_leave(self):
         ribosome.nvim.components.shutdown = True
         self.myo_quit()
+
+    @neovim.autocmd('VimResized', sync=False)
+    def vim_resized(self):
+        if self.myo is not None:
+            self.myo.send(Resized())
 
     @msg_function(Mapping)
     def myo_mapping(self):

@@ -26,8 +26,8 @@ from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
 from myo.ui.tmux.session import Session, VimSession
 from myo.ui.tmux.server import Server, NativeServer
 from myo.util import parse_int
-from myo.ui.tmux.window import VimWindow, Size
-from myo.plugins.core.message import AddDispatcher
+from myo.ui.tmux.window import VimWindow
+from myo.plugins.core.message import AddDispatcher, Resized, Initialized
 from myo.plugins.tmux.dispatch import TmuxDispatcher
 from myo.ui.tmux.util import format_state, Ident
 from myo.ui.tmux.view_path import LayoutPathMod, PanePathMod, ViewPathMod
@@ -71,6 +71,10 @@ class TmuxTransitions(MyoTransitions):
         watcher = (List() if self.vim.vars.p('tmux_no_watcher').true else
                    List(StartWatcher()))
         return msgs + default.to_list + watcher
+
+    @may_handle(Initialized)
+    def initialized(self):
+        return self.with_sub(self.state.set(initialized=True))
 
     @may_handle(AddDispatcher)
     def add_dispatcher(self):
@@ -273,8 +277,7 @@ class TmuxTransitions(MyoTransitions):
             win = win_lens.get()
             w = self.tmux.native_window(sess, win)
             return (
-                (w / _.size)
-                .map2(Size.create) /
+                (w / _.size) /
                 Just /
                 win.setter.size /
                 win_lens.set /
@@ -282,6 +285,16 @@ class TmuxTransitions(MyoTransitions):
             )
         return ((self.state.vim_session & self.state.vim_window_lens)
                 .flat_map2(update_vim_window))
+
+    @handle(Resized)
+    def resized(self):
+        def check(win, adapter):
+            return win.size.contains(adapter.size).no.maybe(TmuxPack())
+        return (
+            self.state.initialized
+            .flat_maybe((self.state.vim_window & self.tmux.native_vim_window))
+            .flat_map2(check)
+        )
 
     @may_handle(TmuxMinimize)
     def minimize(self):

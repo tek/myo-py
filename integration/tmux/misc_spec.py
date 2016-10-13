@@ -161,7 +161,7 @@ class UpdateVimWindowSpec(ExternalTmuxIntegrationSpec):
         self.wait_for_state()
         sz = self._window.size
         later(lambda:
-              (self.state.vim_window // _.size / _.tuple).should.contain(sz)
+              (self.state.vim_window // _.size).should.contain(sz)
               )
 
 __all__ = ('ClosePaneSpec', 'ShowSpec')
