@@ -15,13 +15,31 @@ from myo.ui.tmux.adapter import Adapter
 from myo.ui.tmux.pane import PaneAdapter, Pane, NativePane
 from myo.ui.tmux.layout import Layout
 from myo.ui.tmux.util import parse_window_id
-from myo.record import Named
+from myo.record import Named, Record
 from myo.logging import Logging
+
+
+class Size(Record):
+    width = field(int)
+    height = field(int)
+
+    @staticmethod
+    def create(width, height):
+        return Size(width=width, height=height)
+
+    @property
+    def _str_extra(self):
+        return List(self.width, self.height)
+
+    @property
+    def tuple(self):
+        return self.width, self.height
 
 
 class Window(Named):
     id = maybe_field(int)
     root = field(Layout)
+    size = maybe_field(Size)
 
     @property
     def desc(self):

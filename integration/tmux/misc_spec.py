@@ -153,4 +153,15 @@ class OpenLayoutSpec(TmuxIntegrationSpec):
         self._wait(1)
         self._pane_count(2)
 
+
+class UpdateVimWindowSpec(ExternalTmuxIntegrationSpec):
+
+    def window_size(self):
+        self.plugin.myo_start()
+        self.wait_for_state()
+        sz = self._window.size
+        later(lambda:
+              (self.state.vim_window // _.size / _.tuple).should.contain(sz)
+              )
+
 __all__ = ('ClosePaneSpec', 'ShowSpec')

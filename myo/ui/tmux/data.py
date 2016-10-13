@@ -49,7 +49,7 @@ class TmuxState(Record):
 
     @property
     def vim_window(self):
-        return self.vim_session // __.find(_is_vim_window)
+        return self.vim_session // __.windows.find(_is_vim_window)
 
     @property
     def vim_window_lens(self):

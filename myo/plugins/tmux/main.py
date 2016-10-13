@@ -19,14 +19,14 @@ from myo.plugins.tmux.message import (TmuxOpen, TmuxRunCommand, TmuxCreatePane,
                                       SetCommandLog, TmuxPack, TmuxPostOpen,
                                       TmuxFixFocus, TmuxMinimize, TmuxRestore,
                                       TmuxToggle, TmuxFocus, TmuxOpenOrToggle,
-                                      TmuxKill)
+                                      TmuxKill, UpdateVimWindow)
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
 from myo.ui.tmux.session import Session, VimSession
 from myo.ui.tmux.server import Server, NativeServer
 from myo.util import parse_int
-from myo.ui.tmux.window import VimWindow
+from myo.ui.tmux.window import VimWindow, Size
 from myo.plugins.core.message import AddDispatcher
 from myo.plugins.tmux.dispatch import TmuxDispatcher
 from myo.ui.tmux.util import format_state, Ident
@@ -83,7 +83,8 @@ class TmuxTransitions(MyoTransitions):
         it using the constructor function supplied in *Plugin.state*
         '''
         default = self.pflags.tmux_use_defaults.maybe(TmuxLoadDefaults())
-        msgs = List(AddDispatcher(), self.with_sub(self.state), TmuxFindVim())
+        msgs = List(AddDispatcher(), self.with_sub(self.state), TmuxFindVim(),
+                    UpdateVimWindow())
         watcher = (List() if self.vim.vars.p('tmux_no_watcher').true else
                    List(StartWatcher()))
         return msgs + default.to_list + watcher
@@ -281,7 +282,23 @@ class TmuxTransitions(MyoTransitions):
 
     @may_handle(TmuxPack)
     def pack(self):
-        return UnitTask(self.tmux.pack_sessions)
+        return UnitTask(self.tmux.pack_sessions), UpdateVimWindow()
+
+    @handle(UpdateVimWindow)
+    def update_vim_window(self):
+        def update_vim_window(sess, win_lens):
+            win = win_lens.get()
+            w = self.tmux.native_window(sess, win)
+            return (
+                (w / _.size)
+                .map2(Size.create) /
+                Just /
+                win.setter.size /
+                win_lens.set /
+                self.with_sub
+            )
+        return ((self.state.vim_session & self.state.vim_window_lens)
+                .flat_map2(update_vim_window))
 
     @may_handle(TmuxMinimize)
     def minimize(self):

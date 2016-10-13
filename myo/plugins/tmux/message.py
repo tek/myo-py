@@ -25,6 +25,7 @@ TmuxToggle = json_message('TmuxToggle', 'pane')
 TmuxOpenOrToggle = json_message('TmuxOpenOrToggle', 'pane')
 TmuxKill = json_message('TmuxKill', 'pane')
 SetCommandLog = message('SetCommandLog', 'cmd_ident', 'pane_ident')
+UpdateVimWindow = message('UpdateVimWindow')
 
 StartWatcher = message('StartWatcher')
 QuitWatcher = message('QuitWatcher')
@@ -37,4 +38,4 @@ __all__ = ('TmuxRunCommand', 'TmuxOpen', 'TmuxCreatePane',
            'TmuxRunShell', 'StartWatcher', 'WatchCommand', 'QuitWatcher',
            'TmuxParse', 'SetCommandLog', 'TmuxPack', 'TmuxPostOpen',
            'TmuxFixFocus', 'TmuxMinimize', 'TmuxRestore', 'TmuxToggle',
-           'TmuxFocus', 'TmuxOpenOrToggle', 'TmuxKill')
+           'TmuxFocus', 'TmuxOpenOrToggle', 'TmuxKill', 'UpdateVimWindow')
