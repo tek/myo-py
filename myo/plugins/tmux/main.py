@@ -47,26 +47,9 @@ class TmuxTransitions(MyoTransitions):
     def tmux(self):
         return TmuxFacade(self.state, self.machine.socket, self.options)
 
-    def _with_root(self, data, state, root):
-        l = state.vim_window_lens / _.root
-        new_state = l / __.set(root) | state
-        return self._with_sub(data, new_state)
-
-    def _with_window(self, ident, data, state, win):
-        new_state = (state.window_lens_ident(ident) / __.set(win) |
-                     state)
-        return self._with_sub(data, new_state)
-
-    def with_sub_and_msgs(self, state, msgs):
-        return (self.with_sub(state),) + msgs
-
     @property
     def server(self):
         return self.machine.server
-
-    @property
-    def views(self):
-        return self.machine.views
 
     def record_lens(self, tpe, name):
         return (
