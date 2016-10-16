@@ -4,10 +4,7 @@ from amino import Maybe, List, __, _
 from amino.test import later
 from amino.test.path import fixture_path
 
-from ribosome.machine import state
-
 from myo.output.data import OutputEntry, OutputEvent, ParseResult
-from myo.plugins.command.message import RunVimTest
 
 from integration._support.tmux import TmuxCmdSpec
 from integration._support.vimtest import vimtest
