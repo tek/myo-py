@@ -1,12 +1,38 @@
+import abc
+
 from amino import Path, __, Just, List, L, Maybe, _
 
 from ribosome.record import list_field, field, maybe_field, bool_field
+from ribosome.util.callback import parse_callback_spec
 
 from myo.record import Record, Named
 from myo.ui.tmux.util import ident_field, Ident
+from myo.logging import Logging
 
 
 default_signals = List('int', 'term', 'kill')
+
+
+class Line(Logging, metaclass=abc.ABCMeta):
+
+    def __init__(self, line) -> None:
+        self.line = line
+
+    @abc.abstractmethod
+    def resolve(self, vim) -> Maybe[str]:
+        ...
+
+
+class StrictLine(Line):
+
+    def resolve(self, vim):
+        return Just(self.line)
+
+
+class EvalLine(Line):
+
+    def resolve(self, vim):
+        return parse_callback_spec(self.line) // __(vim)
 
 
 class Command(Named):
@@ -17,6 +43,7 @@ class Command(Named):
     langs = list_field()
     kill = bool_field()
     signals = list_field(str, initial=default_signals)
+    eval = bool_field()
 
     @property
     def desc(self):
@@ -45,6 +72,11 @@ class Command(Named):
     @property
     def _type_desc(self):
         return 'C'
+
+    @property
+    def effective_line(self):
+        tpe = EvalLine if self.eval else StrictLine
+        return tpe(self.line)
 
 
 class VimCommand(Command):

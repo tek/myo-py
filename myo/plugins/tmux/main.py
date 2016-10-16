@@ -7,7 +7,7 @@ from amino.anon import L
 
 from ribosome.machine import may_handle, handle, Quit, Nop
 from ribosome.machine.base import UnitTask, DataTask
-from ribosome.machine.transition import Error
+from ribosome.machine.transition import Error, Fatal
 
 from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.tmux.message import (TmuxOpen, TmuxRunCommand, TmuxCreatePane,
@@ -196,7 +196,7 @@ class TmuxTransitions(MyoTransitions):
         return (self.tmux.close_pane_ppm(self.msg.name) &
                 Right(TmuxPack().pub.at(1)))
 
-    @may_handle(TmuxRunCommand)
+    @handle(TmuxRunCommand)
     def run_command(self):
         command = self.msg.command
         options = self.msg.options
@@ -319,7 +319,7 @@ class TmuxTransitions(MyoTransitions):
     @may_handle(TmuxKill)
     def kill(self):
         signals = self.msg.options.get('signals') | default_signals
-        return self.tmux.kill_process(self.msg.pane, signals)
+        return self.tmux.kill_process(self.msg.pane, signals) / __.lmap(Fatal)
 
     def _minimize(self, f):
         return self.tmux.view_mod(self.msg.pane, f), TmuxPack().pub.at(1)
@@ -354,15 +354,22 @@ class TmuxTransitions(MyoTransitions):
         return self.server.pane_data.find(__.command_pid.contains(vim_pid))
 
     def _run_command(self, command, opt):
-        pane_ident = opt.get('target') | self._default_pane_name
-        in_shell = Boolean('shell' in opt)
+        return (
+            command.effective_line
+            .resolve(self.vim) /
+            L(self._run_command_line)(command, _, opt)
+        )
+
+    def _run_command_line(self, command, line, opt):
         kill = opt.get('kill') | command.kill
         signals = opt.get('signals') / List.wrap | command.signals
+        pane_ident = opt.get('target') | self._default_pane_name
+        in_shell = Boolean('shell' in opt)
         def watch(path):
             msg = WatchCommand(command, path.view)
             return Task.call(self.machine.watcher.send, msg)
-        runner = self.tmux.run_command_ppm(pane_ident, command.line, in_shell,
-                                           kill, signals) % watch
+        runner = self.tmux.run_command_ppm(pane_ident, line, in_shell, kill,
+                                           signals) % watch
         set_log = command.transient.no.maybe(
             SetCommandLog(command.uuid, pane_ident))
         return set_log.to_list.cons(runner).cat(TmuxPostOpen(pane_ident, opt))
@@ -370,9 +377,8 @@ class TmuxTransitions(MyoTransitions):
     def _run_in_shell(self, command: Command, shell: Shell, options: Map):
         ident = shell.target | self._default_pane_name
         opt = options + ('target', ident) + ('shell', shell)
-        cmd_runner = self._run_command(command, opt)
-        shell_runner = TmuxRunShell(shell, Map())
-        return cmd_runner.cons(shell_runner)
+        return (self._run_command(command, opt) /
+                __.cons(TmuxRunShell(shell, Map())))
 
     def _main_command(self, cmd_ident: Ident):
         holder = lambda cmd: cmd.shell // self.data.shell | cmd

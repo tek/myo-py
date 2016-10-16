@@ -140,8 +140,10 @@ class TmuxFacade(Logging):
         return self.path_window_task(path) // __.open_pane(path)
 
     def kill_process(self, ident: Ident, signals):
-        run = lambda win, pane: win.kill_process(pane, signals)
-        return self.pane_window_task(ident).flat_map2(run)
+        return (
+            self.pane_window_task(ident)
+            .flat_map2(__.kill_process(_, signals))
+        )
 
     @property
     def close_all(self):

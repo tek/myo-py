@@ -2,17 +2,17 @@ from integration._support.tmux import TmuxCmdSpec
 
 from psutil import Process
 from amino.test import later
-from amino import __, _
+from amino import __, _, List, Just
 
 _test_line = 'this is a test'
 
 
 def _test_ctor():
-    return 'echo \'{}\''.format(_test_line)
+    return Just('echo \'{}\''.format(_test_line))
 
 
 def _test_shell_ctor():
-    return 'print(\'{}\')'.format(_test_line)
+    return Just('print(\'{}\')'.format(_test_line))
 
 
 class DispatchSpec(TmuxCmdSpec):
@@ -124,5 +124,24 @@ class DispatchSpec(TmuxCmdSpec):
         self._cmd_pid(1).should.be.greater_than(0)
         self.vim.cmd('MyoTmuxKill make')
         later(lambda: self._cmd_pid(1).should.equal(0))
+
+    def kill_nonexisting(self):
+        self.vim.cmd('MyoTmuxKill make')
+        self._log_contains('pane not found: make')
+
+    def vim_eval_func(self):
+        text = List.random_string()
+        name = 'test'
+        func = 'TestLine'
+        callback = 'vim:{}'.format(func)
+        cmd = 'echo "{}"'.format(text)
+        self.vim.cmd_sync(
+            '''function {}()
+            return '{}'
+            endfunction'''.format(func, cmd))
+        self.json_cmd_sync('MyoShellCommand {}'.format(name), line=callback,
+                           eval=True)
+        self.json_cmd_sync('MyoRun {}'.format(name))
+        self._output_contains(text)
 
 __all__ = ('DispatchSpec',)

@@ -64,7 +64,7 @@ class WindowFacade(Logging):
 
     def native_pane(self, pane: Pane):
         return ((pane.id // self.adapter.pane_by_id)
-                .to_either((pane_not_found_error.format(pane.name))))
+                .to_either(pane_not_found_error.format(pane.name)))
 
     def native_pane_task(self, pane: Pane):
         return Task.call(self.native_pane, pane)
@@ -139,8 +139,11 @@ class WindowFacade(Logging):
         return self.native_pane_task_fatal(pane) / _.command_pid
 
     def kill_process(self, pane, signals):
-        return (self.native_pane_task_fatal(pane) //
-                L(self._kill_process)(_, signals))
+        return (
+            self.native_pane_task(pane)
+            .eff(Either) //
+            L(self._kill_process)(_, signals)
+        ).value
 
     @task
     def _kill_process(self, adapter, signals):
@@ -159,12 +162,17 @@ class WindowFacade(Logging):
                 )
                 _wait_killed(3)
             return adapter.not_running
+        def final_check():
+            return adapter.running.e(
+                'could not kill running process',
+                Info('no process running')
+            )
         return (
             signals.find(kill) /
             'process killed by signal {}'.format /
             Info /
             Right |
-            Left(Fatal('could not kill running process'))
+            final_check
         )
 
     def pipe(self, pane: Pane, base: str):

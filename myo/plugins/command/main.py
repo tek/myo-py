@@ -6,7 +6,7 @@ from ribosome.util.callback import parse_callback_spec
 
 from myo.state import MyoComponent, MyoTransitions
 
-from amino import L, _, List, Try, __, Maybe, curried, Map, Right, I
+from amino import L, _, List, Try, __, Maybe, Map, Right, I
 from myo.command import Command, VimCommand, ShellCommand, Shell
 from myo.util import amend_options
 from myo.plugins.core.message import Parse, ParseOutput, StageI
@@ -186,9 +186,10 @@ class CommandTransitions(MyoTransitions):
     def run_test(self):
         opt = self.msg.options
         return (
-            opt.get('ctor').to_either(Fatal('no test ctor specified')) //
+            opt.get('ctor')
+            .to_either('no test ctor specified') //
             self._assemble //
-            self._run_test_line(opt - 'ctor')
+            L(self._run_test_line)(opt - 'ctor', _)
         ).lmap(Fatal)
 
     @handle(RunVimTest)
@@ -196,7 +197,7 @@ class CommandTransitions(MyoTransitions):
         return (
             assemble_vim_test_line(self.vim) //
             __.head.to_either('vim-test failed') //
-            self._run_test_line(self.msg.options)
+            L(self._run_test_line)(self.msg.options, _)
         )
 
     @may_handle(CommandShow)
@@ -205,9 +206,8 @@ class CommandTransitions(MyoTransitions):
         self.log.info(msg.join_lines)
 
     def _assemble(self, ctor):
-        return parse_callback_spec(ctor).join / (lambda a: a())
+        return parse_callback_spec(ctor) // __(self.vim)
 
-    @curried
     def _run_test_line(self, options, line):
         glangs = self.vim.buffer.vars.pl('test_langs')
         langs = options.get('langs').or_else(glangs) | List()

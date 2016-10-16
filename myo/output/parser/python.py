@@ -16,7 +16,7 @@ class FileEntry(PositionEntry):
     fun = maybe_field(str)
     code = maybe_field(CodeEntry)
 
-    def lines(self, event: OutputEvent):
+    def lines(self, event: OutputEvent, group=Empty()):
         x = self.code / L(OutputLine.create)(_.text, self)
         return super().lines(event) + x.to_list
 
@@ -32,7 +32,7 @@ class PyErrorEntry(ErrorEntry):
 class ColEntry(OutputEntry):
     ws = field(str)
 
-    def lines(self, event: OutputEvent):
+    def lines(self, event: OutputEvent, group=Empty()):
         return List()
 
 _file = EdgeData(

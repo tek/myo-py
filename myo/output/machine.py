@@ -6,7 +6,6 @@ from ribosome.nvim import ScratchBuffer, NvimFacade
 from ribosome.machine.scratch import ScratchMachine, Quit
 from ribosome.machine.base import UnitTask
 from ribosome.record import field, list_field, either_field, any_field
-from ribosome.util.callback import SpecialCallback
 from ribosome.machine.transition import Fatal
 
 from amino.task import Task
@@ -95,6 +94,28 @@ class OMState(Record):
     lines = list_field(OutputLine)
 
 
+def _location_index(lines):
+    return (
+        lines
+        .index_where(__.entry.exists(L(isinstance)(_, Location)))
+    )
+
+
+def _jump_first(lines):
+    return _location_index(lines)
+
+
+def _jump_last(lines):
+    return (
+        _location_index(lines.reversed) /
+        (lines.length - _ - 1)
+    )
+
+
+def _jump_default(langs, lang_jumps):
+    return langs.find_map(lang_jumps.get) | (lambda: _jump_first)
+
+
 class OutputMachineTransitions(MyoTransitions):
 
     def _adapter(self, result):
@@ -103,8 +124,9 @@ class OutputMachineTransitions(MyoTransitions):
                    .to_either('no reifier specified'))
         formatters = self._callbacks('output_formatters')
         syntaxes = self._callbacks('output_syntaxes', self.buffer)
-        first_error = (self._callbacks('first_error')
-                       .cat(SpecialCallback('default')))
+        first_error = (self._callbacks('first_error',
+                                       special=self._special_jumps)
+                       .cat(_jump_default(result.langs, self._lang_jumps)))
         return ResultAdapter(buffer=self.buffer, result=result,
                              filters=filters, reifier=reifier,
                              formatters=formatters, syntaxes=syntaxes,
@@ -128,12 +150,11 @@ class OutputMachineTransitions(MyoTransitions):
 
     @property
     def _special_jumps(self):
-        return Map(default=self._jump_default, first=self._jump_first,
-                   last=self._jump_last)
+        return Map(first=_jump_first, last=_jump_last)
 
     @property
     def _lang_jumps(self):
-        return Map(python=self._jump_last)
+        return Map(python=_jump_last)
 
     @property
     def lines(self):
@@ -195,12 +216,10 @@ class OutputMachineTransitions(MyoTransitions):
         def set_cursor(a):
             x, y = a if isinstance(a, tuple) else (a, 1)
             return Task.delay(lambda: self.vim.window.set_cursor(x + 1, y))
-        special, custom = self.result.first_error.split_type(SpecialCallback)
-        special_cb = special / _.name // self._special_jumps.get
         jump = self.vim.vars.pb('jump_to_error') | True
         next_step = Jump() if jump else Nop()
         return (
-            (custom + special_cb)
+            self.result.first_error
             .find_map(__(self.lines))
             .map(set_cursor)
             .map(__.replace(Just(next_step)))
@@ -224,26 +243,6 @@ class OutputMachineTransitions(MyoTransitions):
         post = Task.delay(self.vim.cmd, 'normal! zvzz')
         return (open_file & set_line).map2(add) / (_ + post) / UnitTask
 
-    @property
-    def _jump_default(self):
-        return (self.result.langs.find_map(self._lang_jumps.get) |
-                (lambda: self._jump_first))
-
-    def _location_index(self, lines):
-        return (
-            lines
-            .index_where(__.entry.exists(L(isinstance)(_, Location)))
-        )
-
-    def _jump_first(self, result):
-        return self._location_index(self.lines)
-
-    def _jump_last(self, result):
-        return (
-            self._location_index(self.lines.reversed) /
-            (self.lines.length - _ - 1)
-        )
-
     def _open_file(self, path):
         def split():
             # TODO
@@ -253,7 +252,7 @@ class OutputMachineTransitions(MyoTransitions):
         else:
             win = (
                 self.vim.windows.find(__.buffer.modifiable.contains(True))
-                .or_else(split)
+                .o(split)
                 .task('could not get a window') /
                 __.focus()
             )
