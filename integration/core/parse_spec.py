@@ -63,7 +63,7 @@ class BasicParseSpec(MyoIntegrationSpec, ParseHelpers):
 
     @main_looped
     def native(self):
-        cmd = Command(name='a', line='a', parser=Just('compiler'))
+        cmd = Command(name='a', line='a', parser=Just('s:compiler'))
         fix = fixture_path('parse', 'err1')
         output = List.wrap(fix.read_text().splitlines())
         errorformat = List(

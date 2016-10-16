@@ -63,11 +63,6 @@ class CoreTransitions(MyoTransitions):
     def _special_parsers(self):
         return Map(compiler=VimCompiler)
 
-    def _special_error_handler(self, spec: str):
-        return (Right(Right(VimCompiler(self.vim)))
-                if spec == 'compiler' else
-                Left('no special error handler found'))
-
     def _langs_parsing(self, langs):
         return langs.empty.no.either('command has no langs',
                                      Parsing(self.vim, langs))

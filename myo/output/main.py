@@ -1,13 +1,14 @@
 import abc
 from typing import Callable
 
-from amino import List, Path, Either, __, L, _, Just, Maybe, Map
+from amino import List, Path, Either, __, L, _, Just, Maybe, Map, Empty
 from amino.task import Task
 from amino.lazy import lazy
 
 from ribosome import NvimFacade
 from ribosome.machine.state import RunScratchMachine, IfUnhandled
 from ribosome.machine import Nop, Message
+from ribosome.util.callback import VimCallback
 
 from myo.logging import Logging
 from myo.output.data import ParseResult
@@ -45,10 +46,10 @@ class CustomOutputHandler(OutputHandler):
         return Task.just(IfUnhandled(msg, run).pub)
 
 
-class VimCompiler(OutputHandler):
+class VimCompiler(OutputHandler, VimCallback):
 
-    def __init__(self, vim: NvimFacade) -> None:
-        self.vim = vim
+    def __call__(self, data):
+        return Empty()
 
     def parse(self, output: List[str], errfile: Path):
         r = ParseResult(head=List('errorformat'))
