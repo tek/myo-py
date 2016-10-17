@@ -2,13 +2,14 @@ from pathlib import Path
 
 import neovim
 
-from amino import List, L, _, I
+from amino import List, L, _, I, Map
 
 from ribosome import command, NvimStatePlugin, msg_command, json_msg_command
 from ribosome.machine.scratch import Mapping
 from ribosome.request import msg_function
 import ribosome.nvim.components
 from ribosome.machine.state import UpdateRecord
+from ribosome.unite import mk_unite_candidates, mk_unite_action
 
 from myo.plugins.core.main import StageI
 from myo.main import Myo
@@ -24,6 +25,11 @@ from myo.plugins.tmux.message import (TmuxCreatePane, TmuxCreateSession,
                                       TmuxFocus, TmuxOpenOrToggle, TmuxKill)
 from myo.plugins.tmux import TmuxOpen
 from myo.plugins.core.message import Parse, Resized
+from myo.plugins.unite.message import UniteHistory
+from myo.plugins.unite.main import UniteNames
+
+unite_candidates = mk_unite_candidates(UniteNames)
+unite_action = mk_unite_action(UniteNames)
 
 
 class MyoNvimPlugin(NvimStatePlugin, Logging):
@@ -208,5 +214,17 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
     @msg_function(Mapping)
     def myo_mapping(self):
         pass
+
+    @msg_command(UniteHistory)
+    def myo_unite_history(self):
+        pass
+
+    @unite_candidates('history')
+    def pro_unite_history(self, args):
+        return self.myo.data.commands.history
+
+    @unite_action('run')
+    def myo_unite_run(self, ident):
+        return Run(ident, options=Map())
 
 __all__ = ('MyoNvimPlugin',)
