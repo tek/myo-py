@@ -63,11 +63,15 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
     def myo_start(self):
         config_path = self.vim.vars.ppath('config_path')\
             .get_or_else(Path('/dev/null'))
-        plugins = self.vim.vars.pl('plugins') | List()
+        plugins = self.vim.vars.pl('plugins') | self._default_plugins
         self.myo = Myo(self.vim.proxy, Path(config_path), plugins)
         self.myo.start()
         self.myo.wait_for_running()
         self.myo.send(StageI())
+
+    @property
+    def _default_plugins(self):
+        return List('command', 'tmux', 'unite')
 
     @command()
     def myo_post_startup(self):
