@@ -103,7 +103,7 @@ class CommandTransitions(MyoTransitions):
     @handle(Run)
     def run(self):
         return (
-            self.data.command(self.msg.command) /
+            self._command_fatal(self.msg.command) /
             L(Dispatch)(_, self.msg.options)
         )
 
@@ -126,8 +126,8 @@ class CommandTransitions(MyoTransitions):
         # double Maybe is necessary - the outer indicates success, the
         # inner is the type of the ShellCommand field
         return (
-            self.data.shell(self.msg.shell) /
-            _.uuid /
+            self._shell_fatal(self.msg.shell) /
+            _.ident /
             Maybe /
             (lambda a: ShellCommand(name='shell_run', shell=a, line=line,
                                     transient=True)) /
@@ -136,7 +136,7 @@ class CommandTransitions(MyoTransitions):
 
     @handle(RunLatest)
     def run_latest(self):
-        return self.data.commands.latest_command / Dispatch
+        return self._latest_command_fatal / Dispatch
 
     @handle(Dispatch)
     def dispatch(self):
@@ -157,8 +157,8 @@ class CommandTransitions(MyoTransitions):
     def parse(self):
         cmd = (
             self.msg.options.get('command')
-            .cata(self.data.command, lambda: self.data.commands.latest_command)
-            .to_either('invalid command name or empty history')
+            .cata(self.data.command,
+                  lambda: self.data.commands._latest_command_fatal)
         )
         def find_log(c):
             return ((self.data.command(c.target_id) // _.log_path)
@@ -196,6 +196,16 @@ class CommandTransitions(MyoTransitions):
     def show(self):
         msg = self.data.commands.commands / _.desc
         self.log.info(msg.join_lines)
+
+    def _command_fatal(self, ident):
+        return self.data.command(self.msg.command).lmap(Fatal)
+
+    def _shell_fatal(self, ident):
+        return self.data.shell(ident).lmap(Fatal)
+
+    @property
+    def _latest_command_fatal(self):
+        return self.data.commands.latest_command.lmap(Fatal)
 
     def _assemble(self, ctor):
         return parse_callback_spec(ctor) // __(self.vim)

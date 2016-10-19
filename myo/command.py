@@ -158,6 +158,10 @@ def _history_cmp_transient(cmd):
 
 
 class Commands(Record):
+    no_such_command_error = 'no such command: {}'
+    no_such_shell_error = 'so such shell: {}'
+    no_latest_command_error = 'history is empty'
+
     commands = list_field()
     history = list_field()
     transient_cmd = maybe_field(Command)
@@ -169,7 +173,7 @@ class Commands(Record):
         return (
             self.commands.find(__.has_ident(ident))
             .o(lambda: self.history.find(__.has_ident(ident)))
-            .to_either('no command with ident {}'.format(ident))
+            .to_either(self.no_such_command_error.format(ident))
         )
 
     @property
@@ -178,7 +182,8 @@ class Commands(Record):
 
     def shell(self, ident):
         pred = lambda a: isinstance(a, Shell) and a.has_ident(ident)
-        return self.commands.find(pred)
+        return (self.commands.find(pred)
+                .to_either(self.no_such_shell_error.format(ident)))
 
     def add_history(self, cmd):
         new = self.history.cons(cmd).distinct_by(_history_cmp)
@@ -189,7 +194,7 @@ class Commands(Record):
 
     @property
     def latest_command(self):
-        return self.history.head
+        return self.history.head.to_either(self.no_latest_command_error)
 
 __all__ = ('Commands', 'Command', 'VimCommand', 'ShellCommand', 'Shell',
            'TransientCommand')

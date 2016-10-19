@@ -4,7 +4,7 @@ from amino.lazy import lazy
 
 from ribosome.record import encode_json, decode_json
 
-from myo.command import ShellCommand
+from myo.command import ShellCommand, Commands
 
 from integration._support.command import CmdSpec
 
@@ -35,6 +35,20 @@ class DispatchSpec(_DispatchBase):
         later(lambda: self._last().should.be.empty)
         self.vim.cmd_sync('MyoRunLatest')
         later(lambda: self._last().should.contain(name))
+
+    def nonexistent(self):
+        n = 'invalid'
+        self._run_command(n)
+        self._log_contains(Commands.no_such_command_error.format(n))
+
+    def nonexistent_shell(self):
+        n = 'invalid'
+        self.json_cmd_sync('MyoRunInShell {}'.format(n))
+        self._log_contains(Commands.no_such_shell_error.format(n))
+
+    def no_history(self):
+        self.json_cmd_sync('MyoRunLatest')
+        self._log_contains(Commands.no_latest_command_error)
 
 
 class HistorySpec(_DispatchBase):
