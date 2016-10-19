@@ -11,7 +11,7 @@ from myo.ui.tmux.session import Session, VimSession
 from myo.ui.tmux.window import VimWindow, Window
 from myo.ui.tmux.layout import VimLayout, Layout
 from myo.ui.tmux.pane import VimPane
-from myo.ui.tmux.util import Ident
+from myo.util import Ident
 
 _is_vim_session = lambda a: isinstance(a, VimSession)
 _is_vim_window = lambda a: isinstance(a, VimWindow)

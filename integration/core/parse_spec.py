@@ -8,7 +8,7 @@ from amino.lazy import lazy
 from ribosome.test.integration import main_looped
 from ribosome.machine.scratch import Mapping
 
-from myo.command import Command
+from myo.command import ShellCommand
 from myo.plugins.core.message import ParseOutput
 from myo.output.machine import error_filtered_result_empty
 from myo.plugins.core.main import error_no_output_events
@@ -63,7 +63,7 @@ class BasicParseSpec(MyoIntegrationSpec, ParseHelpers):
 
     @main_looped
     def native(self):
-        cmd = Command(name='a', line='a', parser=Just('s:compiler'))
+        cmd = ShellCommand(name='a', line='a', parser=Just('s:compiler'))
         fix = fixture_path('parse', 'err1')
         output = List.wrap(fix.read_text().splitlines())
         errorformat = List(
@@ -82,7 +82,7 @@ class BasicParseSpec(MyoIntegrationSpec, ParseHelpers):
     @main_looped
     def twice(self):
         self.vim.vars.set_p('jump_to_error', False)
-        cmd = Command(name='a', line='a', langs=List('python'))
+        cmd = ShellCommand(name='a', line='a', langs=List('python'))
         msg = ParseOutput(cmd, self._mk_trace, None, Map())
         self.plugin.myo_start()
         self.root.send_sync(msg)
@@ -95,7 +95,7 @@ class BasicParseSpec(MyoIntegrationSpec, ParseHelpers):
 
     @main_looped
     def empty(self):
-        cmd = Command(name='a', line='a', langs=List('python'))
+        cmd = ShellCommand(name='a', line='a', langs=List('python'))
         msg = ParseOutput(cmd, List(), None, Map())
         self.plugin.myo_start()
         self.root.send_sync(msg)
@@ -122,7 +122,7 @@ class PythonParseSpec(ParseSpecBase):
                             'py:myo.output.reifier.base.LiteralReifier')
 
     def _parse(self, output, parse_opt=Map()):
-        cmd = Command(name='a', line='a', langs=List('python'))
+        cmd = ShellCommand(name='a', line='a', langs=List('python'))
         msg = ParseOutput(cmd, output, None, parse_opt)
         self.root.send_sync(msg)
         return output
@@ -283,7 +283,7 @@ class SbtParseSpec(ParseSpecBase):
         return List.gen(count, lambda: self._mk_scala_error)
 
     def _run(self, output):
-        cmd = Command(name='a', line='a', langs=List('sbt'))
+        cmd = ShellCommand(name='a', line='a', langs=List('sbt'))
         msg = ParseOutput(cmd, output, None, Map())
         self.plugin.myo_start()
         self.root.send_sync(msg)

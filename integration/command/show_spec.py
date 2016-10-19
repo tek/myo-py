@@ -21,8 +21,7 @@ class ShowSpec(CmdSpec):
         )
         self.json_cmd_sync('MyoShell {}'.format(shell), line='python',
                            langs=langs)
-        self.json_cmd_sync('MyoShellCommand test', line='print(1)',
-                           shell=shell, parser=parser)
+        self._create_command('test', 'print(1)', shell=shell, parser=parser)
         self.vim.cmd_sync('MyoCommandShow')
         check = lambda: self._log_out.should.equal(target)
         later(check)

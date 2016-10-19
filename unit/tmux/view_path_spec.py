@@ -43,7 +43,7 @@ class ViewPathSpec(UnitSpec):
         mod = lambda p: ppm_id(p.map_view(__.set(name=self.n2)))
         ppm = PanePathMod(pred=__.has_ident(self.n1)) / mod
         t = ppm.run(self.state)
-        s = t.attempt().join | None
+        s = t.attempt.join | None
         n = s.sessions[0].windows[0].root.layouts.head // _.panes.head / _.name
         n.should.contain(self.n2)
 

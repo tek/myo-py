@@ -3,11 +3,14 @@ from collections import namedtuple
 from ribosome.machine import may_handle, handle
 from ribosome.machine.transition import Fatal
 from ribosome.util.callback import parse_callback_spec
+from ribosome.machine.base import UnitTask
+from ribosome.record import decode_json, encode_json
 
 from myo.state import MyoComponent, MyoTransitions
 
-from amino import L, _, List, Try, __, Maybe, Map, Right, I
-from myo.command import Command, VimCommand, ShellCommand, Shell
+from amino import L, _, List, Try, __, Maybe, Map, I, Right, Task
+from myo.command import (Command, VimCommand, ShellCommand, Shell,
+                         TransientCommand)
 from myo.util import amend_options
 from myo.plugins.core.message import Parse, ParseOutput, StageI
 from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
@@ -58,22 +61,18 @@ class CommandTransitions(MyoTransitions):
     @handle(LoadHistory)
     def load_history(self):
         return (
-            self.vim.vars.s(self._history_var) /
-            __.split(',') /
-            List.wrap /
-            (lambda a: self.data.commands.set(history=a)) /
+            self.vim.vars.s(self._history_var) //
+            L(decode_json)(_).to_either(Fatal('failed to load history')) /
+            self.data.commands.setter.history /
             self.data.setter.commands
         )
 
     @may_handle(StoreHistory)
     def store_history(self):
-        names = (
-            self.data.commands.history /
-            self.data.command //
-            _.to_maybe /
-            _.name
+        return UnitTask(
+            Task.delay(encode_json, self.data.commands.history).join_either /
+            L(self).vim.vars.set(self._history_var, _)
         )
-        self.vim.vars.set(self._history_var, names.mk_string(','))
 
     @handle(AddCommand)
     def add_command(self):
@@ -137,10 +136,7 @@ class CommandTransitions(MyoTransitions):
 
     @handle(RunLatest)
     def run_latest(self):
-        return (
-            self.data.commands.latest_command /
-            Dispatch
-        )
+        return self.data.commands.latest_command / Dispatch
 
     @handle(Dispatch)
     def dispatch(self):
@@ -148,14 +144,13 @@ class CommandTransitions(MyoTransitions):
         self.vim.vars.set_p('last_command', dict(name=cmd.name))
         self.vim.pautocmd('RunCommand')
         return (
-            self.data.dispatch_message(cmd, self.msg.options) /
-            _.pub /
-            (lambda a: (a, CommandExecuted(cmd)))
+            (self.data.dispatch_message(cmd, self.msg.options) / _.pub) &
+            Right(CommandExecuted(cmd))
         )
 
     @may_handle(CommandExecuted)
     def command_executed(self):
-        new = self.data.commands.add_history(self.msg.command.uuid)
+        new = self.data.commands.add_history(self.msg.command)
         return self.data.set(commands=new), StoreHistory()
 
     @handle(Parse)
@@ -166,17 +161,14 @@ class CommandTransitions(MyoTransitions):
             .to_either('invalid command name or empty history')
         )
         def find_log(c):
-            return (
-                (c.shell // self.data.shell | c)
-                .log_path.to_either('{} has no log'.format(c))
-            )
+            return ((self.data.command(c.target_id) // _.log_path)
+                    .to_either('{} has no log'.format(c)))
         log_path = cmd // find_log
         def parse(c, l):
             self.log.debug('parsing {} from {}'.format(c, l))
             return (
                 Try(l.read_text) /
-                __.splitlines() /
-                List.wrap /
+                List.lines /
                 L(ParseOutput)(c, _, l, self.msg.options) /
                 _.pub
             )
@@ -190,7 +182,7 @@ class CommandTransitions(MyoTransitions):
             .to_either('no test ctor specified') //
             self._assemble //
             L(self._run_test_line)(opt - 'ctor', _)
-        ).lmap(Fatal)
+        ).to_either('failed to setup test line').lmap(Fatal)
 
     @handle(RunVimTest)
     def run_vim_test(self):
@@ -214,17 +206,15 @@ class CommandTransitions(MyoTransitions):
         shell = self.vim.buffer.pvar_or_global('test_shell')
         target = self.vim.buffer.pvar_or_global('test_target')
         opt = amend_options(options, 'shell', shell)
-        opt2 = amend_options(opt, 'target', target)
+        opt2 = amend_options(opt, 'target', target) + ('langs', langs)
         self.vim.vars.set(self._last_test_line_var, line)
         shell / L(self.vim.vars.set)('Myo_last_test_shell', _)
-        def dispatch(data):
-            return Right(data) & (data.command(self._test_cmd_name) /
-                                  L(Dispatch)(_, opt2))
         return (
-            self.data.command_lens(self._test_cmd_name)
+            self.data.command(self._test_cmd_name)
             .to_either('no test command') /
-            __.modify(__.set(line=line, langs=langs)) //
-            dispatch
+            (lambda a: TransientCommand(
+                prefix='test_line', command=a, line=line, langs=langs)) /
+            L(Dispatch)(_, opt2)
         )
 
 

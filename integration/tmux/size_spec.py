@@ -191,17 +191,15 @@ class MinimizeSpec(TmuxIntegrationSpec):
     def open_or_toggle_layout(self):
         fix = 10
         mini = 5
-        cmd = lambda: self.json_cmd_sync('MyoTmuxOpenOrToggle lay2')
-        self.json_cmd_sync('MyoTmuxCreateLayout lay', parent='root')
-        self.json_cmd_sync('MyoTmuxCreateLayout lay2', parent='lay',
-                           fixed_size=fix, minimized_size=mini, weight=0)
-        self._create_pane('pan', parent='lay2')
-        self._create_pane('pan2', parent='lay', weight=1)
+        cmd = lambda: self.json_cmd_sync('MyoTmuxOpenOrToggle inner')
+        self._create_layout('outer')
+        self._create_layout('inner', 'outer', fixed_size=fix,
+                            minimized_size=mini, weight=0)
+        self._create_pane('in_inner', parent='inner')
+        self._create_pane('in_outer', parent='outer', weight=1, position=1)
         cmd()
-        self._wait(.1)
-        self._open_pane('pan2')
+        self._open_pane('in_outer')
         self._pane_count(3)
-        self._wait(2)
         self._height(1, fix)
         cmd()
         self._height(1, mini)

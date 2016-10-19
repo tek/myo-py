@@ -4,14 +4,14 @@ from ribosome.record import Record as RecordBase, uuid_field, field
 
 from amino import List
 
-from myo.ui.tmux.util import Ident
+from myo.util import Ident
 
 
 class Record(RecordBase):
     uuid = uuid_field()
 
     @property
-    def ident(self):
+    def ident(self) -> Ident:
         return self.uuid
 
 

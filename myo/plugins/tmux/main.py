@@ -19,23 +19,24 @@ from myo.plugins.tmux.message import (TmuxOpen, TmuxRunCommand, TmuxCreatePane,
                                       SetCommandLog, TmuxPack, TmuxPostOpen,
                                       TmuxFixFocus, TmuxMinimize, TmuxRestore,
                                       TmuxToggle, TmuxFocus, TmuxOpenOrToggle,
-                                      TmuxKill, UpdateVimWindow)
+                                      TmuxKill, UpdateVimWindow,
+                                      TmuxRunTransient)
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
 from myo.ui.tmux.session import Session, VimSession
 from myo.ui.tmux.server import Server, NativeServer
-from myo.util import parse_int
+from myo.util import parse_int, Ident
 from myo.ui.tmux.window import VimWindow
 from myo.plugins.core.message import AddDispatcher, Resized, Initialized
 from myo.plugins.tmux.dispatch import TmuxDispatcher
-from myo.ui.tmux.util import format_state, Ident
 from myo.ui.tmux.view_path import LayoutPathMod, PanePathMod, ViewPathMod
 from myo.ui.tmux.data import TmuxState
 from myo.plugins.command.message import SetShellTarget
 from myo.command import Command, Shell, default_signals
 from myo.plugins.tmux.watcher import Watcher, Terminated
 from myo.ui.tmux.facade.main import TmuxFacade
+from myo.ui.tmux.util import format_state
 
 
 invalid_pane_name = 'invalid pane name: {}'
@@ -227,6 +228,10 @@ class TmuxTransitions(MyoTransitions):
             (lambda a: Command(name='temp', line=a)) /
             L(self._run_in_shell)(_, self.msg.shell, opt)
         )
+
+    @may_handle(TmuxRunTransient)
+    def run_transient(self):
+        return TmuxRunCommand(self.msg.cmd.effective, options=self.msg.options)
 
     @may_handle(ViewPathMod)
     def view_path_mod(self):

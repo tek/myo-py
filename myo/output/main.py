@@ -27,6 +27,8 @@ class OutputHandler(Logging, metaclass=abc.ABCMeta):
         ...
 
 
+# TODO in `display`, return message like `DispalayCustomOutput` and move the
+# `IfUnhandled` part to the core machine, using transition priorities
 class CustomOutputHandler(OutputHandler):
 
     def __init__(self, vim: NvimFacade, handler: Callable[[str], ParseResult]

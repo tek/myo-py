@@ -5,6 +5,7 @@ TmuxRunShell = json_message('TmuxRunShell', 'shell')
 TmuxRunCommandInShell = message('TmuxRunCommandInShell', 'shell', 'command',
                                 'options')
 TmuxRunLineInShell = json_message('TmuxRunLineInShell', 'shell')
+TmuxRunTransient = json_message('TmuxRunTransient', 'cmd')
 TmuxCreateSession = json_message('TmuxCreateSession')
 TmuxSpawnSession = message('TmuxSpawnSession', 'id')
 TmuxCreateLayout = json_message('TmuxCreateLayout', 'name')
@@ -38,4 +39,5 @@ __all__ = ('TmuxRunCommand', 'TmuxOpen', 'TmuxCreatePane',
            'TmuxRunShell', 'StartWatcher', 'WatchCommand', 'QuitWatcher',
            'TmuxParse', 'SetCommandLog', 'TmuxPack', 'TmuxPostOpen',
            'TmuxFixFocus', 'TmuxMinimize', 'TmuxRestore', 'TmuxToggle',
-           'TmuxFocus', 'TmuxOpenOrToggle', 'TmuxKill', 'UpdateVimWindow')
+           'TmuxFocus', 'TmuxOpenOrToggle', 'TmuxKill', 'UpdateVimWindow',
+           'TmuxRunTransient')

@@ -19,7 +19,7 @@ class DispatchSpec(TmuxCmdSpec):
 
     def simple(self):
         target = 'cmd test'
-        self.json_cmd('MyoShellCommand test', line="echo '{}'".format(target))
+        self._create_command('test', "echo '{}'".format(target))
         self._open_pane('make')
         self.json_cmd('MyoRun test')
         self._output_contains(target)
@@ -41,7 +41,7 @@ class DispatchSpec(TmuxCmdSpec):
 
     def kill_shell_command(self):
         def create(line):
-            self.json_cmd('MyoShellCommand test', line=line, shell='py')
+            self._create_command('test', line, shell='py')
             self.json_cmd('MyoRun test')
         def pid():
             expr = '''data.pane("py") // (lambda a: a.pid) | -1'''
@@ -81,7 +81,7 @@ class DispatchSpec(TmuxCmdSpec):
             later(lambda: (self._panes.last / _.in_copy_mode)
                   .should.contain(v))
         target = 'cmd test'
-        self.json_cmd('MyoShellCommand test', line="echo '{}'".format(target))
+        self._create_command('test', "echo '{}'".format(target))
         self._open_pane('make')
         self._pane_count(2)
         self._panes.last / __.cmd('copy-mode')
@@ -92,8 +92,7 @@ class DispatchSpec(TmuxCmdSpec):
 
     def kill_process(self):
         pid = lambda: self._panes.last // _.command_pid | 0
-        self.json_cmd('MyoShellCommand test', line='tee', kill=True,
-                      signals=['int'])
+        self._create_command('test', 'tee', kill=True, signals=['int'])
         self.vim.cmd_sync('MyoRun test')
         pid()
         later(lambda: pid().should.be.greater_than(0))
@@ -105,7 +104,7 @@ class DispatchSpec(TmuxCmdSpec):
 
     def pane_kill(self):
         pid = lambda: self._panes.last // _.command_pid | 0
-        self.json_cmd('MyoShellCommand test', line='tee', signals=['int'])
+        self._create_command('test', 'tee', signals=['int'])
         self.json_cmd('MyoUpdate pane make', kill=True)
         self._open_pane('make')
         self._pane_count(2)
@@ -139,8 +138,7 @@ class DispatchSpec(TmuxCmdSpec):
             '''function {}()
             return '{}'
             endfunction'''.format(func, cmd))
-        self.json_cmd_sync('MyoShellCommand {}'.format(name), line=callback,
-                           eval=True)
+        self._create_command(name, callback, eval=True)
         self.json_cmd_sync('MyoRun {}'.format(name))
         self._output_contains(text)
 

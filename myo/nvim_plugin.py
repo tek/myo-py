@@ -27,6 +27,7 @@ from myo.plugins.tmux import TmuxOpen
 from myo.plugins.core.message import Parse, Resized
 from myo.plugins.unite.message import UniteHistory
 from myo.plugins.unite.main import UniteNames
+from myo.plugins.unite.format import unite_format
 
 unite_candidates = mk_unite_candidates(UniteNames)
 unite_action = mk_unite_action(UniteNames)
@@ -225,9 +226,9 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
 
     @unite_candidates('history')
     def pro_unite_history(self, args):
-        return self.myo.data.commands.history
+        return self.myo.data.commands.history / unite_format
 
-    @unite_action('run')
+    @unite_action('run', 'name')
     def myo_unite_run(self, ident):
         return Run(ident, options=Map())
 

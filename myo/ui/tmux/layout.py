@@ -2,7 +2,7 @@ from typing import Callable
 
 from myo.ui.tmux.view import View
 from myo.ui.tmux.pane import Pane
-from myo.ui.tmux.util import Ident
+from myo.util import Ident
 
 from lenses import lens
 

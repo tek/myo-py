@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from amino import List, Right
+from amino.test import later
 
 from ribosome.test import PluginIntegrationSpec
 from ribosome.test.integration import ExternalIntegrationSpec
@@ -48,7 +49,7 @@ class MyoPluginIntegrationSpec(IntegrationCommon, PluginIntegrationSpec, Spec,
     def _pre_start(self):
         super()._pre_start()
         self.vim.cmd_sync('MyoStart')
-        self._wait_for(lambda: self.vim.vars.p('started').is_just)
+        later(lambda: self.vim.vars.p('started').is_just)
         self.vim.cmd('MyoPostStartup')
 
 __all__ = ('MyoIntegrationSpec', 'MyoPluginIntegrationSpec')

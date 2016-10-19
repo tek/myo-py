@@ -1,12 +1,13 @@
 import abc
+from functools import singledispatch  # type: ignore
 
-from amino import Path, __, Just, List, L, Maybe, _
+from amino import Path, __, Just, List, L, Maybe, _, Map
 
 from ribosome.record import list_field, field, maybe_field, bool_field
 from ribosome.util.callback import parse_callback_spec
 
 from myo.record import Record, Named
-from myo.ui.tmux.util import ident_field, Ident
+from myo.util import ident_field, Ident
 from myo.logging import Logging
 
 
@@ -36,7 +37,6 @@ class EvalLine(Line):
 
 
 class Command(Named):
-    line = field(str)
     log_path = maybe_field(Path)
     parser = maybe_field(str)
     transient = bool_field()
@@ -44,6 +44,14 @@ class Command(Named):
     kill = bool_field()
     signals = list_field(str, initial=default_signals)
     eval = bool_field()
+
+    @property
+    def _str_extra(self):
+        return super()._str_extra.cat_m(self.langs.empty.no.m(self.langs))
+
+    @property
+    def _str_extra_named(self):
+        return Map(eval=self.eval)
 
     @property
     def desc(self):
@@ -74,9 +82,8 @@ class Command(Named):
         return 'C'
 
     @property
-    def effective_line(self):
-        tpe = EvalLine if self.eval else StrictLine
-        return tpe(self.line)
+    def target_id(self) -> Ident:
+        return self.ident
 
 
 class VimCommand(Command):
@@ -87,6 +94,7 @@ class VimCommand(Command):
 
 
 class ShellCommand(Command):
+    line = field(str)
     shell = ident_field()
 
     @property
@@ -97,6 +105,15 @@ class ShellCommand(Command):
     def _info_fields(self):
         return super()._info_fields + List('shell')
 
+    @property
+    def effective_line(self):
+        tpe = EvalLine if self.eval else StrictLine
+        return tpe(self.line)
+
+    @property
+    def target_id(self):
+        return self.shell | self.ident
+
 
 class Shell(ShellCommand):
     target = ident_field()
@@ -104,6 +121,40 @@ class Shell(ShellCommand):
     @property
     def _type_desc(self):
         return 'S'
+
+
+class TransientCommand(Command):
+    command = field(Command)
+    line = field(str)
+
+    def __new__(cls, prefix='transient', transient=None, command=None,
+                name=None, **kw):
+        name = name or '{}_{}_{}'.format(prefix, command.name,
+                                         List.random_string(5))
+        return super().__new__(cls, name=name, transient=True, command=command,
+                               **kw)
+
+    @property
+    def _str_extra(self):
+        return super()._str_extra.cat(self.command)
+
+    @property
+    def effective(self):
+        return self.command.set(name=self.name, line=self.line)
+
+    @property
+    def target_id(self):
+        return self.command.target_id
+
+
+@singledispatch
+def _history_cmp(cmd):
+    return cmd.name
+
+
+@_history_cmp.register(TransientCommand)
+def _history_cmp_transient(cmd):
+    return '{}|{}'.format(cmd.command.name, cmd.line)
 
 
 class Commands(Record):
@@ -117,32 +168,28 @@ class Commands(Record):
     def __getitem__(self, ident: Ident):
         return (
             self.commands.find(__.has_ident(ident))
+            .o(lambda: self.history.find(__.has_ident(ident)))
             .to_either('no command with ident {}'.format(ident))
         )
 
-    def __str__(self):
-        return '{}({})'.format(
-            self.__class__.__name__,
-            ','.join(map(repr, self.commands))
-        )
+    @property
+    def _str_extra(self):
+        return super()._str_extra.cat(self.commands)
 
     def shell(self, ident):
         pred = lambda a: isinstance(a, Shell) and a.has_ident(ident)
         return self.commands.find(pred)
 
-    def add_history(self, uuid):
-        return self.append1.history(uuid)
+    def add_history(self, cmd):
+        new = self.history.cons(cmd).distinct_by(_history_cmp)
+        return self.set(history=new)
 
     def transient_command(self, cmd):
         return self.set(transient_cmd=Just(cmd))
 
     @property
     def latest_command(self):
-        def fetch(ident):
-            return (
-                self.transient_cmd.filter(__.has_ident(ident))
-                .or_else(lambda: self[ident])
-            )
-        return self.history.head // fetch
+        return self.history.head
 
-__all__ = ('Commands', 'Command')
+__all__ = ('Commands', 'Command', 'VimCommand', 'ShellCommand', 'Shell',
+           'TransientCommand')

@@ -9,7 +9,7 @@ from ribosome.data import field, Data
 
 from myo.command import Commands, Command
 from myo.dispatch import Dispatchers, Dispatcher
-from myo.ui.tmux.util import Ident
+from myo.util import Ident
 
 
 class Env(Data):

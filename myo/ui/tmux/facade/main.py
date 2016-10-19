@@ -7,7 +7,7 @@ from myo.ui.tmux.data import TmuxState
 from myo.ui.tmux.view import View
 from myo.ui.tmux.pane import Pane
 from myo.ui.tmux.layout import Layout
-from myo.ui.tmux.util import Ident
+from myo.util import Ident
 from myo.ui.tmux.server import Server, NativeServer
 from myo.ui.tmux.view_path import (ViewLoc, ViewPath, PanePathMod,
                                    LayoutPathMod, ViewPathMod)
@@ -134,7 +134,7 @@ class TmuxFacade(Logging):
 
     def pack_window(self, session: Session, window: Window
                     ) -> Task[Either[str, Window]]:
-        return self.window_task(session, window) // _.pack
+        return self.window_task(session, window) // __.pack()
 
     def open_pane(self, path: ViewPath) -> Task[Either[str, ViewPath]]:
         return self.path_window_task(path) // __.open_pane(path)

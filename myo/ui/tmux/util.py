@@ -1,6 +1,5 @@
 import re
 from uuid import UUID
-from typing import Union
 
 from amino import List, Maybe, Empty, L, _
 
@@ -47,17 +46,5 @@ def format_window(win):
 def format_state(state) -> List[str]:
     return state.all_windows // format_window
 
-Ident = Union[str, UUID]
-
-
-def contains_pane_ident(a: Maybe):
-    tpes = List(UUID, str)
-    bad = lambda a: not tpes.exists(L(isinstance)(a, _))
-    err = 'must be Maybe[Ident]'
-    return not a.exists(bad), err
-
-
-def ident_field():
-    return field(Maybe, initial=Empty(), invariant=contains_pane_ident)
-
-__all__ = ('parse_window_id', 'parse_pane_id')
+__all__ = ('parse_window_id', 'parse_pane_id', 'format_state', 'format_window',
+           'indent', 'format_layout', 'format_pane', 'parse_session_id')

@@ -1,5 +1,5 @@
 import amino
-from amino import __, F, Right, List, Left, Task, Map
+from amino import __, F, List, Left, Task, Map
 
 from ribosome.machine import may_handle, Error, RunTask, handle
 from ribosome.machine.base import io

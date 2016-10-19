@@ -1,7 +1,7 @@
 from functools import singledispatch  # type: ignore
 from operator import ne, sub
 
-from amino import Either, Task, L, _, Right, __, List, Boolean, Just, Empty
+from amino import Either, Task, L, _, Right, __, List, Boolean, Empty
 
 from myo.logging import Logging
 from myo.ui.tmux.window import Window
@@ -137,8 +137,8 @@ class WindowPacker(Logging):
         return views // self._ref_adapter
 
     def _ref_adapter(self, view: View):
-        ref = Just(view) if isinstance(view, Pane) else self._ref_pane(view)
-        return ref // self.window.native_pane
+        return (self.window.native_pane(view) if isinstance(view, Pane) else
+                self.window.native_ref_pane(view))
 
 
 def _pos(a):

@@ -50,16 +50,19 @@ class WindowFacade(Logging):
         Uses the first open pane available.
         Failure if no panes are open.
         '''
-        return (Task.call(self._ref_pane, layout) //
+        return (Task.call(self.ref_pane, layout) //
                 L(Task.from_maybe)(_, "no ref pane for {}".format(layout)))
 
-    def _ref_pane(self, layout: Layout) -> Maybe[Pane]:
+    def ref_pane(self, layout: Layout) -> Maybe[Pane]:
         return (
             self._opened_panes(layout.panes).sort_by(_.position | 0).last
-            .o(layout.layouts.find_map(self._ref_pane))
+            .o(layout.layouts.find_map(self.ref_pane))
         )
 
     def native_ref_pane(self, layout: Layout):
+        return self.ref_pane(layout) // self.native_pane
+
+    def native_ref_pane_task(self, layout: Layout):
         return self.ref_pane_fatal(layout) // self.native_pane_task_fatal
 
     def native_pane(self, pane: Pane):
@@ -104,7 +107,7 @@ class WindowFacade(Logging):
 
     def _split_pane(self, layout, pane) -> Task[Pane]:
         return (
-            self.native_ref_pane(layout) /
+            self.native_ref_pane_task(layout) /
             __.split(layout.horizontal) /
             PaneAdapter /
             pane.open
@@ -113,7 +116,6 @@ class WindowFacade(Logging):
     def pack_path(self, path: ViewPath):
         return self.pack / __.replace(path)
 
-    @property
     def pack(self):
         from myo.ui.tmux.pack import WindowPacker
         return WindowPacker(self).run
