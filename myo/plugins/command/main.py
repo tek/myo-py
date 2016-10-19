@@ -107,13 +107,11 @@ class CommandTransitions(MyoTransitions):
             L(Dispatch)(_, self.msg.options)
         )
 
-    @handle(RunLine)
+    @may_handle(RunLine)
     def run_line(self):
-        return self.msg.args.detach_head.map2(
-            lambda target, line:
-            Dispatch(ShellCommand(name='run_line', line=line.mk_string(' ')),
-                     Map(target=target))
-        )
+        return Dispatch(ShellCommand(name='run_line',
+                                     line=self.msg.args.join_tokens),
+                        Map(target=self.msg.target))
 
     @handle(ShellRun)
     def run_in_shell(self):
@@ -157,8 +155,7 @@ class CommandTransitions(MyoTransitions):
     def parse(self):
         cmd = (
             self.msg.options.get('command')
-            .cata(self.data.command,
-                  lambda: self.data.commands._latest_command_fatal)
+            .cata(self.data.command, lambda: self._latest_command_fatal)
         )
         def find_log(c):
             return ((self.data.command(c.target_id) // _.log_path)

@@ -1,7 +1,7 @@
 from ribosome.machine import message, json_message
 
 Run = json_message('Run', 'command')
-RunLine = message('RunLine', varargs='args')
+RunLine = message('RunLine', 'target', varargs='args')
 ShellRun = json_message('ShellRun', 'shell')
 RunLatest = json_message('RunLatest')
 RunTest = json_message('RunTest')

@@ -30,13 +30,14 @@ class DispatchSpec(TmuxCmdSpec):
         target = s.format(i)
         line = 'print(\'{}\'.format(\'{}\'))'.format(s, i)
         self._py_shell()
+        self._wait(.1)
         create(line)
         self._output_contains(target)
 
     def run_in_shell(self):
         def create(line):
-            self.json_cmd('MyoRun py')
-            self.json_cmd('MyoRunInShell py', line=line)
+            self.json_cmd_sync('MyoRun py')
+            self.json_cmd_sync('MyoRunInShell py', line=line)
         self._shell(create)
 
     def kill_shell_command(self):
@@ -118,7 +119,7 @@ class DispatchSpec(TmuxCmdSpec):
         later(lambda: pid().should_not.equal(pid1))
 
     def manual_kill(self):
-        self.vim.cmd('MyoRunLine make tail')
+        self.vim.cmd_sync('MyoRunLine make tail')
         later(lambda: self._output.exists(lambda a: 'tail' in a).should.be.ok)
         self._cmd_pid(1).should.be.greater_than(0)
         self.vim.cmd('MyoTmuxKill make')

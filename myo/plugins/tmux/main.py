@@ -202,7 +202,7 @@ class TmuxTransitions(MyoTransitions):
         command = self.msg.command
         options = self.msg.options
         shell = options.get('shell').or_else(command.shell) // self.data.shell
-        return shell.cata(
+        return shell.to_maybe.cata(
             L(self._run_in_shell)(command, _, options),
             L(self._run_command)(command, options)
         )
