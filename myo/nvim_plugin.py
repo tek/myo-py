@@ -10,6 +10,7 @@ from ribosome.request import msg_function
 import ribosome.nvim.components
 from ribosome.machine.state import UpdateRecord
 from ribosome.unite import mk_unite_candidates, mk_unite_action
+from ribosome.unite.plugin import unite_plugin
 
 from myo.plugins.core.main import StageI
 from myo.main import Myo
@@ -33,6 +34,7 @@ unite_candidates = mk_unite_candidates(UniteNames)
 unite_action = mk_unite_action(UniteNames)
 
 
+@unite_plugin('myo', UniteNames)
 class MyoNvimPlugin(NvimStatePlugin, Logging):
 
     def __init__(self, vim: neovim.Nvim) -> None:
@@ -225,7 +227,7 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
         pass
 
     @unite_candidates('history')
-    def pro_unite_history(self, args):
+    def myo_unite_history_candidates(self, args):
         return self.myo.data.commands.history / unite_format
 
     @unite_action('run', 'name')

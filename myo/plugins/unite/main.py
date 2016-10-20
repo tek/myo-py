@@ -1,13 +1,18 @@
-from ribosome.machine import may_handle
-from ribosome.unite import UniteMessage, UniteSource, UniteKind
+from ribosome.machine import may_handle, handle
+from ribosome.unite import UniteKind
+from ribosome.machine.base import UnitTask
+from ribosome.unite.data import UniteSyntax
+from ribosome.unite.machine import UniteMachine, UniteTransitions
 
-from amino import Map, List
+from amino import Map, List, _, __
+from amino.lazy import lazy
 
 from myo.plugins.unite.message import UniteHistory
 from myo.state import MyoTransitions, MyoComponent
+from myo.plugins.unite.data import UniteNames, HistorySource
 
 
-class UniteTransitions(MyoTransitions):
+class MyoUniteTransitions(UniteTransitions, MyoTransitions):
 
     def unite_cmd(self, cmd):
         args = ' '.join(self.msg.unite_args)
@@ -18,34 +23,35 @@ class UniteTransitions(MyoTransitions):
         self.unite_cmd(UniteNames.history)
 
 
-class Plugin(MyoComponent):
-    Transitions = UniteTransitions
+class Plugin(UniteMachine, MyoComponent):
+    Transitions = MyoUniteTransitions
 
     def __init__(self, *a, **kw):
-        super().__init__(*a, **kw)
-        self._unite_ready = False
+        UniteMachine.__init__(self)
+        MyoComponent.__init__(self, *a, **kw)
 
-    def prepare(self, msg):
-        if not self._unite_ready and isinstance(msg, UniteMessage):
-            self._setup_unite()
+    @lazy
+    def history_source(self):
+        return HistorySource()
 
-    def _setup_unite(self):
-        history = UniteSource(UniteNames.history,
-                              UniteNames.history_candidates,
-                              UniteNames.history)
-        run_action = Map(name='run', handler=UniteNames.run,
-                         desc='run command')
-        run = UniteKind(UniteNames.history, List(run_action))
-        history.define(self.vim)
-        run.define(self.vim)
-        self._unite_ready = True
+    @property
+    def sources(self):
+        return List(self.history_source)
 
+    @lazy
+    def run_action(self):
+        return Map(name='run', handler=UniteNames.run, desc='run command')
 
-class UniteNames():
-    history_candidates = '_myo_unite_history'
+    @property
+    def actions(self):
+        return List(self.run_action)
 
-    run = '_myo_unite_run_project'
+    @lazy
+    def run_kind(self):
+        return UniteKind(UniteNames.history, List(self.run_action))
 
-    history = 'myo_history'
+    @property
+    def kinds(self):
+        return List(self.run_kind)
 
-__all__ = ('Plugin', 'UniteNames')
+__all__ = ('Plugin',)
