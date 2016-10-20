@@ -1,6 +1,7 @@
-from myo.dispatch import Dispatcher
+from amino import Empty
 
-from ribosome.machine import Nop
+from myo.dispatch import Dispatcher
+from myo.plugins.command.message import CommandExecuted
 
 
 class DummyDispatcher(Dispatcher):
@@ -9,6 +10,6 @@ class DummyDispatcher(Dispatcher):
         return True
 
     def message(self, cmd, options):
-        return Nop()
+        return CommandExecuted(cmd, Empty())
 
 __all__ = ('DummyDispatcher',)

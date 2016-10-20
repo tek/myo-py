@@ -9,6 +9,7 @@ from ribosome.util.callback import parse_callback_spec
 from myo.record import Record, Named
 from myo.util import ident_field, Ident
 from myo.logging import Logging
+from myo.util.ident import Key
 
 
 default_signals = List('int', 'term', 'kill')
@@ -82,8 +83,20 @@ class Command(Named):
         return 'C'
 
     @property
-    def target_id(self) -> Ident:
-        return self.ident
+    def main_id(self) -> Ident:
+        return self.uuid
+
+    @property
+    def main_name(self):
+        return self.name
+
+    @property
+    def main_key(self):
+        return Key(uuid=self.main_id, name=self.main_name)
+
+    @property
+    def effective(self):
+        return self
 
 
 class VimCommand(Command):
@@ -109,10 +122,6 @@ class ShellCommand(Command):
     def effective_line(self):
         tpe = EvalLine if self.eval else StrictLine
         return tpe(self.line)
-
-    @property
-    def target_id(self):
-        return self.shell | self.ident
 
 
 class Shell(ShellCommand):
@@ -143,8 +152,12 @@ class TransientCommand(Command):
         return self.command.set(name=self.name, line=self.line)
 
     @property
-    def target_id(self):
-        return self.command.target_id
+    def main_id(self):
+        return self.command.main_id
+
+    @property
+    def main_name(self):
+        return self.command.name
 
 
 @singledispatch

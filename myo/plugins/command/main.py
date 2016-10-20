@@ -8,7 +8,7 @@ from ribosome.record import decode_json, encode_json
 
 from myo.state import MyoComponent, MyoTransitions
 
-from amino import L, _, List, Try, __, Maybe, Map, I, Right, Task
+from amino import L, _, List, Try, __, Maybe, Map, I, Task, Just
 from myo.command import (Command, VimCommand, ShellCommand, Shell,
                          TransientCommand)
 from myo.util import amend_options
@@ -141,26 +141,30 @@ class CommandTransitions(MyoTransitions):
         cmd = self.msg.command
         self.vim.vars.set_p('last_command', dict(name=cmd.name))
         self.vim.pautocmd('RunCommand')
-        return (
-            (self.data.dispatch_message(cmd, self.msg.options) / _.pub) &
-            Right(CommandExecuted(cmd))
-        )
+        return self.data.dispatch_message(cmd, self.msg.options) / _.pub
 
     @may_handle(CommandExecuted)
     def command_executed(self):
-        new = self.data.commands.add_history(self.msg.command)
-        return self.data.set(commands=new), StoreHistory()
+        cmd = self.msg.command
+        def set_log(path, cmd_lens):
+            def run(cmd):
+                self.log.debug('setting {} log to {}'.format(cmd.name, path))
+                return cmd.set(log_path=Just(path))
+            return cmd_lens.modify(run)
+        data = (
+            (self.msg.log_path.to_either('no log path') &
+             self.data.command_lens(cmd.main_key))
+            .map2(set_log) |
+            self.data
+        )
+        new = data.commands.add_history(cmd)
+        return data.set(commands=new), StoreHistory()
 
     @handle(Parse)
     def parse(self):
-        cmd = (
-            self.msg.options.get('command')
-            .cata(self.data.command, lambda: self._latest_command_fatal)
-        )
         def find_log(c):
-            return ((self.data.command(c.target_id) // _.log_path)
+            return ((self.data.command(c.main_key) // _.log_path)
                     .to_either('{} has no log'.format(c)))
-        log_path = cmd // find_log
         def parse(c, l):
             self.log.debug('parsing {} from {}'.format(c, l))
             return (
@@ -169,6 +173,11 @@ class CommandTransitions(MyoTransitions):
                 L(ParseOutput)(c, _, l, self.msg.options) /
                 _.pub
             )
+        cmd = (
+            self.msg.options.get('command')
+            .cata(self.data.command, lambda: self._latest_command_fatal)
+        )
+        log_path = cmd // find_log
         return (cmd & log_path).flat_map2(parse).lmap(Fatal)
 
     @handle(RunTest)

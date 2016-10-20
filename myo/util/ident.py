@@ -5,7 +5,16 @@ from amino import Maybe, List, L, _, Empty
 
 from ribosome.record import field, Record, uuid_field
 
-Ident = Union[str, UUID]
+
+class Key(Record):
+    uuid = uuid_field()
+    name = field(str)
+
+    @property
+    def _str_extra(self):
+        return super()._str_extra.cat(self.name)
+
+Ident = Union[str, UUID, Key]
 
 
 def contains_pane_ident(a: Maybe):
@@ -17,10 +26,5 @@ def contains_pane_ident(a: Maybe):
 
 def ident_field():
     return field(Maybe, initial=Empty(), invariant=contains_pane_ident)
-
-
-class Key(Record):
-    ident = uuid_field()
-    name = field(str)
 
 __all__ = ('Ident', 'contains_pane_ident', 'ident_field', 'Key')

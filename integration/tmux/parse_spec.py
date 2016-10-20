@@ -4,7 +4,10 @@ from amino import Maybe, List, __, _
 from amino.test import later
 from amino.test.path import fixture_path
 
+from ribosome.record import encode_json
+
 from myo.output.data import OutputEntry, OutputEvent, ParseResult
+from myo.command import TransientCommand, ShellCommand
 
 from integration._support.tmux import TmuxCmdSpec
 from integration._support.vimtest import vimtest
@@ -29,9 +32,12 @@ class TmuxParseSpec(TmuxCmdSpec):
         s = lines.mk_string('\\n')
         heads = List(_parse_head, _event_head)
         target = heads + lines / __.replace('line', 'entry')
-        self._create_command('com', "echo '{}'".format(s),
-                      target='make',
-                      parser='py:integration.tmux.parse_spec._parse_echo')
+        self._create_command(
+            'com',
+            "echo '{}'".format(s),
+            target='make',
+            parser='py:integration.tmux.parse_spec._parse_echo'
+        )
         self._open_pane('make')
         self.json_cmd('MyoRun com')
         self._output_contains(l3)
@@ -56,7 +62,7 @@ class TmuxParseSpec(TmuxCmdSpec):
         later(lambda: self.vim.buffer.content.should.have.length_of(3))
 
 
-class PythonVimTestSpec(TmuxCmdSpec):
+class PythonVimTestBase(TmuxCmdSpec):
 
     @property
     def _fname(self):
@@ -66,29 +72,37 @@ class PythonVimTestSpec(TmuxCmdSpec):
     def _target(self):
         return 'RuntimeError: supernova'
 
-    def _pre_start(self):
+    def _set_vars(self):
+        super()._set_vars()
         self.vim.vars.set_p('tmux_no_watcher', True)
         self.vim.vars.set_p('jump_to_error', False)
         self.vim.vars.set('test#python#runner', 'nose')
         self.vim.vars.set_p('output_reifier',
                             'py:myo.output.reifier.base.LiteralReifier')
+
+    def _pre_start(self):
         super()._pre_start()
         self.vim.cmd_sync('noswapfile edit {}'.format(self._fname))
         self.vim.buffer.vars.set_p('test_langs', ['python'])
 
     def _run_test(self):
-        check = lambda: self._output.should.contain(self._target)
         self.vim.cursor(4, 1)
         len_pre = self._output.length
         self.json_cmd('MyoVimTest')
+        self._check_test(len_pre)
+
+    def _check_test(self, len_pre):
         later(lambda: self._output.length.should.be.greater_than(len_pre))
-        later(check)
+        later(lambda: self._output.should.contain(self._target))
 
     def _run_parse(self):
         check = lambda: self.vim.buffer.content.last.should.contain(
             self._target)
         self.json_cmd_sync('MyoParse')
         later(check)
+
+
+class PythonVimTestSpec(PythonVimTestBase):
 
     @vimtest
     def complete(self):
@@ -109,6 +123,30 @@ class PythonVimTestSpec(TmuxCmdSpec):
         self._run_parse()
         self.vim.window.close()
         self._run_test()
+        self._run_parse()
+
+
+class PythonVimTestLoadHistorySpec(PythonVimTestBase):
+
+    @property
+    def _line(self):
+        return 'nosetests {}:Namespace.test_something'.format(self._fname)
+
+    def _set_vars(self):
+        super()._set_vars()
+        cmd = TransientCommand(line=self._line,
+                               command=ShellCommand(line='', name='<test>'),
+                               transient=True,
+                               name='test_line_<test>_VIroI',
+                               langs=List('python'))
+        history = encode_json([cmd]).get_or_raise
+        self.vim.vars.set('Myo_history', history)
+
+    @vimtest
+    def history(self):
+        len_pre = self._output.length
+        self.json_cmd('MyoRunLatest')
+        self._check_test(len_pre)
         self._run_parse()
 
 __all__ = ('TmuxParseSpec', 'PythonVimTestSpec')

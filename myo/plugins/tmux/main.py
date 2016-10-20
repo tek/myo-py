@@ -20,7 +20,7 @@ from myo.plugins.tmux.message import (TmuxOpen, TmuxRunCommand, TmuxCreatePane,
                                       TmuxFixFocus, TmuxMinimize, TmuxRestore,
                                       TmuxToggle, TmuxFocus, TmuxOpenOrToggle,
                                       TmuxKill, UpdateVimWindow,
-                                      TmuxRunTransient)
+                                      TmuxRunTransient, TmuxPostCommand)
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
@@ -32,7 +32,7 @@ from myo.plugins.core.message import AddDispatcher, Resized, Initialized
 from myo.plugins.tmux.dispatch import TmuxDispatcher
 from myo.ui.tmux.view_path import LayoutPathMod, PanePathMod, ViewPathMod
 from myo.ui.tmux.data import TmuxState
-from myo.plugins.command.message import SetShellTarget
+from myo.plugins.command.message import SetShellTarget, CommandExecuted
 from myo.command import Command, Shell, default_signals
 from myo.plugins.tmux.watcher import Watcher, Terminated
 from myo.ui.tmux.facade.main import TmuxFacade
@@ -201,7 +201,8 @@ class TmuxTransitions(MyoTransitions):
     def run_command(self):
         command = self.msg.command
         options = self.msg.options
-        shell = options.get('shell').or_else(command.shell) // self.data.shell
+        shell = (options.get('shell').or_else(command.effective.shell) //
+                 self.data.shell)
         return shell.to_maybe.cata(
             L(self._run_in_shell)(command, _, options),
             L(self._run_command)(command, options)
@@ -231,7 +232,7 @@ class TmuxTransitions(MyoTransitions):
 
     @may_handle(TmuxRunTransient)
     def run_transient(self):
-        return TmuxRunCommand(self.msg.cmd.effective, options=self.msg.options)
+        return TmuxRunCommand(self.msg.cmd, options=self.msg.options)
 
     @may_handle(ViewPathMod)
     def view_path_mod(self):
@@ -326,6 +327,11 @@ class TmuxTransitions(MyoTransitions):
         signals = self.msg.options.get('signals') | default_signals
         return self.tmux.kill_process(self.msg.pane, signals) / __.lmap(Fatal)
 
+    @may_handle(TmuxPostCommand)
+    def post_command(self):
+        log_path = self._pane(self.msg.pane_ident) // _.log_path
+        return CommandExecuted(self.msg.command, log_path).pub
+
     def _minimize(self, f):
         return self.tmux.view_mod(self.msg.pane, f), TmuxPack().pub.at(1)
 
@@ -360,7 +366,7 @@ class TmuxTransitions(MyoTransitions):
 
     def _run_command(self, command, opt):
         return (
-            command.effective_line
+            command.effective.effective_line
             .resolve(self.vim) /
             L(self._run_command_line)(command, _, opt)
         )
@@ -375,9 +381,9 @@ class TmuxTransitions(MyoTransitions):
             return Task.call(self.machine.watcher.send, msg)
         runner = self.tmux.run_command_ppm(pane_ident, line, in_shell, kill,
                                            signals) % watch
-        set_log = command.transient.no.maybe(
-            SetCommandLog(command.uuid, pane_ident))
-        return set_log.to_list.cons(runner).cat(TmuxPostOpen(pane_ident, opt))
+        set_log = SetCommandLog(command, pane_ident)
+        return List(runner, TmuxPostOpen(pane_ident, opt),
+                    TmuxPostCommand(command, pane_ident))
 
     def _run_in_shell(self, command: Command, shell: Shell, options: Map):
         ident = shell.target | self._default_pane_name
