@@ -5,7 +5,8 @@ from ribosome.machine import (message, may_handle, Machine, handle, Nop,
 from ribosome.nvim import ScratchBuffer, NvimFacade
 from ribosome.machine.scratch import ScratchMachine, Quit
 from ribosome.machine.base import UnitTask
-from ribosome.record import field, list_field, either_field, any_field
+from ribosome.record import (field, list_field, either_field, any_field,
+                             bool_field)
 from ribosome.machine.transition import Fatal
 
 from amino.task import Task
@@ -24,6 +25,7 @@ Jump = message('Jump')
 FirstError = message('FirstError')
 DisplayLines = message('DisplayLines')
 SetResult = json_message('SetResult', 'result')
+ToggleFilters = message('ToggleFilters')
 
 error_filtered_result_empty = 'filtered result is empty'
 
@@ -74,8 +76,15 @@ class ResultAdapter(Record):
         return want.maybe(self.langs) // __.find_map(create) / __(self.buffer)
 
     @property
-    def lines(self):
+    def filtered_lines(self):
         return self.filtered // L(Try)(self._reifier, _) // self.format
+
+    @property
+    def unfiltered_lines(self):
+        return Try(self._reifier, self.result) // self.format
+
+    def lines(self, filtered: Boolean):
+        return self.filtered_lines if filtered else self.unfiltered_lines
 
     @property
     def langs(self):
@@ -92,6 +101,7 @@ class ResultAdapter(Record):
 class OMState(Record):
     result = field(ResultAdapter)
     lines = list_field(OutputLine)
+    filter_state = bool_field()
 
 
 def _location_index(lines):
@@ -181,7 +191,7 @@ class OutputMachineTransitions(MyoTransitions):
                 if lines.empty else
                 Right(run(lines))
             )
-        return self.result.lines // check
+        return self.result.lines(self.state.filter_state) // check
 
     @property
     def _syntax(self):
@@ -204,7 +214,10 @@ class OutputMachineTransitions(MyoTransitions):
     @may_handle(SetResult)
     def set_result(self):
         result = self._adapter(self.msg.result)
-        return self.with_sub(self.state.set(result=result)), DisplayLines()
+        return (
+            self.with_sub(self.state.set(result=result, filter_state=True)),
+            DisplayLines()
+        )
 
     @handle(DisplayLines)
     def display_lines(self):
@@ -242,6 +255,14 @@ class OutputMachineTransitions(MyoTransitions):
         )
         post = Task.delay(self.vim.cmd, 'normal! zvzz')
         return (open_file & set_line).map2(add) / (_ + post) / UnitTask
+
+    @may_handle(ToggleFilters)
+    def toggle_filters(self):
+        new_state = self.state.filter_state.no
+        return (
+            self.with_sub(self.state.set(filter_state=new_state)),
+            DisplayLines()
+        )
 
     def _open_file(self, path):
         def split():
@@ -281,6 +302,7 @@ class OutputMachine(ScratchMachine, Logging):
     def mappings(self):
         return Map({
             '%cr%': Jump,
+            'f': ToggleFilters,
             'q': Quit,
         })
 

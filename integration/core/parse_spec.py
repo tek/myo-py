@@ -157,7 +157,14 @@ class PythonParseSpec(ParseSpecBase):
 
     def filter(self):
         filters = List('py:integration.core.parse_spec._filter1')
-        self._go(_trace_len * 2 + 3, Map(output_filters=filters))
+        count = _trace_len * 2 + 3
+        self._go(count, Map(output_filters=filters))
+        output_machine = self.root.sub[-1]
+        toggle = lambda: self.root.send_sync(Mapping(output_machine.uuid, 'f'))
+        toggle()
+        later(lambda: self._buffer_length(_line_count))
+        toggle()
+        later(lambda: self._buffer_length(count))
 
     def initial_pos(self):
         self.vim.vars.set_p('first_error',
