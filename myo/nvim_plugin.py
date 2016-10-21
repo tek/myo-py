@@ -34,7 +34,7 @@ unite_candidates = mk_unite_candidates(UniteNames)
 unite_action = mk_unite_action(UniteNames)
 
 
-@unite_plugin('myo', UniteNames)
+@unite_plugin('myo')
 class MyoNvimPlugin(NvimStatePlugin, Logging):
 
     def __init__(self, vim: neovim.Nvim) -> None:
