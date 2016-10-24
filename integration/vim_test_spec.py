@@ -16,6 +16,6 @@ class VimTestSpec(MyoIntegrationSpec):
         self.vim.cursor(5, 0)
         base = base_dir().parent
         target = 'py.test {} -k test_something'.format(fname.relative_to(base))
-        assemble_vim_test_line(self.vim).to_maybe.should.contain(List(target))
+        assemble_vim_test_line(self.vim).to_maybe.should.contain(target)
 
 __all__ = ('VimTestSpec',)
