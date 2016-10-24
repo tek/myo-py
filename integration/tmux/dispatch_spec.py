@@ -1,10 +1,14 @@
-from integration._support.tmux import TmuxCmdSpec
-
 from psutil import Process
+
 from amino.test import later
 from amino import __, _, List, Just
 
+from ribosome.util.callback import VimCallback
+
+from integration._support.tmux import TmuxCmdSpec
+
 _test_line = 'this is a test'
+_eval_args_line = 'test {} / {}'
 
 
 def _test_ctor():
@@ -13,6 +17,13 @@ def _test_ctor():
 
 def _test_shell_ctor():
     return Just('print(\'{}\')'.format(_test_line))
+
+
+class EvalArgsCallback(VimCallback):
+
+    def __call__(self, *args):
+        a1, a2 = args
+        return Just('echo \'{}\''.format(_eval_args_line.format(a1, a2)))
 
 
 class DispatchSpec(TmuxCmdSpec):
@@ -141,6 +152,15 @@ class DispatchSpec(TmuxCmdSpec):
             endfunction'''.format(func, cmd))
         self._create_command(name, callback, eval=True)
         self.json_cmd_sync('MyoRun {}'.format(name))
+        self._output_contains(text)
+
+    def eval_args(self):
+        name = 'test'
+        line = 'py:integration.tmux.dispatch_spec.EvalArgsCallback'
+        args = List(List.random_string(), List.random_string())
+        self._create_command(name, line, args=args, eval=True)
+        self.json_cmd_sync('MyoRun {}'.format(name))
+        text = _eval_args_line.format(*args)
         self._output_contains(text)
 
 __all__ = ('DispatchSpec',)

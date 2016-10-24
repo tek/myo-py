@@ -354,9 +354,10 @@ class TmuxTransitions(MyoTransitions):
         return self.server.pane_data.find(__.command_pid.contains(vim_pid))
 
     def _run_command(self, command, opt):
+        args = opt.get('args') | command.args
         return (
             command.effective.effective_line
-            .resolve(self.vim) /
+            .resolve(self.vim, *args) /
             L(self._run_command_line)(command, _, opt)
         )
 

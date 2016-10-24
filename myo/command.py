@@ -21,20 +21,20 @@ class Line(Logging, metaclass=abc.ABCMeta):
         self.line = line
 
     @abc.abstractmethod
-    def resolve(self, vim) -> Maybe[str]:
+    def resolve(self, vim, args: List) -> Maybe[str]:
         ...
 
 
 class StrictLine(Line):
 
-    def resolve(self, vim):
+    def resolve(self, vim, *args):
         return Just(self.line)
 
 
 class EvalLine(Line):
 
-    def resolve(self, vim):
-        return parse_callback_spec(self.line) // __(vim)
+    def resolve(self, vim, *args):
+        return parse_callback_spec(self.line) // __(vim, *args)
 
 
 class Command(Named):
@@ -45,6 +45,7 @@ class Command(Named):
     kill = bool_field()
     signals = list_field(str, initial=default_signals)
     eval = bool_field()
+    args = list_field()
 
     @property
     def _str_extra(self):
