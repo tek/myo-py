@@ -26,19 +26,18 @@ TmuxRestore = json_message('TmuxRestore', 'pane')
 TmuxToggle = json_message('TmuxToggle', 'pane')
 TmuxOpenOrToggle = json_message('TmuxOpenOrToggle', 'pane')
 TmuxKill = json_message('TmuxKill', 'pane')
-SetCommandLog = message('SetCommandLog', 'cmd_ident', 'pane_ident')
 UpdateVimWindow = message('UpdateVimWindow')
 
 StartWatcher = message('StartWatcher')
 QuitWatcher = message('QuitWatcher')
 WatchCommand = message('WatchCommand', 'command', 'pane')
 
-__all__ = ('TmuxRunCommand', 'TmuxOpen', 'TmuxCreatePane',
-           'TmuxCreateSession', 'TmuxCreateLayout', 'TmuxCreateLayout',
-           'TmuxSpawnSession', 'TmuxFindVim', 'TmuxLoadDefaults',
-           'TmuxClosePane', 'TmuxRunCommandInShell', 'TmuxRunLineInShell',
-           'TmuxRunShell', 'StartWatcher', 'WatchCommand', 'QuitWatcher',
-           'TmuxParse', 'SetCommandLog', 'TmuxPack', 'TmuxPostOpen',
-           'TmuxFixFocus', 'TmuxMinimize', 'TmuxRestore', 'TmuxToggle',
-           'TmuxFocus', 'TmuxOpenOrToggle', 'TmuxKill', 'UpdateVimWindow',
-           'TmuxRunTransient', 'TmuxPostCommand')
+__all__ = ('TmuxRunCommand', 'TmuxOpen', 'TmuxCreatePane', 'TmuxCreateSession',
+           'TmuxCreateLayout', 'TmuxCreateLayout', 'TmuxSpawnSession',
+           'TmuxFindVim', 'TmuxLoadDefaults', 'TmuxClosePane',
+           'TmuxRunCommandInShell', 'TmuxRunLineInShell', 'TmuxRunShell',
+           'StartWatcher', 'WatchCommand', 'QuitWatcher', 'TmuxParse',
+           'TmuxPack', 'TmuxPostOpen', 'TmuxFixFocus', 'TmuxMinimize',
+           'TmuxRestore', 'TmuxToggle', 'TmuxFocus', 'TmuxOpenOrToggle',
+           'TmuxKill', 'UpdateVimWindow', 'TmuxRunTransient',
+           'TmuxPostCommand')

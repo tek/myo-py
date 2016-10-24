@@ -16,7 +16,7 @@ from myo.plugins.tmux.message import (TmuxOpen, TmuxRunCommand, TmuxCreatePane,
                                       TmuxLoadDefaults, TmuxClosePane,
                                       TmuxRunShell, TmuxRunLineInShell,
                                       StartWatcher, WatchCommand, QuitWatcher,
-                                      SetCommandLog, TmuxPack, TmuxPostOpen,
+                                      TmuxPack, TmuxPostOpen,
                                       TmuxFixFocus, TmuxMinimize, TmuxRestore,
                                       TmuxToggle, TmuxFocus, TmuxOpenOrToggle,
                                       TmuxKill, UpdateVimWindow,
@@ -262,17 +262,6 @@ class TmuxTransitions(MyoTransitions):
     def terminated(self):
         return self.tmux.pane_mod(self.msg.pane.uuid, __.setter.pid(Empty()))
 
-    @handle(SetCommandLog)
-    def set_command_log(self):
-        def set_log(cmd):
-            log = lambda p: self.log.debug(
-                'setting {} log to {}'.format(cmd.name, p))
-            cmd_lens = self.data.command_lens(cmd.ident)
-            log_path = self._pane(self.msg.pane_ident) // _.log_path
-            log_path % log
-            return cmd_lens / __.modify(__.set(log_path=log_path))
-        return self._main_command(self.msg.cmd_ident) // set_log
-
     @may_handle(TmuxPack)
     def pack(self):
         return UnitTask(self.tmux.pack_sessions), UpdateVimWindow()
@@ -381,7 +370,6 @@ class TmuxTransitions(MyoTransitions):
             return Task.call(self.machine.watcher.send, msg)
         runner = self.tmux.run_command_ppm(pane_ident, line, in_shell, kill,
                                            signals) % watch
-        set_log = SetCommandLog(command, pane_ident)
         return List(runner, TmuxPostOpen(pane_ident, opt),
                     TmuxPostCommand(command, pane_ident))
 
