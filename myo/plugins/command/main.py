@@ -194,9 +194,8 @@ class CommandTransitions(MyoTransitions):
     def run_vim_test(self):
         return (
             assemble_vim_test_line(self.vim) //
-            __.head.to_either('vim-test failed') //
             L(self._run_test_line)(self.msg.options, _)
-        )
+        ).lmap(Fatal)
 
     @may_handle(CommandShow)
     def show(self):
