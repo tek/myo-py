@@ -3,7 +3,7 @@ from functools import singledispatch  # type: ignore
 
 from amino import Path, __, Just, List, L, Maybe, _, Map
 
-from ribosome.record import list_field, field, maybe_field, bool_field
+from ribosome.record import list_field, field, maybe_field, bool_field, dfield
 from ribosome.util.callback import parse_callback_spec
 
 from myo.record import Record, Named
@@ -172,6 +172,8 @@ def _history_cmp_transient(cmd):
 
 
 class Commands(Record):
+    max_history = dfield(20)
+
     no_such_command_error = 'no such command: {}'
     no_such_shell_error = 'so such shell: {}'
     no_latest_command_error = 'history is empty'
@@ -200,7 +202,11 @@ class Commands(Record):
                 .to_either(self.no_such_shell_error.format(ident)))
 
     def add_history(self, cmd):
-        new = self.history.cons(cmd).distinct_by(_history_cmp)
+        new = (
+            self.history.cons(cmd)
+            .distinct_by(_history_cmp)
+            .take(self.max_history)
+        )
         return self.set(history=new)
 
     def transient_command(self, cmd):
