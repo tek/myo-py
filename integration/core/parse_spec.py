@@ -1,7 +1,7 @@
 from integration._support.base import MyoIntegrationSpec
 
 from amino.test.path import fixture_path
-from amino import Map, Just, List, _
+from amino import Map, Just, List, _, __
 from amino.test import temp_file, later
 from amino.lazy import lazy
 
@@ -226,8 +226,11 @@ class PythonParseSpec(ParseSpecBase):
                   .should.equal(t.lift(-2)))
         self._run(t1)
         check(t1)
+        h = self.vim.window.height
+        self.vim.windows.last % __.focus()
         self._parse(t2)
         check(t2)
+        self.vim.window.height.should.equal(h)
 
     def _syntax(self):
         from amino import log

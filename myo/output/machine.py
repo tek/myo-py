@@ -246,6 +246,7 @@ class OutputMachineTransitions(MyoTransitions):
                 self._with_sub(self.data,
                                self.state.set(locations=locations,
                                               lines=lines)),
+                Task.delay(self.window.focus) +
                 Task.delay(self.window.cmd, 'resize {}'.format(size)) +
                 Task.delay(self.buffer.set_modifiable, True) +
                 Task.delay(self.buffer.set_content, text) +
