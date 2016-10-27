@@ -327,8 +327,11 @@ class OutputMachineTransitions(MyoTransitions):
                 .task('could not get a window') /
                 __.focus()
             )
-            edit = Task.delay(self.vim.edit, path) / __.run_async()
-            return win + edit
+            def edit():
+                return (Task.delay(self.vim.edit, path) / __.run_async()
+                        if self.vim.buffer.name != path else
+                        Task.zero)
+            return win + Task.suspend(edit)
 
 
 class OutputMachine(ScratchMachine, Logging):
