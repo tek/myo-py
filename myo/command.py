@@ -38,7 +38,7 @@ class EvalLine(Line):
 
 
 class Command(Named):
-    log_path = maybe_field(Path)
+    log_path = maybe_field(Path, factory=Path)
     parser = maybe_field(str)
     transient = bool_field()
     langs = list_field()

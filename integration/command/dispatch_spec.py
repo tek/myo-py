@@ -1,5 +1,5 @@
 from amino.test import later
-from amino import List
+from amino import List, Path, Just
 from amino.lazy import lazy
 
 from ribosome.record import encode_json, decode_json
@@ -59,7 +59,8 @@ class HistorySpec(_DispatchBase):
 
     def _set_vars(self):
         super()._set_vars()
-        cmd = ShellCommand(name=self._cmd, line='')
+        cmd = ShellCommand(name=self._cmd, line='',
+                           log_path=Just(Path('/foo/bar')))
         history = encode_json([cmd]).get_or_raise
         self.vim.vars.set('Myo_history', history)
 

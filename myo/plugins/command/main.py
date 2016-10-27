@@ -62,7 +62,7 @@ class CommandTransitions(MyoTransitions):
     def load_history(self):
         return (
             self.vim.vars.s(self._history_var) //
-            L(decode_json)(_).to_either(Fatal('failed to load history')) /
+            L(decode_json)(_).to_either('failed to load history').lmap(Fatal) /
             self.data.commands.setter.history /
             self.data.setter.commands
         )
