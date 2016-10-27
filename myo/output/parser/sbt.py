@@ -6,7 +6,7 @@ from amino import List, _
 from ribosome.record import field, maybe_field
 
 from myo.output.data import (PositionEntry, OutputEntry, OutputEvent,
-                             Location, CodeEntry as CodeEntryBase)
+                             CodeEntry as CodeEntryBase, Location)
 from myo.output.parser.base import EdgeData, SimpleParser
 
 
@@ -57,6 +57,10 @@ class SbtOutputEvent(OutputEvent, Location):
     file = field(FileEntry)
 
     @property
+    def location(self):
+        return self.file
+
+    @property
     def file_path(self):
         return self.file.file_path
 
@@ -67,6 +71,10 @@ class SbtOutputEvent(OutputEvent, Location):
     @property
     def code(self):
         return self.entries.filter_type(CodeEntry)
+
+    @property
+    def locations(self):
+        return List(self)
 
 
 class Parser(SimpleParser):
@@ -84,8 +92,7 @@ class Parser(SimpleParser):
         col = entries.find_type(ColEntry)
         return (
             entries.find_type(FileEntry) / (
-                lambda a: SbtOutputEvent(head=List('error'), entries=entries,
-                                         col=col, file=a)
+                lambda a: SbtOutputEvent(entries=entries, col=col, file=a)
             )
         )
 

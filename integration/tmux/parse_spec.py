@@ -59,7 +59,8 @@ class TmuxParseSpec(TmuxCmdSpec):
         later(lambda: self._output.filter(_ == target).should.have.length_of(2)
               )
         self.json_cmd_sync('MyoParse')
-        later(lambda: self.vim.buffer.content.should.have.length_of(3))
+        text = '  File "<stdin>", line 1, in <module>'
+        later(lambda: self.vim.buffer.content.head.should.contain(text))
 
 
 class PythonVimTestBase(TmuxCmdSpec):

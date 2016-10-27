@@ -80,7 +80,6 @@ class Parsing(CustomOutputHandler):
 
     def parse(self, output: List[str], errfile: Path):
         events = self.parsers // __.events(output)
-        return Task.now(ParseResult(head=List('parsed'), events=events,
-                                    langs=self.langs))
+        return Task.now(ParseResult(events=events, langs=self.langs))
 
 __all__ = ('CustomOutputHandler', 'VimCompiler', 'Parsing')

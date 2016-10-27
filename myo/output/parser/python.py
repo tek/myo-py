@@ -70,6 +70,6 @@ class Parser(SimpleParser):
             return res + add.to_list, new
         grouped, rest = entries.fold_left((List(), Empty()))(folder)
         complete = grouped + rest.to_list
-        return Just(MultiEvent(head=List('traceback'), entries=complete))
+        return Just(MultiEvent(entries=complete))
 
 __all__ = ('Parser',)

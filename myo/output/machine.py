@@ -1,16 +1,14 @@
-from operator import add
-
-from ribosome.machine import (message, may_handle, Machine, handle, Nop,
-                              json_message)
+from ribosome.machine import may_handle, Machine, handle, Nop
 from ribosome.nvim import ScratchBuffer, NvimFacade
 from ribosome.machine.scratch import ScratchMachine, Quit
 from ribosome.machine.base import UnitTask
 from ribosome.record import (field, list_field, either_field, any_field,
-                             bool_field)
+                             bool_field, dfield)
 from ribosome.machine.transition import Fatal
 
 from amino.task import Task
-from amino import Map, _, L, Left, __, List, Either, Just, Try, Right, Boolean
+from amino import (Map, _, L, Left, __, List, Either, Just, Try, Right,
+                   Boolean, Empty)
 from amino.lazy import lazy
 
 from myo.output.data import ParseResult, Location, OutputLine
@@ -20,12 +18,10 @@ from myo.record import Record
 from myo.output.reifier.base import Reifier, LiteralReifier
 from myo.output.syntax.base import LineGroups
 from myo.output.filter.base import DuplicatesFilter
-
-Jump = message('Jump')
-FirstError = message('FirstError')
-DisplayLines = message('DisplayLines')
-SetResult = json_message('SetResult', 'result')
-ToggleFilters = message('ToggleFilters')
+from myo.output.message import (JumpCurrent, JumpCursor, Jump, SetLoc,
+                                InitialError, DisplayLines, SetResult,
+                                ToggleFilters, EventNext, EventPrev,
+                                CursorToCurrent)
 
 error_filtered_result_empty = 'filtered result is empty'
 
@@ -41,7 +37,7 @@ class ResultAdapter(Record):
     reifier = either_field(Reifier)
     formatters = list_field()
     syntaxes = list_field()
-    first_error = list_field()
+    initial_error = list_field()
 
     @lazy
     def vim(self):
@@ -51,9 +47,12 @@ class ResultAdapter(Record):
     def _filters(self):
         return self.filters.cat(DuplicatesFilter(self.vim))
 
-    @property
+    @lazy
     def filtered(self):
         return fold_callbacks(self._filters, self.result)
+
+    def effective_result(self, filtered: Boolean):
+        return self.filtered if filtered else Right(self.result)
 
     def format(self, lines: List[OutputLine]):
         return fold_callbacks(self.formatters, lines)
@@ -75,51 +74,43 @@ class ResultAdapter(Record):
             )
         return want.maybe(self.langs) // __.find_map(create) / __(self.buffer)
 
-    @property
+    @lazy
     def filtered_lines(self):
         return self.filtered // L(Try)(self._reifier, _) // self.format
 
-    @property
+    @lazy
     def unfiltered_lines(self):
         return Try(self._reifier, self.result) // self.format
 
     def lines(self, filtered: Boolean):
-        return self.filtered_lines if filtered else self.unfiltered_lines
+        return (self.effective_result(filtered) // L(Try)(self._reifier, _) //
+                self.format)
 
     @property
     def langs(self):
         return self.result.langs
 
-    @property
-    def events(self):
-        return self.result.events
-
     def __repr__(self):
         return repr(self.result)
+
+    def locations(self, filtered: Boolean):
+        return self.effective_result(filtered) / _.locations
 
 
 class OMState(Record):
     result = field(ResultAdapter)
+    locations = list_field(Location)
     lines = list_field(OutputLine)
     filter_state = bool_field()
+    current_loc_index = dfield(0)
 
 
-def _location_index(lines):
-    return (
-        lines
-        .index_where(__.entry.exists(L(isinstance)(_, Location)))
-    )
+def _jump_first(locs):
+    return Empty() if locs.empty else Just(0)
 
 
-def _jump_first(lines):
-    return _location_index(lines)
-
-
-def _jump_last(lines):
-    return (
-        _location_index(lines.reversed) /
-        (lines.length - _ - 1)
-    )
+def _jump_last(locs):
+    return Empty() if locs.empty else Just(locs.length - 1)
 
 
 def _jump_default(langs, lang_jumps):
@@ -128,19 +119,89 @@ def _jump_default(langs, lang_jumps):
 
 class OutputMachineTransitions(MyoTransitions):
 
+    @may_handle(SetResult)
+    def set_result(self):
+        result = self._adapter(self.msg.result)
+        return (
+            self.with_sub(self.state.set(result=result, filter_state=True)),
+            DisplayLines()
+        )
+
+    @handle(DisplayLines)
+    def display_lines(self):
+        return self.set_content.map2(
+            lambda a, b: (a, b.replace(Just(InitialError()))))
+
+    @handle(InitialError)
+    def initial_error(self):
+        jump = self.vim.vars.pb('jump_to_error') | True
+        locs = self.locations
+        return (
+            self.result.initial_error.find_map(__(locs)) /
+            L(SetLoc)(_, jump)
+        )
+
+    @may_handle(Jump)
+    def jump(self):
+        open_file = self.open_file(self.msg.target.file_path)
+        l, c = self.msg.target.coords
+        set_line = Task.delay(lambda: self.vim.window.set_cursor(l, c))
+        post = Task.delay(self.vim.cmd, 'normal! zvzz')
+        return UnitTask(open_file + set_line + post)
+
+    @handle(JumpCurrent)
+    def jump_current(self):
+        return self.current_loc / Jump
+
+    @handle(JumpCursor)
+    def jump_cursor(self):
+        return self.location_for_cursor // self.index_for_location / SetLoc
+
+    @may_handle(ToggleFilters)
+    def toggle_filters(self):
+        new_state = self.state.filter_state.no
+        return (
+            self.with_sub(self.state.set(filter_state=new_state)),
+            DisplayLines()
+        )
+
+    @handle(EventNext)
+    def event_next(self):
+        return self.cycle_loc(_ < self.state.locations.length, _ + 1)
+
+    @handle(EventPrev)
+    def event_prev(self):
+        return self.cycle_loc(_ > 0, _ - 1)
+
+    @may_handle(SetLoc)
+    def set_loc(self):
+        return (
+            self.with_sub(self.state.set(current_loc_index=self.msg.index)),
+            CursorToCurrent(),
+            (JumpCurrent() if self.msg.jump else Nop())
+        )
+
+    @handle(CursorToCurrent)
+    def cursor_to_current(self):
+        return (
+            self.line_for_current_loc /
+            L(Task.delay)(self.vim.window.set_cursor, _ + 1) /
+            UnitTask
+        )
+
     def _adapter(self, result):
         filters = self._callbacks('output_filters')
         reifier = (self._callback('output_reifier')
                    .to_either('no reifier specified'))
         formatters = self._callbacks('output_formatters')
         syntaxes = self._callbacks('output_syntaxes', self.buffer)
-        first_error = (self._callbacks('first_error',
-                                       special=self._special_jumps)
-                       .cat(_jump_default(result.langs, self._lang_jumps)))
+        initial_error = (self._callbacks('initial_error',
+                                         special=self.special_jumps)
+                         .cat(_jump_default(result.langs, self.lang_jumps)))
         return ResultAdapter(buffer=self.buffer, result=result,
                              filters=filters, reifier=reifier,
                              formatters=formatters, syntaxes=syntaxes,
-                             first_error=first_error)
+                             initial_error=initial_error)
 
     @property
     def scratch(self):
@@ -159,11 +220,11 @@ class OutputMachineTransitions(MyoTransitions):
         return self.state.result
 
     @property
-    def _special_jumps(self):
+    def special_jumps(self):
         return Map(first=_jump_first, last=_jump_last)
 
     @property
-    def _lang_jumps(self):
+    def lang_jumps(self):
         return Map(python=_jump_last)
 
     @property
@@ -171,100 +232,88 @@ class OutputMachineTransitions(MyoTransitions):
         return self.state.lines
 
     @property
-    def _set_content(self):
+    def locations(self):
+        return self.state.locations
+
+    @property
+    def set_content(self):
         min_size = self.vim.vars.pi('output_window_min_size') | 3
         max_size = self.vim.vars.pi('output_window_max_size') | 30
-        def run(lines):
+        def run(locations, lines):
             text = lines / _.formatted
             size = min(max_size, max(min_size, text.length))
             return (
-                self._with_sub(self.data, self.state.set(lines=lines)),
+                self._with_sub(self.data,
+                               self.state.set(locations=locations,
+                                              lines=lines)),
                 Task.delay(self.window.cmd, 'resize {}'.format(size)) +
                 Task.delay(self.buffer.set_modifiable, True) +
                 Task.delay(self.buffer.set_content, text) +
                 Task.delay(self.buffer.set_modifiable, False) +
-                self._run_syntax(lines)
+                self.run_syntax(lines)
             )
-        def check(lines):
+        def check(locations, lines):
             return (
                 Left(Fatal(error_filtered_result_empty))
                 if lines.empty else
-                Right(run(lines))
+                Right(run(locations, lines))
             )
-        return self.result.lines(self.state.filter_state) // check
+        f = self.state.filter_state
+        return (self.result.locations(f) &
+                self.result.lines(f)).flat_map2(check)
 
     @property
-    def _syntax(self):
-        lang = self._lang_syntax.to_list
+    def syntax(self):
+        lang = self.lang_syntax.to_list
         return self.result.syntaxes.cons(LineGroups(self.vim)) + lang
 
     @property
-    def _lang_syntax(self):
+    def lang_syntax(self):
         def create(lang):
             return Either.import_name('myo.output.syntax.{}'.format(lang),
                                       'Syntax')
         return self.result.langs.find_map(create) / __(self.vim)
 
-    def _run_syntax(self, lines):
-        return (self._syntax / (lambda a: a(lines))).sequence(Task)
+    def run_syntax(self, lines):
+        return (self.syntax / (lambda a: a(lines))).sequence(Task)
 
     def target_for_line(self, line):
         return self.lines.lift(line) / _.target
 
-    @may_handle(SetResult)
-    def set_result(self):
-        result = self._adapter(self.msg.result)
+    def line_for_target(self, target):
+        return self.lines.index_where(_.target == target)
+
+    def line_for_location(self, index):
+        def same_location(a, b):
+            return isinstance(a, Location) and a.same_location(b.target)
         return (
-            self.with_sub(self.state.set(result=result, filter_state=True)),
-            DisplayLines()
-        )
+            self.locations.lift(index) //
+            (lambda a: self.lines.index_where(L(same_location)(a, _))))
 
-    @handle(DisplayLines)
-    def display_lines(self):
-        return self._set_content.map2(
-            lambda a, b: (a, b.replace(Just(FirstError()))))
+    def index_for_location(self, loc):
+        return self.locations.index_where(__.same_location(loc))
 
-    @handle(FirstError)
-    def first_error(self):
-        def set_cursor(a):
-            x, y = a if isinstance(a, tuple) else (a, 1)
-            return Task.delay(lambda: self.vim.window.set_cursor(x + 1, y))
-        jump = self.vim.vars.pb('jump_to_error') | True
-        next_step = Jump() if jump else Nop()
+    @property
+    def location_for_cursor(self):
         return (
-            self.result.first_error
-            .find_map(__(self.lines))
-            .map(set_cursor)
-            .map(__.replace(Just(next_step)))
-        )
-
-    @handle(Jump)
-    def jump(self):
-        # cannot use Task.delay for set_cursor because then the window is
-        # fixed to what is active before opening the file
-        target = (
             self.vim.window.line /
             (_ - 1) //
             self.target_for_line
         ).filter_type(Location).to_either('not a location')
-        open_file = target / L(self._open_file)(_.file_path)
-        set_line = (
-            (target / _.coords)
-            .map2(lambda a, b: Task.delay(
-                lambda: self.vim.window.set_cursor(a, b)))
-        )
-        post = Task.delay(self.vim.cmd, 'normal! zvzz')
-        return (open_file & set_line).map2(add) / (_ + post) / UnitTask
 
-    @may_handle(ToggleFilters)
-    def toggle_filters(self):
-        new_state = self.state.filter_state.no
-        return (
-            self.with_sub(self.state.set(filter_state=new_state)),
-            DisplayLines()
-        )
+    @property
+    def current_loc(self):
+        return self.locations.lift(self.state.current_loc_index)
 
-    def _open_file(self, path):
+    @property
+    def line_for_current_loc(self):
+        return self.line_for_location(self.state.current_loc_index)
+
+    def cycle_loc(self, cond, update):
+        cur = self.state.current_loc_index
+        return Boolean(cond(cur)).m(update(cur)) / SetLoc
+
+    def open_file(self, path):
         def split():
             # TODO
             pass
@@ -301,7 +350,7 @@ class OutputMachine(ScratchMachine, Logging):
     @property
     def mappings(self):
         return Map({
-            '%cr%': Jump,
+            '%cr%': JumpCursor,
             'f': ToggleFilters,
             'q': Quit,
         })

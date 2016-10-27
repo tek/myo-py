@@ -74,11 +74,20 @@ class LocationMeta(abc.ABCMeta, RecordMeta):
 
 class Location:
 
+    @abc.abstractproperty
     def file_path(self) -> Path:
         ...
 
+    @abc.abstractproperty
     def coords(self) -> Tuple[int, int]:
         ...
+
+    @property
+    def location(self) -> 'Location':
+        return self
+
+    def same_location(self, other):
+        return isinstance(other, Location) and self.location == other.location
 
 
 class PositionEntry(OutputEntry, Location):
@@ -118,6 +127,10 @@ class OutputEvent(Record):
             (self.entries // __.lines(self._target))
         )
 
+    @property
+    def locations(self):
+        return self.entries.filter_type(Location)
+
 
 class MultiEvent(OutputEvent):
 
@@ -144,5 +157,9 @@ class ParseResult(Record):
 
     def target_for_line(self, line):
         return self.lines.lift(line) / _.target
+
+    @property
+    def locations(self):
+        return self.events // _.locations
 
 __all__ = ('OutputEntry', 'OutputEvent', 'ParseResult')

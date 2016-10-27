@@ -29,6 +29,7 @@ from myo.plugins.core.message import Parse, Resized
 from myo.plugins.unite.message import UniteHistory
 from myo.plugins.unite.main import UniteNames
 from myo.plugins.unite.format import unite_format
+from myo.output.machine import EventPrev, EventNext
 
 unite_candidates = mk_unite_candidates(UniteNames)
 unite_action = mk_unite_action(UniteNames)
@@ -178,6 +179,14 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
 
     @json_msg_command(Parse)
     def myo_parse(self):
+        pass
+
+    @msg_command(EventPrev)
+    def myo_event_prev(self):
+        pass
+
+    @msg_command(EventNext)
+    def myo_event_next(self):
         pass
 
     @json_msg_command(RunTest)

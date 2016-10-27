@@ -10,11 +10,13 @@ from ribosome.machine.scratch import Mapping
 
 from myo.command import ShellCommand
 from myo.plugins.core.message import ParseOutput
-from myo.output.machine import error_filtered_result_empty
+from myo.output.machine import (error_filtered_result_empty, EventNext,
+                                EventPrev, OutputMachine)
 from myo.plugins.core.main import error_no_output_events
 
 _trace_len = 3
-_line_count = _trace_len * 4 + 5
+_line_count = _trace_len * 4 + 2
+_initial_error_num = 2
 
 
 class ParseHelpers:
@@ -35,17 +37,18 @@ class ParseHelpers:
 
     @lazy
     def _python_code(self):
-        return List(
-            'import functools',
+        fun = List(
+            '',
             'def {}(a, b=1):'.format(self._python_func_name),
-            '    return 1'
+            '    return 1',
         )
+        return (fun * 10).cons('import functools')
 
     def _frame(self, i):
         r = lambda: List.random_string(4)
-        tmpl = '  File "{}", line 2, in {}'
+        tmpl = '  File "{}", line {}, in {}'
         return List(
-            tmpl.format(self._file, self._python_func_name),
+            tmpl.format(self._file, i + 1, self._python_func_name),
             '    {}()'.format(r())
         )
 
@@ -57,6 +60,22 @@ class ParseHelpers:
     @property
     def _mk_trace(self):
         return self._mk_trace_with(_trace_len)
+
+    @property
+    def _output_machine(self):
+        return (
+            self.root.sub
+            .find_type(OutputMachine)
+            .get_or_fail('no output machine!')
+        )
+
+    @property
+    def _state(self):
+        return (
+            self.root.data
+            .sub_state_m('output')
+            .get_or_fail('no output state')
+        )
 
 
 class BasicParseSpec(MyoIntegrationSpec, ParseHelpers):
@@ -86,9 +105,8 @@ class BasicParseSpec(MyoIntegrationSpec, ParseHelpers):
         msg = ParseOutput(cmd, self._mk_trace, None, Map())
         self.plugin.myo_start()
         self.root.send_sync(msg)
-        output_machine = self.root.sub[-1]
         self._modifiable(False)
-        self.root.send_sync(Mapping(output_machine.uuid, 'q'))
+        self.root.send_sync(Mapping(self._output_machine.uuid, 'q'))
         self._modifiable(True)
         self.root.send_sync(msg)
         self._modifiable(False)
@@ -143,62 +161,62 @@ class PythonParseSpec(ParseSpecBase):
         self.vim.buffer.options('modifiable').should.contain(False)
         self.vim.buffer.content.should.have.length_of(line_count)
 
-    def _check_jumped(self):
+    def _check_jumped(self, line):
         self.vim.window.buffer.name.should.equal(str(self._file))
-        self._cursor(2, 0)
+        self._cursor(line, 0)
 
     def jump(self):
         self._go()
-        output_machine = self.root.sub[-1]
-        self.vim.window.set_cursor(4)
-        self.root.send_sync(Mapping(output_machine.uuid, '%cr%'))
+        self.vim.window.set_cursor(_trace_len * 2)
+        self.root.send_sync(Mapping(self._output_machine.uuid, '%cr%'))
         self.vim.windows.should.have.length_of(2)
-        self._check_jumped()
+        self._check_jumped(_trace_len)
 
     def filter(self):
         filters = List('py:integration.core.parse_spec._filter1')
-        count = _trace_len * 2 + 3
+        count = _trace_len * 2 + 1
         self._go(count, Map(output_filters=filters))
-        output_machine = self.root.sub[-1]
-        toggle = lambda: self.root.send_sync(Mapping(output_machine.uuid, 'f'))
+        toggle = lambda: self.root.send_sync(Mapping(self._output_machine.uuid,
+                                                     'f'))
         toggle()
         later(lambda: self._buffer_length(_line_count))
         toggle()
         later(lambda: self._buffer_length(count))
 
     def initial_pos(self):
-        self.vim.vars.set_p('first_error',
-                            ['py:integration.core.parse_spec._first_error'])
+        self.vim.vars.set_p('initial_error',
+                            ['py:integration.core.parse_spec._initial_error'])
         self._go()
-        self.vim.window.line.should.contain(_line_count - 2)
+        self._state.current_loc_index.should.equal(_initial_error_num)
+        self.vim.window.line.should.contain(_initial_error_num * 2 + 1)
 
     def initial_pos_default(self):
         self._go()
         self.vim.window.line.should.contain(_line_count - 2)
 
     def initial_pos_first(self):
-        self.vim.vars.set_p('first_error', ['s:first'])
+        self.vim.vars.set_p('initial_error', ['s:first'])
         self._go()
-        self.vim.window.line.should.contain(3)
+        self.vim.window.line.should.contain(1)
 
     def initial_pos_with_jump(self):
         self.vim.vars.set_p('jump_to_error', True)
-        self.vim.vars.set_p('first_error',
-                            ['py:integration.core.parse_spec._first_error'])
+        self.vim.vars.set_p('initial_error',
+                            ['py:integration.core.parse_spec._initial_error'])
         self._init()
-        self._check_jumped()
+        self._check_jumped(_initial_error_num % _trace_len + 1)
 
     def default_jump(self):
         self.vim.vars.set_p('jump_to_error', True)
         self._init()
-        self._check_jumped()
+        self._check_jumped(3)
 
     def lang_reifier(self):
         self.vim.vars.set_p('output_reifier',
                             'py:myo.output.reifier.python.Reifier')
         trace1 = self._mk_trace_with(1)
         self._run(trace1)
-        self._cursor(1, 1)
+        self._cursor(1, 0)
 
     def twice(self):
         t1 = self._mk_trace_with(1)
@@ -219,13 +237,13 @@ class PythonParseSpec(ParseSpecBase):
         self._init()
         self._wait(3)
         log.info(self.vim.cmd_output('syntax').join_lines)
-        self._check_jumped()
+        self._check_jumped(2)
 
     def duplicate(self):
         t = self._mk_trace_with(2)
         trace = t + t
         self._run(trace)
-        later(lambda: self.vim.buffer.content[2:].should.equal(t))
+        later(lambda: self.vim.buffer.content.should.equal(t))
 
     def _empty_filtered(self):
         filters = List('py:integration.core.parse_spec._filter_empty')
@@ -234,6 +252,17 @@ class PythonParseSpec(ParseSpecBase):
         self._init(Map(output_filters=filters))
         later(lambda:
               self.vim.messages.should.contain(error_filtered_result_empty))
+
+    def cycle(self):
+        pos = lambda l: later(lambda: self.vim.window.line.should.contain(l))
+        self.vim.vars.set_p('initial_error', ['s:first'])
+        self._go()
+        self.root.send_sync(EventNext())
+        pos(2)
+        self.root.send_sync(EventNext())
+        pos(3)
+        self.root.send_sync(EventPrev())
+        pos(2)
 
 
 def _filter1(result):
@@ -246,8 +275,8 @@ def _filter_empty(result):
     return result.set(events=List())
 
 
-def _first_error(a):
-    return Just((_line_count - 3, 1))
+def _initial_error(a):
+    return Just(_initial_error_num)
 
 
 class SbtParseSpec(ParseSpecBase):
@@ -300,11 +329,10 @@ class SbtParseSpec(ParseSpecBase):
                             'py:myo.output.reifier.base.LiteralReifier')
         output = self._mk_scala_errors(1)
         self._run(output)
-        output_machine = self.root.sub[-1]
         self.vim.buffer.content.should.contain(output[-1])
         self.vim.buffer.options('modifiable').should.contain(False)
         self.vim.window.set_cursor(4)
-        self.root.send_sync(Mapping(output_machine.uuid, '%cr%'))
+        self.root.send_sync(Mapping(self._output_machine.uuid, '%cr%'))
         self.vim.windows.should.have.length_of(2)
         self.vim.window.buffer.name.should.equal(str(self._scala_file))
         self._cursor(3, 4)
