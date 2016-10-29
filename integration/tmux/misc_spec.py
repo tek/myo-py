@@ -11,7 +11,6 @@ from integration._support.tmux import (DefaultLayoutSpec, TmuxIntegrationSpec,
 class CreateLayoutSpec(ExternalTmuxIntegrationSpec):
 
     def create(self):
-        self.plugin.myo_start()
         name = 'lay'
         self._create_layout(name, parent='root')
         l = self.state.sessions.head // _.windows.head // _.root.layouts.last
@@ -21,7 +20,6 @@ class CreateLayoutSpec(ExternalTmuxIntegrationSpec):
 class CreatePaneSpec(ExternalTmuxIntegrationSpec):
 
     def create(self):
-        self.plugin.myo_start()
         lname = 'lay'
         pname = 'pan'
         self._create_layout(lname, parent='root')
@@ -33,9 +31,11 @@ class CreatePaneSpec(ExternalTmuxIntegrationSpec):
 
 class XOpenSpec(ExternalTmuxIntegrationSpec):
 
-    def create(self):
+    def _set_vars(self):
+        super()._set_vars()
         self.vim.vars.set_p('tmux_no_watcher', True)
-        self.plugin.myo_start()
+
+    def create(self):
         lname = 'lay'
         pname = 'pan'
         self._create_layout(lname, parent='root')
@@ -157,7 +157,6 @@ class OpenLayoutSpec(TmuxIntegrationSpec):
 class UpdateVimWindowSpec(ExternalTmuxIntegrationSpec):
 
     def window_size(self):
-        self.plugin.myo_start()
         self.wait_for_state()
         sz = self._window.size
         later(lambda:

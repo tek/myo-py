@@ -43,6 +43,7 @@ class MyoIntegrationSpec(IntegrationCommon, ExternalIntegrationSpec):
 
     def _start_plugin(self):
         self.plugin.start_plugin()
+        self._wait(.05)
         self._wait_for(lambda: self.vim.vars.p('started').present)
 
 

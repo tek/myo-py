@@ -78,32 +78,36 @@ class ParseHelpers:
         )
 
 
-class BasicParseSpec(MyoIntegrationSpec, ParseHelpers):
+class NativeParseSpec(MyoIntegrationSpec, ParseHelpers):
 
-    @main_looped
-    def native(self):
-        cmd = ShellCommand(name='a', line='a', parser=Just('s:compiler'))
-        fix = fixture_path('parse', 'err1')
-        output = List.wrap(fix.read_text().splitlines())
+    def _set_vars(self):
+        super()._set_vars()
         errorformat = List(
             '%AIn %f:%l',
             '%C  %.%#',
             '%+Z%.%#Error: %.%#'
         ).mk_string(',')
         self.vim.buffer.options.set('errorformat', errorformat)
+
+    @main_looped
+    def native(self):
+        cmd = ShellCommand(name='a', line='a', parser=Just('s:compiler'))
+        fix = fixture_path('parse', 'err1')
+        output = List.wrap(fix.read_text().splitlines())
         msg = ParseOutput(cmd, output, fix, Map())
-        self.plugin.myo_start()
         self.root.send(msg)
         self._await()
         qf = self.vim.call('getqflist') | []
         qf.should_not.be.empty
+
+
+class ParseTwiceSpec(MyoIntegrationSpec, ParseHelpers):
 
     @main_looped
     def twice(self):
         self.vim.vars.set_p('jump_to_error', False)
         cmd = ShellCommand(name='a', line='a', langs=List('python'))
         msg = ParseOutput(cmd, self._mk_trace, None, Map())
-        self.plugin.myo_start()
         self.root.send_sync(msg)
         self._modifiable(False)
         self.root.send_sync(Mapping(self._output_machine.uuid, 'q'))
@@ -111,11 +115,12 @@ class BasicParseSpec(MyoIntegrationSpec, ParseHelpers):
         self.root.send_sync(msg)
         self._modifiable(False)
 
-    @main_looped
+
+class ParseEmptySpec(MyoIntegrationSpec, ParseHelpers):
+
     def empty(self):
         cmd = ShellCommand(name='a', line='a', langs=List('python'))
         msg = ParseOutput(cmd, List(), None, Map())
-        self.plugin.myo_start()
         self.root.send_sync(msg)
         later(lambda:
               self.vim.messages.should.contain(error_no_output_events))
@@ -146,7 +151,6 @@ class PythonParseSpec(ParseSpecBase):
         return output
 
     def _run(self, output, parse_opt=Map()):
-        self.plugin.myo_start()
         return self._parse(output, parse_opt)
 
     def _init(self, parse_opt=Map()):
@@ -324,7 +328,6 @@ class SbtParseSpec(ParseSpecBase):
     def _run(self, output):
         cmd = ShellCommand(name='a', line='a', langs=List('sbt'))
         msg = ParseOutput(cmd, output, None, Map())
-        self.plugin.myo_start()
         self.root.send_sync(msg)
 
     def complete(self):
@@ -376,4 +379,5 @@ def _format(r):
 def _trunc(path):
     return path.name
 
-__all__ = ('BasicParseSpec', 'PythonParseSpec', 'SbtParseSpec')
+__all__ = ('PythonParseSpec', 'SbtParseSpec', 'NativeParseSpec',
+           'ParseTwiceSpec', 'ParseEmptySpec')

@@ -4,7 +4,7 @@ from libtmux.exc import LibTmuxException
 
 import amino.test
 from amino.test.path import fixture_path
-from amino import _, __
+from amino import _, __, List
 from amino.test import later
 from amino.lazy import lazy
 
@@ -121,5 +121,14 @@ class TmuxSpecBase(Spec):
 
     def _output_contains(self, target):
         later(lambda: self._output.should.contain(target))
+
+    def _pane_output(self, id):
+        return self._pane_with_id(id) / _.capture
+
+    def _pane_output_contains(self, id, data):
+        def check():
+            output = self._pane_output(id) | List()
+            output.should.contain(data)
+        later(check)
 
 __all__ = ('Spec', 'TmuxSpecBase')

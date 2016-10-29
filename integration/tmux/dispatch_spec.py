@@ -9,6 +9,7 @@ from integration._support.tmux import TmuxCmdSpec
 
 _test_line = 'this is a test'
 _eval_args_line = 'test {} / {}'
+r = lambda: List.random_string()
 
 
 def _test_ctor():
@@ -29,10 +30,11 @@ class EvalArgsCallback(VimCallback):
 class DispatchSpec(TmuxCmdSpec):
 
     def simple(self):
-        target = 'cmd test'
-        self._create_command('test', "echo '{}'".format(target))
+        target = r()
+        cmd = r()
+        self._create_command(cmd, "echo '{}'".format(target))
         self._open_pane('make')
-        self.json_cmd('MyoRun test')
+        self._run_command(cmd)
         self._output_contains(target)
 
     def _shell(self, create):
@@ -141,7 +143,7 @@ class DispatchSpec(TmuxCmdSpec):
         self._log_contains('pane not found: make')
 
     def vim_eval_func(self):
-        text = List.random_string()
+        text = r()
         name = 'test'
         func = 'TestLine'
         callback = 'vim:{}'.format(func)
@@ -157,7 +159,7 @@ class DispatchSpec(TmuxCmdSpec):
     def eval_args(self):
         name = 'test'
         line = 'py:integration.tmux.dispatch_spec.EvalArgsCallback'
-        args = List(List.random_string(), List.random_string())
+        args = List(r(), r())
         self._create_command(name, line, args=args, eval=True)
         self.json_cmd_sync('MyoRun {}'.format(name))
         text = _eval_args_line.format(*args)

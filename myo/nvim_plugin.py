@@ -41,7 +41,6 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
     def __init__(self, vim: neovim.Nvim) -> None:
         super().__init__(vim)
         self.myo = None
-        self._post_initialized = False
 
     @property
     def name(self):
@@ -63,8 +62,7 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
             self.vim.clean()
             self.myo = None
 
-    @command(sync=True)
-    def myo_start(self):
+    def start_plugin(self):
         config_path = self.vim.vars.ppath('config_path')\
             .get_or_else(Path('/dev/null'))
         plugins = self.vim.vars.pl('plugins') | self._default_plugins
@@ -73,17 +71,13 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
         self.myo.wait_for_running()
         self.myo.send(StageI())
 
+    @command(sync=True)
+    def myo_start(self):
+        self.start_plugin()
+
     @property
     def _default_plugins(self):
         return List('command', 'tmux', 'unite')
-
-    @command()
-    def myo_post_startup(self):
-        self._post_initialized = True
-        if self.myo is not None:
-            pass
-        else:
-            self.log.error('myo startup failed')
 
     @command()
     def myo_plug(self, plug_name, cmd_name, *args):
