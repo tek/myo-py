@@ -26,7 +26,7 @@ from myo.ui.tmux.pane import Pane, VimPane
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
 from myo.ui.tmux.session import Session, VimSession
 from myo.ui.tmux.server import Server, NativeServer
-from myo.util import parse_int, Ident
+from myo.util import Ident
 from myo.ui.tmux.window import VimWindow
 from myo.plugins.core.message import AddDispatcher, Resized, Initialized
 from myo.plugins.tmux.dispatch import TmuxDispatcher
@@ -83,25 +83,22 @@ class TmuxTransitions(MyoTransitions):
 
     @may_handle(TmuxFindVim)
     def find_vim(self):
-        vim_pid = self._vim_pid
-        vim_pane = vim_pid // self._find_vim_pane
         id = (
-            (self.vim.vars.p('tmux_force_vim_pane_id') // parse_int)
-            .or_else(vim_pane // _.id_i)
+            self.vim.vars.pi('tmux_force_vim_pane_id')
+            .o(lambda: self.native_vim_pane // _.id_i)
         )
         wid = (
-            self.vim.vars.p('tmux_force_vim_win_id')
-            .or_else(vim_pane // _.window_id_i)
+            self.vim.vars.pi('tmux_force_vim_win_id')
+            .o(lambda: self.native_vim_pane // _.window_id_i)
             .to_either('no vim win id')
         )
         sid = (
-            self.vim.vars.p('tmux_force_vim_session_id')
-            .or_else(vim_pane // _.session_id_i)
+            self.vim.vars.pi('tmux_force_vim_session_id')
+            .o(lambda: self.native_vim_pane // _.session_id_i)
             .to_either('no vim session id')
         )
         vim_w = self.vim.vars.p('tmux_vim_width').or_else(Just(88))
-        pane = VimPane(id=id.to_maybe, pid=vim_pid.to_maybe, window_id=wid,
-                       session_id=sid)
+        pane = VimPane(id=id.to_maybe, window_id=wid, session_id=sid)
         vim_layout = VimLayout(name=VimPane.pane_name,
                                direction=LayoutDirections.vertical,
                                panes=List(pane), min_size=vim_w,
@@ -260,7 +257,7 @@ class TmuxTransitions(MyoTransitions):
 
     @may_handle(Terminated)
     def terminated(self):
-        return self.tmux.pane_mod(self.msg.pane.uuid, __.setter.pid(Empty()))
+        return self.tmux.pane_mod(self.msg.pane.uuid, __.set(pid=Empty()))
 
     @may_handle(TmuxPack)
     def pack(self):
@@ -350,7 +347,11 @@ class TmuxTransitions(MyoTransitions):
     def _vim_pid(self):
         return self.vim.call('getpid').to_either('no pid')
 
-    def _find_vim_pane(self, vim_pid):
+    @lazy
+    def native_vim_pane(self):
+        return self._vim_pid // self._find_vim_pane_by_pid
+
+    def _find_vim_pane_by_pid(self, vim_pid):
         return self.server.pane_data.find(__.command_pid.contains(vim_pid))
 
     def _run_command(self, command, opt):
