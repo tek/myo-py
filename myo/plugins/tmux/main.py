@@ -365,7 +365,8 @@ class TmuxTransitions(MyoTransitions):
     def _run_command_line(self, command, line, opt):
         kill = opt.get('kill') | command.kill
         signals = opt.get('signals') / List.wrap | command.signals
-        pane_ident = opt.get('target') | self._default_pane_name
+        pane_ident = (opt.get('target').o(command.target) |
+                      self._default_pane_name)
         in_shell = Boolean('shell' in opt)
         def watch(path):
             msg = WatchCommand(command, path.view)

@@ -46,6 +46,7 @@ class Command(Named):
     signals = list_field(str, initial=default_signals)
     eval = bool_field()
     args = list_field()
+    target = ident_field()
 
     @property
     def _str_extra(self):

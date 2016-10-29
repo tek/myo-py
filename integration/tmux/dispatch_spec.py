@@ -37,6 +37,19 @@ class DispatchSpec(TmuxCmdSpec):
         self._run_command(cmd)
         self._output_contains(target)
 
+    def target_pane(self):
+        marker = r()
+        pane = r()
+        cmd = r()
+        sz = 3
+        self._open_pane('make')
+        self._create_pane(pane, parent='main', fixed_size=sz)
+        self._create_command(cmd, "echo '{}'".format(marker), target=pane)
+        self._run_command(cmd)
+        self._pane_count(3)
+        self._pane_output_contains(2, marker)
+        self._height(2, sz)
+
     def _shell(self, create):
         s = 'cmd test {}'
         i = 5342
