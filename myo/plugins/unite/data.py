@@ -13,6 +13,18 @@ class UniteNames():
     syntax = '_myo_unite_syntax'
 
 
+def commands_syntax(syntax):
+    m = L(Task.call)(syntax.match, _, _)
+    hi = L(Task.call)(syntax.highlight, _)
+    name = '^\s*\[\S\+\]'
+    return (
+        m('name', name) +
+        hi('name', ctermfg=3) +
+        m('line', '\({} \)\@<=.*'.format(name)) +
+        hi('line', ctermfg=4)
+    )
+
+
 class HistorySource(UniteSource):
 
     def __init__(self) -> None:
@@ -20,15 +32,7 @@ class HistorySource(UniteSource):
                          UniteNames.command, Just(UniteNames.syntax))
 
     def syntax_task(self, syntax):
-        m = L(Task.call)(syntax.match, _, _)
-        hi = L(Task.call)(syntax.highlight, _)
-        name = '^\s*\[\S\+\]'
-        return (
-            m('name', name) +
-            hi('name', ctermfg=3) +
-            m('line', '\({} \)\@<=.*'.format(name)) +
-            hi('line', ctermfg=4)
-        )
+        return commands_syntax(syntax)
 
 
 class CommandsSource(UniteSource):
@@ -36,5 +40,8 @@ class CommandsSource(UniteSource):
     def __init__(self) -> None:
         super().__init__(UniteNames.commands, UniteNames.commands_candidates,
                          UniteNames.command, Just(UniteNames.syntax))
+
+    def syntax_task(self, syntax):
+        return commands_syntax(syntax)
 
 __all__ = ('HistorySource', 'UniteNames', 'CommandsSource')
