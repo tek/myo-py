@@ -26,7 +26,7 @@ from myo.plugins.tmux.message import (TmuxCreatePane, TmuxCreateSession,
                                       TmuxFocus, TmuxOpenOrToggle, TmuxKill)
 from myo.plugins.tmux import TmuxOpen
 from myo.plugins.core.message import Parse, Resized
-from myo.plugins.unite.message import UniteHistory
+from myo.plugins.unite.message import UniteHistory, UniteCommands
 from myo.plugins.unite.main import UniteNames
 from myo.plugins.unite.format import unite_format
 from myo.output.machine import EventPrev, EventNext
@@ -235,9 +235,17 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
     def myo_unite_history(self):
         pass
 
+    @msg_command(UniteCommands)
+    def myo_unite_commands(self):
+        pass
+
     @unite_candidates('history')
     def myo_unite_history_candidates(self, args):
         return self.myo.data.commands.history / unite_format
+
+    @unite_candidates('commands')
+    def myo_unite_commands_candidates(self, args):
+        return self.myo.data.commands.commands / unite_format
 
     @unite_action('run', 'name')
     def myo_unite_run(self, ident):

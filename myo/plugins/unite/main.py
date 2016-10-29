@@ -1,15 +1,13 @@
-from ribosome.machine import may_handle, handle
+from ribosome.machine import may_handle
 from ribosome.unite import UniteKind
-from ribosome.machine.base import UnitTask
-from ribosome.unite.data import UniteSyntax
 from ribosome.unite.machine import UniteMachine, UniteTransitions
 
-from amino import Map, List, _, __
+from amino import Map, List
 from amino.lazy import lazy
 
-from myo.plugins.unite.message import UniteHistory
+from myo.plugins.unite.message import UniteHistory, UniteCommands
 from myo.state import MyoTransitions, MyoComponent
-from myo.plugins.unite.data import UniteNames, HistorySource
+from myo.plugins.unite.data import UniteNames, HistorySource, CommandsSource
 
 
 class MyoUniteTransitions(UniteTransitions, MyoTransitions):
@@ -17,6 +15,10 @@ class MyoUniteTransitions(UniteTransitions, MyoTransitions):
     def unite_cmd(self, cmd):
         args = ' '.join(self.msg.unite_args)
         self.vim.cmd('Unite {} {}'.format(cmd, args))
+
+    @may_handle(UniteCommands)
+    def commands(self):
+        self.unite_cmd(UniteNames.commands)
 
     @may_handle(UniteHistory)
     def history(self):
@@ -34,9 +36,13 @@ class Plugin(UniteMachine, MyoComponent):
     def history_source(self):
         return HistorySource()
 
+    @lazy
+    def commands_source(self):
+        return CommandsSource()
+
     @property
     def sources(self):
-        return List(self.history_source)
+        return List(self.history_source, self.commands_source)
 
     @lazy
     def run_action(self):
@@ -48,7 +54,7 @@ class Plugin(UniteMachine, MyoComponent):
 
     @lazy
     def run_kind(self):
-        return UniteKind(UniteNames.history, List(self.run_action))
+        return UniteKind(UniteNames.command, List(self.run_action))
 
     @property
     def kinds(self):

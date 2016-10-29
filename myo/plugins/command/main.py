@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-from ribosome.machine import may_handle, handle
+from ribosome.machine import may_handle, handle, Nop
 from ribosome.machine.transition import Fatal
 from ribosome.util.callback import parse_callback_spec
 from ribosome.machine.base import UnitTask
@@ -8,7 +8,7 @@ from ribosome.record import decode_json, encode_json
 
 from myo.state import MyoComponent, MyoTransitions
 
-from amino import L, _, List, Try, __, Maybe, Map, I, Task, Just
+from amino import L, _, List, Try, __, Maybe, Map, I, Task, Just, Boolean
 from myo.command import (Command, VimCommand, ShellCommand, Shell,
                          TransientCommand)
 from myo.util import amend_options
@@ -26,6 +26,7 @@ RunInShell = namedtuple('RunInShell', ['shell'])
 
 class CommandTransitions(MyoTransitions):
     _test_cmd_name = '<test>'
+    _test_cmd_var = 'create_test_command'
 
     def _add(self, tpe: type, **strict):
         return self._from_opt(tpe, **strict) / self._add_command
@@ -39,10 +40,14 @@ class CommandTransitions(MyoTransitions):
     def stage_i(self):
         line = self.vim.vars(self._last_test_line_var) | ''
         shell = self.vim.vars(self._last_test_shell_var)
+        test_cmd = self.vim.vars.pb(self._test_cmd_var) | Boolean(True)
         opt1 = Map(line=line)
         opt = shell / (lambda a: opt1.cat(('shell', a))) | opt1
         return (
-            AddShellCommand(name=self._test_cmd_name, options=opt),
+            test_cmd.cata(
+                AddShellCommand(name=self._test_cmd_name, options=opt),
+                Nop()
+            ),
             LoadHistory()
         )
 

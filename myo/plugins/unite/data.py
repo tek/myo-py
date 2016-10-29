@@ -5,7 +5,10 @@ from ribosome.unite import UniteSource
 
 class UniteNames():
     history_candidates = '_myo_unite_history'
-    run = '_myo_unite_run_project'
+    commands_candidates = '_myo_unite_commands'
+    run = '_myo_unite_run_command'
+    commands = 'myo_commands'
+    command = 'myo_command'
     history = 'myo_history'
     syntax = '_myo_unite_syntax'
 
@@ -14,7 +17,7 @@ class HistorySource(UniteSource):
 
     def __init__(self) -> None:
         super().__init__(UniteNames.history, UniteNames.history_candidates,
-                         UniteNames.history, Just(UniteNames.syntax))
+                         UniteNames.command, Just(UniteNames.syntax))
 
     def syntax_task(self, syntax):
         m = L(Task.call)(syntax.match, _, _)
@@ -28,4 +31,10 @@ class HistorySource(UniteSource):
         )
 
 
-__all__ = ('HistorySource', 'UniteNames')
+class CommandsSource(UniteSource):
+
+    def __init__(self) -> None:
+        super().__init__(UniteNames.commands, UniteNames.commands_candidates,
+                         UniteNames.command, Just(UniteNames.syntax))
+
+__all__ = ('HistorySource', 'UniteNames', 'CommandsSource')
