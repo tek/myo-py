@@ -5,7 +5,7 @@ from amino.lazy import lazy
 from ribosome.test.unite import unite
 from ribosome.record import encode_json
 
-from myo.command import ShellCommand, TransientCommand
+from myo.command import ShellCommand, CommandJob, TransientCommandJob
 from myo.plugins.unite.format import unite_format, unite_format_str_command
 from myo.plugins.command.main import CommandTransitions
 
@@ -50,8 +50,10 @@ class UniteLoadHistorySpec(_UniteSpecBase):
     @lazy
     def _history(self):
         cmd = ShellCommand(name='other', line='ls')
-        return List(ShellCommand(name=self._cmd, line='tee'),
-                    TransientCommand(command=cmd, line='tail'))
+        return List(
+            CommandJob(command=ShellCommand(name=self._cmd, line='tee')),
+            TransientCommandJob(command=cmd, override_line='tail')
+        )
 
     def _set_vars(self):
         super()._set_vars()

@@ -7,7 +7,7 @@ from amino.test.path import fixture_path
 from ribosome.record import encode_json
 
 from myo.output.data import OutputEntry, OutputEvent, ParseResult
-from myo.command import TransientCommand, ShellCommand
+from myo.command import ShellCommand, TransientCommandJob
 
 from integration._support.tmux import TmuxCmdSpec
 from integration._support.vimtest import vimtest
@@ -135,12 +135,12 @@ class PythonVimTestLoadHistorySpec(PythonVimTestBase):
 
     def _set_vars(self):
         super()._set_vars()
-        cmd = TransientCommand(line=self._line,
-                               command=ShellCommand(line='', name='<test>'),
-                               transient=True,
-                               name='test_line_<test>_VIroI',
-                               langs=List('python'))
-        history = encode_json([cmd]).get_or_raise
+        cmd = ShellCommand(line='', name='<test>')
+        job = TransientCommandJob(override_line=self._line,
+                                  command=cmd,
+                                  name='test_line_<test>_VIroI',
+                                  override_langs=List('python'))
+        history = encode_json([job]).get_or_raise
         self.vim.vars.set('Myo_history', history)
 
     @vimtest

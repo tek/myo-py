@@ -1,7 +1,7 @@
 from ribosome.machine import message, json_message
 
-TmuxRunCommand = json_message('TmuxRunCommand', 'command')
-TmuxRunShell = json_message('TmuxRunShell', 'shell')
+TmuxRunCommand = json_message('TmuxRunCommand', 'job')
+TmuxRunShell = json_message('TmuxRunShell', 'job')
 TmuxRunCommandInShell = message('TmuxRunCommandInShell', 'shell', 'command',
                                 'options')
 TmuxRunLineInShell = json_message('TmuxRunLineInShell', 'shell')
@@ -18,7 +18,7 @@ TmuxInfo = message('TmuxInfo')
 TmuxParse = json_message('TmuxParse')
 TmuxPack = message('TmuxPack')
 TmuxPostOpen = json_message('TmuxPostOpen', 'ident')
-TmuxPostCommand = message('TmuxPostCommand', 'command', 'pane_ident')
+TmuxPostCommand = message('TmuxPostCommand', 'job', 'pane_ident')
 TmuxFixFocus = message('TmuxFixFocus', 'pane')
 TmuxFocus = message('TmuxFocus', 'pane')
 TmuxMinimize = json_message('TmuxMinimize', 'pane')

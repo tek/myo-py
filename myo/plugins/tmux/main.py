@@ -33,7 +33,7 @@ from myo.plugins.tmux.dispatch import TmuxDispatcher
 from myo.ui.tmux.view_path import LayoutPathMod, PanePathMod, ViewPathMod
 from myo.ui.tmux.data import TmuxState
 from myo.plugins.command.message import SetShellTarget, CommandExecuted
-from myo.command import Command, Shell, default_signals
+from myo.command import Command, Shell, default_signals, CommandJob
 from myo.plugins.tmux.watcher import Watcher, Terminated
 from myo.ui.tmux.facade.main import TmuxFacade
 from myo.ui.tmux.util import format_state
@@ -196,21 +196,24 @@ class TmuxTransitions(MyoTransitions):
 
     @handle(TmuxRunCommand)
     def run_command(self):
-        command = self.msg.command
+        job = self.msg.job
+        command = job.command
         options = self.msg.options
-        shell = (options.get('shell').or_else(command.effective.shell) //
+        shell = (options.get('shell')
+                 .o(command.shell) //
                  self.data.shell)
         return shell.to_maybe.cata(
-            L(self._run_in_shell)(command, _, options),
-            L(self._run_command)(command, options)
+            L(self._run_in_shell)(job, _, options),
+            L(self._run_command)(job, options)
         )
 
     @may_handle(TmuxRunShell)
     def run_shell(self):
-        shell = self.msg.shell
-        default = Map(shell.target.map(lambda a: ('target', a)).to_list)
+        shell = self.msg.job
+        default = Map(shell.command.target.map(lambda a: ('target', a)).to_list
+                      )
         opts = default ** self.msg.options
-        return TmuxRunCommand(command=shell, options=opts)
+        return TmuxRunCommand(job=shell, options=opts)
 
     @handle(SetShellTarget)
     def set_shell_target(self):
@@ -316,7 +319,7 @@ class TmuxTransitions(MyoTransitions):
     @may_handle(TmuxPostCommand)
     def post_command(self):
         log_path = self._pane(self.msg.pane_ident) // _.log_path
-        return CommandExecuted(self.msg.command, log_path).pub
+        return CommandExecuted(self.msg.job, log_path).pub
 
     def _minimize(self, f):
         return self.tmux.view_mod(self.msg.pane, f), TmuxPack().pub.at(1)
@@ -354,33 +357,34 @@ class TmuxTransitions(MyoTransitions):
     def _find_vim_pane_by_pid(self, vim_pid):
         return self.server.pane_data.find(__.command_pid.contains(vim_pid))
 
-    def _run_command(self, command, opt):
-        args = opt.get('args') | command.args
+    def _run_command(self, job: CommandJob, opt):
+        args = opt.get('args') | job.args
         return (
-            command.effective.effective_line
+            job.line
             .resolve(self.vim, *args) /
-            L(self._run_command_line)(command, _, opt)
+            L(self._run_command_line)(job, _, opt)
         )
 
-    def _run_command_line(self, command, line, opt):
+    def _run_command_line(self, job: CommandJob, line, opt):
+        command = job.command
         kill = opt.get('kill') | command.kill
         signals = opt.get('signals') / List.wrap | command.signals
         pane_ident = (opt.get('target').o(command.target) |
                       self._default_pane_name)
         in_shell = Boolean('shell' in opt)
         def watch(path):
-            msg = WatchCommand(command, path.view)
+            msg = WatchCommand(job, path.view)
             return Task.call(self.machine.watcher.send, msg)
         runner = self.tmux.run_command_ppm(pane_ident, line, in_shell, kill,
                                            signals) % watch
         return List(runner, TmuxPostOpen(pane_ident, opt),
-                    TmuxPostCommand(command, pane_ident))
+                    TmuxPostCommand(job, pane_ident))
 
-    def _run_in_shell(self, command: Command, shell: Shell, options: Map):
+    def _run_in_shell(self, job: CommandJob, shell: Shell, options: Map):
         ident = shell.target | self._default_pane_name
         opt = options + ('target', ident) + ('shell', shell)
-        return (self._run_command(command, opt) /
-                __.cons(TmuxRunShell(shell, Map())))
+        return (self._run_command(job, opt) /
+                __.cons(TmuxRunShell(CommandJob(command=shell), Map())))
 
     def _main_command(self, cmd_ident: Ident):
         holder = lambda cmd: cmd.shell // self.data.shell | cmd

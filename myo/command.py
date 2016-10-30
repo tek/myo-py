@@ -1,7 +1,7 @@
 import abc
 from functools import singledispatch  # type: ignore
 
-from amino import Path, __, Just, List, L, Maybe, _, Map
+from amino import Path, __, Just, List, L, Maybe, _, Map, Left, Right
 
 from ribosome.record import list_field, field, maybe_field, bool_field, dfield
 from ribosome.util.callback import parse_callback_spec
@@ -44,17 +44,12 @@ class Command(Named):
     langs = list_field()
     kill = bool_field()
     signals = list_field(str, initial=default_signals)
-    eval = bool_field()
     args = list_field()
     target = ident_field()
 
     @property
     def _str_extra(self):
         return super()._str_extra.cat_m(self.langs.empty.no.m(self.langs))
-
-    @property
-    def _str_extra_named(self):
-        return Map(eval=self.eval)
 
     @property
     def desc(self):
@@ -85,18 +80,6 @@ class Command(Named):
         return 'C'
 
     @property
-    def main_id(self) -> Ident:
-        return self.uuid
-
-    @property
-    def main_name(self):
-        return self.name
-
-    @property
-    def main_key(self):
-        return Key(uuid=self.main_id, name=self.main_name)
-
-    @property
     def effective(self):
         return self
 
@@ -108,8 +91,25 @@ class VimCommand(Command):
         return 'VC'
 
 
-class ShellCommand(Command):
+class LineCommand(Command):
     line = field(str)
+    eval = bool_field()
+
+    @property
+    def _str_extra_named(self):
+        return Map(eval=self.eval)
+
+    @property
+    def effective_line(self):
+        tpe = EvalLine if self.eval else StrictLine
+        return tpe(self.line)
+
+    @property
+    def formatted_line(self):
+        return self.line
+
+
+class ShellCommand(LineCommand):
     shell = ident_field()
 
     @property
@@ -120,46 +120,85 @@ class ShellCommand(Command):
     def _info_fields(self):
         return super()._info_fields + List('shell')
 
-    @property
-    def effective_line(self):
-        tpe = EvalLine if self.eval else StrictLine
-        return tpe(self.line)
-
 
 class Shell(ShellCommand):
-    target = ident_field()
+    # target = ident_field()
 
     @property
     def _type_desc(self):
         return 'S'
 
 
-class TransientCommand(Command):
+class CommandJob(Record):
     command = field(Command)
-    line = field(str)
-
-    def __new__(cls, prefix='transient', transient=None, command=None,
-                name=None, **kw):
-        name = name or '{}_{}_{}'.format(prefix, command.name,
-                                         List.random_string(5))
-        return super().__new__(cls, name=name, transient=True, command=command,
-                               **kw)
 
     @property
     def _str_extra(self):
         return super()._str_extra.cat(self.command)
 
     @property
-    def effective(self):
-        return self.command.set(name=self.name, line=self.line)
+    def args(self):
+        return self.command.args
 
     @property
-    def main_id(self):
-        return self.command.main_id
+    def _line(self):
+        return self.command.line
+
+    @property
+    def line(self):
+        tpe = EvalLine if self.command.eval else StrictLine
+        return tpe(self._line)
+
+    @property
+    def main_id(self) -> Ident:
+        return self.command.uuid
 
     @property
     def main_name(self):
         return self.command.name
+
+    @property
+    def main_key(self):
+        return Key(uuid=self.main_id, name=self.main_name)
+
+    @property
+    def name(self):
+        return self.command.name
+
+    @property
+    def langs(self):
+        return self.command.langs
+
+    @property
+    def formatted_line(self):
+        return self.command.line
+
+
+class TransientCommandJob(CommandJob):
+    name = field(str)
+    override_langs = list_field(str)
+    override_line = field(str)
+
+    def __new__(cls, prefix='transient', command=None,
+                name=None, **kw):
+        name = name or '{}_{}_{}'.format(prefix, command.name,
+                                         List.random_string(5))
+        return super().__new__(cls, name=name, command=command, **kw)
+
+    @property
+    def _line(self):
+        return self.override_line
+
+    @property
+    def langs(self):
+        return self.override_langs + super().langs
+
+    @property
+    def formatted_line(self):
+        return self.override_line
+
+    def has_ident(self, ident: Ident):
+        return self.name == ident
 
 
 @singledispatch
@@ -167,9 +206,9 @@ def _history_cmp(cmd):
     return cmd.name
 
 
-@_history_cmp.register(TransientCommand)
+@_history_cmp.register(TransientCommandJob)
 def _history_cmp_transient(cmd):
-    return '{}|{}'.format(cmd.command.name, cmd.line)
+    return '{}|{}'.format(cmd.command.name, cmd.override_line)
 
 
 class Commands(Record):
@@ -187,9 +226,13 @@ class Commands(Record):
         return self.append1.commands(command)
 
     def __getitem__(self, ident: Ident):
+        return (self.commands.find(__.has_ident(ident))
+                .to_either(self.no_such_command_error.format(ident)))
+
+    def command_or_job(self, ident: Ident):
         return (
-            self.commands.find(__.has_ident(ident))
-            .o(lambda: self.history.find(__.has_ident(ident)))
+            (self[ident] / Right)
+            .o(lambda: self.history.find(__.has_ident(ident)) / Left)
             .to_either(self.no_such_command_error.format(ident))
         )
 
@@ -218,4 +261,4 @@ class Commands(Record):
         return self.history.head.to_either(self.no_latest_command_error)
 
 __all__ = ('Commands', 'Command', 'VimCommand', 'ShellCommand', 'Shell',
-           'TransientCommand')
+           'CommandJob', 'TransientCommandJob')

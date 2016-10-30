@@ -1,10 +1,9 @@
 import asyncio
-from pathlib import Path
 
 from psutil import Process
 
-from ribosome.record import list_field, bool_field, field, maybe_field
-from ribosome.machine import may_handle, handle, Transitions, message, RunTask
+from ribosome.record import list_field, bool_field, field
+from ribosome.machine import may_handle, handle, Transitions, message
 from ribosome import StateMachine
 from ribosome.machine.base import UnitTask
 
@@ -13,7 +12,7 @@ from amino.task import Task
 
 from myo.record import Record
 from myo.plugins.tmux.message import WatchCommand
-from myo.command import Command
+from myo.command import CommandJob
 from myo.ui.tmux.pane import Pane
 
 
@@ -26,9 +25,8 @@ class WatcherState(Record):
 
 
 class WatchedCommand(Record):
-    command = field(Command)
+    command = field(CommandJob)
     pane = field(Pane)
-    # log = maybe_field(Path)
 
 
 Start = message('Start')
@@ -49,7 +47,6 @@ class WatcherTransitions(Transitions):
     def watch_command(self):
         pane = self.msg.pane
         wc = WatchedCommand(command=self.msg.command, pane=pane)
-        f = pane.log_path
         return self.data.append1.commands(wc), Tail(pane), Start()
 
     @handle(Start)

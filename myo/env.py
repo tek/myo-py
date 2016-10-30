@@ -31,6 +31,9 @@ class Env(Data):
     def command(self, name: str):
         return self.commands[name]
 
+    def command_or_job(self, name: str):
+        return self.commands.command_or_job(name)
+
     def shell(self, name: str):
         return self.commands.shell(name)
 

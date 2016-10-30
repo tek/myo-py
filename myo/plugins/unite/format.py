@@ -1,6 +1,6 @@
 from functools import singledispatch  # type: ignore
 
-from myo.command import ShellCommand, TransientCommand
+from myo.command import ShellCommand, CommandJob
 
 
 @singledispatch
@@ -17,11 +17,11 @@ def _format_cmd(name, display_name, line):
 
 @unite_format.register(ShellCommand)
 def unite_format_command(cmd):
-    return _format_cmd(cmd.name, cmd.name, cmd.line)
+    return _format_cmd(cmd.name, cmd.name, cmd.formatted_line)
 
 
-@unite_format.register(TransientCommand)
+@unite_format.register(CommandJob)
 def unite_format_transient_command(cmd):
-    return _format_cmd(cmd.name, cmd.command.name, cmd.line)
+    return _format_cmd(cmd.name, cmd.command.name, cmd.formatted_line)
 
 __all__ = ('unite_format',)

@@ -10,6 +10,7 @@ from myo.plugins.core.dispatch import VimDispatcher
 from myo.plugins.core.message import StageI, Initialized, ParseOutput
 from myo.output import VimCompiler, CustomOutputHandler, Parsing
 from myo.output.main import OutputHandler
+from myo.command import CommandJob
 
 error_no_output_events = 'no events in parse result'
 
@@ -37,6 +38,7 @@ class CoreTransitions(MyoTransitions):
     @handle(ParseOutput)
     def parse_output(self):
         opt = self.msg.options
+        job = self._ensure_job(self.msg.job)
         def handle(parser):
             def display(result):
                 return (
@@ -46,11 +48,11 @@ class CoreTransitions(MyoTransitions):
                 )
             return RunTask(parser.parse(self.msg.output, self.msg.path) //
                            display)
-        return self._error_handler(self.msg.command) / handle
+        return self._error_handler(job) / handle
 
-    def _error_handler(self, cmd):
-        langs = self.msg.options.get('langs') / List.wrap | cmd.langs
-        parser_spec = self.msg.options.get('parser').o(cmd.parser)
+    def _error_handler(self, job):
+        langs = self.msg.options.get('langs') / List.wrap | job.langs
+        parser_spec = self.msg.options.get('parser').o(job.command.parser)
         def check(p):
             return (p if isinstance(p, OutputHandler) else
                     CustomOutputHandler(self.vim, p))
@@ -66,6 +68,10 @@ class CoreTransitions(MyoTransitions):
     def _langs_parsing(self, langs):
         return langs.empty.no.either('command has no langs',
                                      Parsing(self.vim, langs))
+
+    def _ensure_job(self, data):
+        return (data if isinstance(data, CommandJob) else
+                CommandJob(command=data))
 
 
 class Plugin(MyoComponent):

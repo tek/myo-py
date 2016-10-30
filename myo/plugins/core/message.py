@@ -6,7 +6,7 @@ StageI = message('StageI')
 StageII = message('StageII')
 Initialized = message('Initialized')
 Parse = json_message('Parse')
-ParseOutput = json_message('ParseOutput', 'command', 'output', 'path')
+ParseOutput = json_message('ParseOutput', 'job', 'output', 'path')
 Resized = message('Resized')
 
 __all__ = ('RunVimCommand', 'AddDispatcher', 'StageI', 'StageII',

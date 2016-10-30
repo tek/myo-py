@@ -1,5 +1,3 @@
-from collections import namedtuple
-
 from ribosome.machine import may_handle, handle, Nop
 from ribosome.machine.transition import Fatal
 from ribosome.util.callback import parse_callback_spec
@@ -8,9 +6,10 @@ from ribosome.record import decode_json, encode_json
 
 from myo.state import MyoComponent, MyoTransitions
 
-from amino import L, _, List, Try, __, Maybe, Map, I, Task, Just, Boolean
-from myo.command import (Command, VimCommand, ShellCommand, Shell,
-                         TransientCommand)
+from amino import (L, _, List, Try, __, Maybe, Map, I, Task, Just, Boolean,
+                   Left)
+from myo.command import (Command, VimCommand, ShellCommand, Shell, CommandJob,
+                         TransientCommandJob)
 from myo.util import amend_options
 from myo.plugins.core.message import Parse, ParseOutput, StageI
 from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
@@ -20,8 +19,6 @@ from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
                                          CommandAdded, CommandShow, RunLatest,
                                          LoadHistory, StoreHistory, RunLine)
 from myo.plugins.command.util import assemble_vim_test_line
-
-RunInShell = namedtuple('RunInShell', ['shell'])
 
 
 class CommandTransitions(MyoTransitions):
@@ -108,7 +105,7 @@ class CommandTransitions(MyoTransitions):
     @handle(Run)
     def run(self):
         return (
-            self._command_fatal(self.msg.command) /
+            self._command_job_fatal(self.msg.command) /
             L(Dispatch)(_, self.msg.options)
         )
 
@@ -139,7 +136,7 @@ class CommandTransitions(MyoTransitions):
 
     @handle(RunLatest)
     def run_latest(self):
-        return self._latest_command_fatal / Dispatch
+        return self.latest_job_fatal / Dispatch
 
     @handle(Dispatch)
     def dispatch(self):
@@ -150,7 +147,7 @@ class CommandTransitions(MyoTransitions):
 
     @may_handle(CommandExecuted)
     def command_executed(self):
-        cmd = self.msg.command
+        job = self.msg.job
         def set_log(path, cmd_lens):
             def run(cmd):
                 self.log.debug('setting {} log to {}'.format(cmd.name, path))
@@ -158,11 +155,11 @@ class CommandTransitions(MyoTransitions):
             return cmd_lens.modify(run)
         data = (
             (self.msg.log_path.to_either('no log path') &
-             self.data.command_lens(cmd.main_key))
+             self.data.command_lens(job.main_key))
             .map2(set_log) |
             self.data
         )
-        new = data.commands.add_history(cmd)
+        new = data.commands.add_history(job)
         return data.set(commands=new), StoreHistory()
 
     @handle(Parse)
@@ -180,7 +177,10 @@ class CommandTransitions(MyoTransitions):
             )
         cmd = (
             self.msg.options.get('command')
-            .cata(self.data.command, lambda: self._latest_command_fatal)
+            .cata(
+                L(self.data.command_or_job)(_),
+                lambda: self.latest_job_fatal / Left
+            ) / __.left_or_map(lambda a: CommandJob(command=a))
         )
         log_path = cmd // find_log
         return (cmd & log_path).flat_map2(parse).lmap(Fatal)
@@ -207,14 +207,16 @@ class CommandTransitions(MyoTransitions):
         msg = self.data.commands.commands / _.desc
         self.log.info(msg.join_lines)
 
-    def _command_fatal(self, ident):
-        return self.data.command(self.msg.command).lmap(Fatal)
+    def _command_job_fatal(self, ident):
+        return (self.data.command_or_job(self.msg.command)
+                .lmap(Fatal) /
+                __.left_or_map(CommandJob.from_attr('command')))
 
     def _shell_fatal(self, ident):
         return self.data.shell(ident).lmap(Fatal)
 
     @property
-    def _latest_command_fatal(self):
+    def latest_job_fatal(self):
         return self.data.commands.latest_command.lmap(Fatal)
 
     def _assemble(self, ctor):
@@ -232,8 +234,9 @@ class CommandTransitions(MyoTransitions):
         return (
             self.data.command(self._test_cmd_name)
             .to_either('no test command') /
-            (lambda a: TransientCommand(
-                prefix='test_line', command=a, line=line, langs=langs)) /
+            (lambda a: TransientCommandJob(
+                prefix='test_line', command=a, override_line=line,
+                override_langs=langs)) /
             L(Dispatch)(_, opt2)
         )
 
