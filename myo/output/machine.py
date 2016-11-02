@@ -327,11 +327,14 @@ class OutputMachineTransitions(MyoTransitions):
                 .task('could not get a window') /
                 __.focus()
             )
+            def load_buffer(id):
+                return Task.delay(self.vim.window.cmd, 'buffer {}'.format(id))
             def edit():
-                return (Task.delay(self.vim.edit, path) / __.run_async()
-                        if self.vim.buffer.name != path else
-                        Task.zero)
-            return win + Task.suspend(edit)
+                return Task.delay(self.vim.edit, path) / __.run_async()
+            def load_file():
+                buf = self.vim.buffers.find(_.name == str(path))
+                return buf / load_buffer | edit
+            return win + Task.suspend(load_file)
 
 
 class OutputMachine(ScratchMachine, Logging):

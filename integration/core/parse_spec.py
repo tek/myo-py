@@ -127,6 +127,19 @@ class ParseEmptySpec(MyoIntegrationSpec, ParseHelpers):
         self.vim.windows.should.have.length_of(1)
 
 
+class ParseOpenModifiedSpec(MyoIntegrationSpec, ParseHelpers):
+
+    def modified(self):
+        self.vim.edit(self._file).run_sync()
+        self.vim.buffer.options.set('modified', True)
+        cmd = ShellCommand(name='a', line='a', langs=List('python'))
+        msg = ParseOutput(cmd, self._mk_trace, None, Map())
+        l = self.vim.window.line
+        self.root.send_sync(msg)
+        later(lambda: self.vim.window.line.should_not.equal(l))
+        self.vim.buffer.options('modified').should.be.true
+
+
 class ParseSpecBase(MyoIntegrationSpec, ParseHelpers):
 
     def _pre_start(self):
