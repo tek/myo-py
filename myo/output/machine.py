@@ -183,9 +183,15 @@ class OutputMachineTransitions(MyoTransitions):
 
     @handle(CursorToCurrent)
     def cursor_to_current(self):
+        cur = self.vim.window
         return (
-            self.line_for_current_loc /
-            L(Task.delay)(self.vim.window.set_cursor, _ + 1) /
+            self.line_for_current_loc / (
+                lambda a:
+                Task.delay(self.window.focus) +
+                Task.delay(self.window.set_cursor, a + 1) +
+                Task.delay(self.window.cmd, 'normal! zz') +
+                Task.delay(cur.focus)
+            ) /
             UnitTask
         )
 
