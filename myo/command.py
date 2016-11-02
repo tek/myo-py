@@ -173,6 +173,9 @@ class CommandJob(Record):
     def formatted_line(self):
         return self.command.line
 
+    def has_ident(self, ident: Ident):
+        return self.command.has_ident(ident)
+
 
 class TransientCommandJob(CommandJob):
     name = field(str)
