@@ -1,7 +1,8 @@
-from amino import Empty
+from ribosome.machine import json_message
 
 from myo.dispatch import Dispatcher
-from myo.plugins.command.message import CommandExecuted
+
+DummyRun = json_message('DummyRun', 'cmd')
 
 
 class DummyDispatcher(Dispatcher):
@@ -10,6 +11,6 @@ class DummyDispatcher(Dispatcher):
         return True
 
     def message(self, cmd, options):
-        return CommandExecuted(cmd, Empty())
+        return DummyRun(cmd, options)
 
 __all__ = ('DummyDispatcher',)

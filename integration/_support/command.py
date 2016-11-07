@@ -13,6 +13,9 @@ class CmdSpecConf:
     def _last(self):
         return (lambda: self.vim.vars.pd('last_command') // __.get('name'))
 
+
+class CmdPluginSpecConf(CmdSpecConf):
+
     def _create_command(self, name, line, **opt):
         self.json_cmd_sync('MyoShellCommand {}'.format(name), line=line, **opt)
         self._wait(.1)
@@ -22,7 +25,7 @@ class CmdSpecConf:
         self._wait(.1)
 
 
-class CmdSpec(CmdSpecConf, MyoPluginIntegrationSpec):
+class CmdSpec(CmdPluginSpecConf, MyoPluginIntegrationSpec):
     pass
 
-__all__ = ('CmdSpec', 'CmdSpecConf')
+__all__ = ('CmdSpec', 'CmdSpecConf', 'CmdPluginSpecConf')

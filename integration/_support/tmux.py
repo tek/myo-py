@@ -1,6 +1,6 @@
 from integration._support.base import (MyoPluginIntegrationSpec,
                                        MyoIntegrationSpec)
-from integration._support.command import CmdSpecConf
+from integration._support.command import CmdPluginSpecConf
 
 from amino.test import later
 from amino import _, __, Map, Maybe
@@ -141,7 +141,7 @@ class DefaultLayoutSpec(TmuxIntegrationSpec):
         self.vim.vars.set_p('tmux_use_defaults', True)
 
 
-class TmuxCmdConf(CmdSpecConf):
+class TmuxCmdConf(CmdPluginSpecConf):
 
     def _set_vars(self):
         super()._set_vars()

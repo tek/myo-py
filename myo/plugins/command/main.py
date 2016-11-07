@@ -1,3 +1,5 @@
+import re
+
 from ribosome.machine import may_handle, handle, Nop
 from ribosome.machine.transition import Fatal
 from ribosome.util.callback import parse_callback_spec
@@ -7,7 +9,7 @@ from ribosome.record import decode_json, encode_json
 from myo.state import MyoComponent, MyoTransitions
 
 from amino import (L, _, List, Try, __, Maybe, Map, I, Task, Just, Boolean,
-                   Left)
+                   Left, Either)
 from myo.command import (Command, VimCommand, ShellCommand, Shell, CommandJob,
                          TransientCommandJob)
 from myo.util import amend_options
@@ -17,7 +19,8 @@ from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
                                          AddVimCommand, SetShellTarget,
                                          CommandExecuted, RunTest, RunVimTest,
                                          CommandAdded, CommandShow, RunLatest,
-                                         LoadHistory, StoreHistory, RunLine)
+                                         LoadHistory, StoreHistory, RunLine,
+                                         RunChained)
 from myo.plugins.command.util import assemble_vim_test_line
 
 
@@ -138,6 +141,53 @@ class CommandTransitions(MyoTransitions):
     def run_latest(self):
         return self.latest_job_fatal / Dispatch
 
+    @handle(RunChained)
+    def run_chained(self):
+        special_rex = re.compile('s:(.*)')
+        def special(name):
+            return (
+                (
+                    self._vim_test_line //
+                    L(self._test_line_job)(Map(), _) /
+                    List.wrap //
+                    _.head
+                ).to_either('failed to create test line')
+                if name == 'vimtest' else
+                Left('invalid special command: {}'.format(name))
+            )
+        def resolve(name):
+            return (
+                Maybe(special_rex.match(name)).cata(
+                    L(special)(__.group(1)),
+                    lambda: (self.data.command(name) /
+                             CommandJob.from_attr('command'))
+                )
+            )
+        def cons(line, job):
+            cmd = job.command.set(eval=False)
+            return (
+                Dispatch(
+                    TransientCommandJob(prefix='chained', command=cmd,
+                                        override_line=line),
+                    Map()
+                )
+            )
+        commands = (
+            List.wrap(self.msg.commands) / resolve
+        ).sequence(Either)
+        lines = ((commands.eff() / __.resolved_line(self.vim)).value //
+                 __.sequence(Either))
+        chained = (
+            (self._callback('chainer') & lines)
+            .map2(lambda a, b: a(b))
+            .to_either('chainer failed')
+        )
+        return (
+            (chained & (commands // __.head.to_either('commands empty')))
+            .map2(cons)
+            .lmap(Fatal)
+        )
+
     @handle(Dispatch)
     def dispatch(self):
         cmd = self.msg.command
@@ -192,14 +242,14 @@ class CommandTransitions(MyoTransitions):
             opt.get('ctor')
             .to_either('no test ctor specified') //
             self._assemble //
-            L(self._run_test_line)(opt - 'ctor', _)
+            L(self._test_line_dispatch)(opt - 'ctor', _)
         ).to_either('failed to setup test line').lmap(Fatal)
 
     @handle(RunVimTest)
     def run_vim_test(self):
         return (
-            assemble_vim_test_line(self.vim) //
-            L(self._run_test_line)(self.msg.options, _)
+            self._vim_test_line //
+            L(self._test_line_dispatch)(self.msg.options, _)
         ).lmap(Fatal)
 
     @may_handle(CommandShow)
@@ -222,7 +272,21 @@ class CommandTransitions(MyoTransitions):
     def _assemble(self, ctor):
         return parse_callback_spec(ctor) // __(self.vim)
 
-    def _run_test_line(self, options, line):
+    @property
+    def _vim_test_line(self):
+        return assemble_vim_test_line(self.vim)
+
+    def _test_line_dispatch(self, options, line):
+        return self._test_line_job(options, line).map2(Dispatch)
+
+    def _test_line_job(self, options, line):
+        def dispatch(cmd, line, langs, opt):
+            job = TransientCommandJob(prefix='test_line', command=cmd,
+                                      override_line=line, override_langs=langs)
+            return job, opt
+        return self._test_line_params(options, line).map4(dispatch)
+
+    def _test_line_params(self, options, line):
         glangs = self.vim.buffer.vars.pl('test_langs')
         langs = options.get('langs').or_else(glangs) | List()
         shell = self.vim.buffer.pvar_or_global('test_shell')
@@ -234,10 +298,7 @@ class CommandTransitions(MyoTransitions):
         return (
             self.data.command(self._test_cmd_name)
             .to_either('no test command') /
-            (lambda a: TransientCommandJob(
-                prefix='test_line', command=a, override_line=line,
-                override_langs=langs)) /
-            L(Dispatch)(_, opt2)
+            (lambda a: (a, line, langs, opt2))
         )
 
 

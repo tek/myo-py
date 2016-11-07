@@ -28,13 +28,16 @@ class Line(Logging, metaclass=abc.ABCMeta):
 class StrictLine(Line):
 
     def resolve(self, vim, *args):
-        return Just(self.line)
+        return Right(self.line)
 
 
 class EvalLine(Line):
 
     def resolve(self, vim, *args):
-        return parse_callback_spec(self.line) // __(vim, *args)
+        return (
+            (parse_callback_spec(self.line) // __(vim, *args))
+            .to_either('callback {} failed')
+        )
 
 
 class Command(Named):
@@ -148,6 +151,9 @@ class CommandJob(Record):
     def line(self):
         tpe = EvalLine if self.command.eval else StrictLine
         return tpe(self._line)
+
+    def resolved_line(self, vim):
+        return self.line.resolve(vim, *self.args)
 
     @property
     def main_id(self) -> Ident:

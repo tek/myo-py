@@ -7,6 +7,7 @@ RunLatest = json_message('RunLatest')
 RunTest = json_message('RunTest')
 RunVimTest = json_message('RunVimTest')
 RunIn = json_message('RunIn', 'target', 'line')
+RunChained = message('RunChained', varargs='commands')
 Dispatch = json_message('Dispatch', 'command')
 AddCommand = json_message('AddCommand', 'name')
 AddShellCommand = json_message('AddShellCommand', 'name')
@@ -22,4 +23,4 @@ StoreHistory = message('StoreHistory')
 __all__ = ('Run', 'ShellRun', 'Dispatch', 'AddCommand', 'AddShellCommand',
            'AddShell', 'AddVimCommand', 'SetShellTarget', 'CommandExecuted',
            'RunTest', 'RunVimTest', 'CommandAdded', 'CommandShow', 'RunLatest',
-           'LoadHistory', 'StoreHistory', 'RunLine', 'RunIn')
+           'LoadHistory', 'StoreHistory', 'RunLine', 'RunIn', 'RunChained')
