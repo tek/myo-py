@@ -207,10 +207,12 @@ class TmuxFacade(Logging):
                 (lambda a: path.map_view(__.set(pid=a.to_maybe))) /
                 Right
             )
+        is_open = self.pane_open(pane_ident)
         ppm = (self._ident_vpm
-               if self.pane_open(pane_ident) else
+               if is_open else
                self.open_pane_ppm)
-        return (((ppm(pane_ident) + check_running) / pipe) % run) / pid
+        return ((((ppm(pane_ident) + check_running) / pipe) % run) / pid,
+                is_open)
 
     def pane_mod(self, ident: Ident, f: Callable[[Pane], Pane]):
         return self._mod(self._ident_ppm, ident, f)

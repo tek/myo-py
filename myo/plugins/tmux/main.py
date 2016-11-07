@@ -375,10 +375,10 @@ class TmuxTransitions(MyoTransitions):
         def watch(path):
             msg = WatchCommand(job, path.view)
             return Task.call(self.machine.watcher.send, msg)
-        runner = self.tmux.run_command_ppm(pane_ident, line, in_shell, kill,
-                                           signals) % watch
-        return List(runner, TmuxPostOpen(pane_ident, opt),
-                    TmuxPostCommand(job, pane_ident))
+        runner, is_open = self.tmux.run_command_ppm(pane_ident, line, in_shell,
+                                                    kill, signals)
+        post = is_open.no.m(TmuxPostOpen(pane_ident, opt)).to_list
+        return post.cons(runner % watch).cat(TmuxPostCommand(job, pane_ident))
 
     def _run_in_shell(self, job: CommandJob, shell: Shell, options: Map):
         ident = shell.target | self._default_pane_name
