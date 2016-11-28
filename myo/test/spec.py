@@ -131,4 +131,11 @@ class TmuxSpecBase(Spec):
             output.should.contain(data)
         later(check)
 
+    def _pane_output_contains_not(self, id, data):
+        self._wait(1)
+        def check():
+            output = self._pane_output(id) | List()
+            output.should_not.contain(data)
+        later(check)
+
 __all__ = ('Spec', 'TmuxSpecBase')

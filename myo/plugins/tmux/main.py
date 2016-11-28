@@ -14,13 +14,13 @@ from myo.plugins.tmux.message import (TmuxOpen, TmuxRunCommand, TmuxCreatePane,
                                       TmuxCreateLayout, TmuxCreateSession,
                                       TmuxSpawnSession, TmuxFindVim, TmuxInfo,
                                       TmuxLoadDefaults, TmuxClosePane,
-                                      TmuxRunShell, TmuxRunLineInShell,
-                                      StartWatcher, WatchCommand, QuitWatcher,
-                                      TmuxPack, TmuxPostOpen,
-                                      TmuxFixFocus, TmuxMinimize, TmuxRestore,
-                                      TmuxToggle, TmuxFocus, TmuxOpenOrToggle,
-                                      TmuxKill, UpdateVimWindow,
-                                      TmuxRunTransient, TmuxPostCommand)
+                                      TmuxRunLineInShell, StartWatcher,
+                                      WatchCommand, QuitWatcher, TmuxPack,
+                                      TmuxPostOpen, TmuxFixFocus, TmuxMinimize,
+                                      TmuxRestore, TmuxToggle, TmuxFocus,
+                                      TmuxOpenOrToggle, TmuxKill,
+                                      UpdateVimWindow, TmuxRunTransient,
+                                      TmuxPostCommand, TmuxRebootCommand)
 from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
@@ -207,13 +207,10 @@ class TmuxTransitions(MyoTransitions):
             L(self._run_command)(job, options)
         )
 
-    @may_handle(TmuxRunShell)
-    def run_shell(self):
-        shell = self.msg.job
-        default = Map(shell.command.target.map(lambda a: ('target', a)).to_list
-                      )
-        opts = default ** self.msg.options
-        return TmuxRunCommand(job=shell, options=opts)
+    @handle(TmuxRebootCommand)
+    def tmux_reboot_command(self):
+        return ((self.msg.job.command.target / TmuxClosePane) &
+                Just(TmuxRunCommand(self.msg.job)))
 
     @handle(SetShellTarget)
     def set_shell_target(self):
@@ -384,7 +381,7 @@ class TmuxTransitions(MyoTransitions):
         ident = shell.target | self._default_pane_name
         opt = options + ('target', ident) + ('shell', shell)
         return (self._run_command(job, opt) /
-                __.cons(TmuxRunShell(CommandJob(command=shell), Map())))
+                __.cons(TmuxRunCommand(CommandJob(command=shell), Map())))
 
     def _main_command(self, cmd_ident: Ident):
         holder = lambda cmd: cmd.shell // self.data.shell | cmd

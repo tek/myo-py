@@ -178,4 +178,14 @@ class DispatchSpec(TmuxCmdSpec):
         text = _eval_args_line.format(*args)
         self._output_contains(text)
 
+    def reboot(self):
+        line = List.random_string()
+        self._py_shell()
+        self._run_command('py')
+        self.json_cmd_sync('MyoRunInShell py',
+                           line='print(\'{}\')'.format(line))
+        self._pane_output_contains(1, line)
+        self.json_cmd_sync('MyoRebootCommand py')
+        self._pane_output_contains_not(3, line)
+
 __all__ = ('DispatchSpec',)

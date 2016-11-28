@@ -125,7 +125,6 @@ class ShellCommand(LineCommand):
 
 
 class Shell(ShellCommand):
-    # target = ident_field()
 
     @property
     def _type_desc(self):

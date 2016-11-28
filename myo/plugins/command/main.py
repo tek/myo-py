@@ -20,8 +20,18 @@ from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
                                          CommandExecuted, RunTest, RunVimTest,
                                          CommandAdded, CommandShow, RunLatest,
                                          LoadHistory, StoreHistory, RunLine,
-                                         RunChained)
+                                         RunChained, RebootCommand)
 from myo.plugins.command.util import assemble_vim_test_line
+
+
+class Reboot:
+
+    def __init__(self, job) -> None:
+        self.job = job
+
+    @property
+    def name(self):
+        return self.job.name
 
 
 class CommandTransitions(MyoTransitions):
@@ -186,6 +196,14 @@ class CommandTransitions(MyoTransitions):
             (chained & (commands // __.head.to_either('commands empty')))
             .map2(cons)
             .lmap(Fatal)
+        )
+
+    @handle(RebootCommand)
+    def reboot_command(self):
+        return (
+            self._command_job_fatal(self.msg.command) /
+            Reboot /
+            L(Dispatch)(_, self.msg.options)
         )
 
     @handle(Dispatch)

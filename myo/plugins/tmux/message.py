@@ -1,11 +1,11 @@
 from ribosome.machine import message, json_message
 
 TmuxRunCommand = json_message('TmuxRunCommand', 'job')
-TmuxRunShell = json_message('TmuxRunShell', 'job')
 TmuxRunCommandInShell = message('TmuxRunCommandInShell', 'shell', 'command',
                                 'options')
 TmuxRunLineInShell = json_message('TmuxRunLineInShell', 'shell')
 TmuxRunTransient = json_message('TmuxRunTransient', 'cmd')
+TmuxRebootCommand = json_message('TmuxRebootCommand', 'job')
 TmuxCreateSession = json_message('TmuxCreateSession')
 TmuxSpawnSession = message('TmuxSpawnSession', 'id')
 TmuxCreateLayout = json_message('TmuxCreateLayout', 'name')
@@ -35,9 +35,9 @@ WatchCommand = message('WatchCommand', 'command', 'pane')
 __all__ = ('TmuxRunCommand', 'TmuxOpen', 'TmuxCreatePane', 'TmuxCreateSession',
            'TmuxCreateLayout', 'TmuxCreateLayout', 'TmuxSpawnSession',
            'TmuxFindVim', 'TmuxLoadDefaults', 'TmuxClosePane',
-           'TmuxRunCommandInShell', 'TmuxRunLineInShell', 'TmuxRunShell',
+           'TmuxRunCommandInShell', 'TmuxRunLineInShell',
            'StartWatcher', 'WatchCommand', 'QuitWatcher', 'TmuxParse',
            'TmuxPack', 'TmuxPostOpen', 'TmuxFixFocus', 'TmuxMinimize',
            'TmuxRestore', 'TmuxToggle', 'TmuxFocus', 'TmuxOpenOrToggle',
            'TmuxKill', 'UpdateVimWindow', 'TmuxRunTransient',
-           'TmuxPostCommand')
+           'TmuxPostCommand', 'TmuxRebootCommand')
