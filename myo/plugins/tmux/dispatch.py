@@ -15,7 +15,7 @@ def convert_message(msg, options):
 
 @convert_message.register(ShellCommand)
 def _convert_shell_command(cmd, options):
-    return TmuxRunCommand(CommandJob(command=cmd), options)
+    return TmuxRunCommand(CommandJob(command=cmd, options=options), options)
 
 
 @convert_message.register(CommandJob)

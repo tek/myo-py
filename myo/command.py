@@ -3,7 +3,8 @@ from functools import singledispatch  # type: ignore
 
 from amino import Path, __, Just, List, L, Maybe, _, Map, Left, Right
 
-from ribosome.record import list_field, field, maybe_field, bool_field, dfield
+from ribosome.record import (list_field, field, maybe_field, bool_field,
+                             dfield, map_field)
 from ribosome.util.callback import parse_callback_spec
 
 from myo.record import Record, Named
@@ -134,6 +135,7 @@ class Shell(ShellCommand):
 
 class CommandJob(Record):
     command = field(Command)
+    options = map_field()
 
     @property
     def _str_extra(self):
