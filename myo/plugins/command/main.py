@@ -227,8 +227,9 @@ class CommandTransitions(MyoTransitions):
             .map2(set_log) |
             self.data
         )
-        new = data.commands.add_history(job)
-        return data.set(commands=new), StoreHistory()
+        if job.history:
+            new = data.commands.add_history(job)
+            return data.set(commands=new), StoreHistory()
 
     @handle(Parse)
     def parse(self):

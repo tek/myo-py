@@ -49,6 +49,7 @@ class Command(Named):
     signals = list_field(str, initial=default_signals)
     args = list_field()
     target = ident_field()
+    history = bool_field(True)
 
     @property
     def _str_extra(self):
@@ -180,6 +181,10 @@ class CommandJob(Record):
 
     def has_ident(self, ident: Ident):
         return self.command.has_ident(ident)
+
+    @property
+    def history(self):
+        return self.options.get('history') | self.command.history
 
 
 class TransientCommandJob(CommandJob):
