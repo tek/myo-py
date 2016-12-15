@@ -1,6 +1,6 @@
 from numbers import Number
 
-from ribosome.record import maybe_field, field, bool_field
+from ribosome.record import optional_field, field, bool_field
 
 from amino import Just, L, List, _
 
@@ -9,13 +9,13 @@ from myo.record import Named
 
 class View(Named):
     name = field(str)
-    min_size = maybe_field(Number)
-    max_size = maybe_field(Number)
-    fixed_size = maybe_field(Number)
+    min_size = optional_field(Number)
+    max_size = optional_field(Number)
+    fixed_size = optional_field(Number)
     minimized = bool_field()
-    minimized_size = maybe_field(Number)
-    weight = maybe_field(Number)
-    position = maybe_field(Number)
+    minimized_size = optional_field(Number)
+    weight = optional_field(Number)
+    position = optional_field(Number)
 
     @property
     def _minimized_size(self):
@@ -23,7 +23,7 @@ class View(Named):
 
     @property
     def effective_weight(self):
-        return (Just(0) if self.fixed_size.is_just or self.minimized else
+        return (Just(0) if self.fixed_size.present or self.minimized else
                 self.weight)
 
     @property

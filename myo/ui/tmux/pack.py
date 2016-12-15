@@ -114,7 +114,7 @@ class WindowPacker(Logging):
         )
 
     def _apply_positions(self, views, horizontal):
-        if views.length > 1 and views.exists(_.position.is_just):
+        if views.length > 1 and views.exists(_.position.present):
             quantity = _.left if horizontal else _.top
             ordered = views.sort_by(_.position | 0).reversed
             adapters = self._ref_adapters(ordered)

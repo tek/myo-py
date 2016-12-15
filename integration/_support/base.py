@@ -53,6 +53,6 @@ class MyoPluginIntegrationSpec(IntegrationCommon, PluginIntegrationSpec, Spec,
     def _pre_start(self):
         super()._pre_start()
         self.vim.cmd_sync('MyoStart')
-        later(lambda: self.vim.vars.p('started').is_just)
+        later(lambda: self.vim.vars.p('started').present)
 
 __all__ = ('MyoIntegrationSpec', 'MyoPluginIntegrationSpec')

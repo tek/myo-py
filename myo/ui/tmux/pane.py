@@ -223,7 +223,7 @@ class PaneAdapter(Adapter, PaneI):
 
     @property
     def running(self) -> Boolean:
-        return self.command_pid.is_just
+        return self.command_pid.present
 
     @property
     def not_running(self) -> Boolean:

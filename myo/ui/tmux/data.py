@@ -108,7 +108,7 @@ class TmuxState(Record):
     def possibly_open_panes(self):
         return (
             self.all_panes
-            .filter(_.id.is_just)
+            .filter(_.id.present)
             .filter(lambda a: not _is_vim_pane(a))
         )
 
