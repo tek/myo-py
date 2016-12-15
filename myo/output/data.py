@@ -5,7 +5,7 @@ from amino import _, Path, List, __, Empty, Just, L
 from amino.lazy import lazy
 
 from ribosome.record import (field, list_field, dfield, any_field, RecordMeta,
-                             maybe_field)
+                             optional_field)
 
 from myo.record import Record
 from myo.util import parse_int
@@ -29,9 +29,9 @@ class OutputEntry(Record):
 class OutputLine(Record):
     text = field(str)
     target = any_field()
-    entry = maybe_field(OutputEntry)
+    entry = optional_field(OutputEntry)
     indent = dfield(0)
-    group = maybe_field(str)
+    group = optional_field(str)
 
     def __str__(self):
         return '{}({})'.format(self._name, self.text)

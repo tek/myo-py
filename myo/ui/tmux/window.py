@@ -9,7 +9,7 @@ from libtmux.window import Window as LTWindow
 from amino import List, __, _, Maybe, Map
 from amino.lazy import lazy
 
-from ribosome.record import field, maybe_field
+from ribosome.record import field, optional_field
 
 from myo.ui.tmux.adapter import Adapter
 from myo.ui.tmux.pane import PaneAdapter, Pane, NativePane
@@ -40,9 +40,9 @@ class Size(Record):
 
 
 class Window(Named):
-    id = maybe_field(int)
+    id = optional_field(int)
     root = field(Layout)
-    size = maybe_field(Size)
+    size = optional_field(Size)
 
     @property
     def desc(self):

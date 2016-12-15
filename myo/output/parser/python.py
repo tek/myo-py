@@ -5,7 +5,7 @@ from networkx import DiGraph
 from amino.lazy import lazy
 from amino import List, Empty, Just, Maybe, __, L, _
 
-from ribosome.record import field, maybe_field
+from ribosome.record import field, optional_field
 
 from myo.output.data import (PositionEntry, ErrorEntry, OutputEntry,
                              OutputEvent, OutputLine, MultiEvent, CodeEntry)
@@ -13,8 +13,8 @@ from myo.output.parser.base import EdgeData, SimpleParser
 
 
 class FileEntry(PositionEntry):
-    fun = maybe_field(str)
-    code = maybe_field(CodeEntry)
+    fun = optional_field(str)
+    code = optional_field(CodeEntry)
 
     def lines(self, event: OutputEvent, group=Empty()):
         x = self.code / L(OutputLine.create)(_.text, self)

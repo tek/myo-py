@@ -2,7 +2,7 @@ from libtmux import formats
 from libtmux.session import Session as LTSession
 from libtmux.common import EnvironmentMixin
 
-from ribosome.record import list_field, maybe_field, field
+from ribosome.record import list_field, optional_field, field
 
 from amino import List, __, Maybe, Map
 from amino.lazy import lazy
@@ -16,7 +16,7 @@ from myo.logging import Logging
 
 class Session(Named):
     name = field(str)
-    id = maybe_field(int)
+    id = optional_field(int)
     windows = list_field(Window)
 
     @property

@@ -3,7 +3,7 @@ from functools import singledispatch  # type: ignore
 
 from amino import Path, __, Just, List, L, Maybe, _, Map, Left, Right
 
-from ribosome.record import (list_field, field, maybe_field, bool_field,
+from ribosome.record import (list_field, field, optional_field, bool_field,
                              dfield, map_field)
 from ribosome.util.callback import parse_callback_spec
 
@@ -42,8 +42,8 @@ class EvalLine(Line):
 
 
 class Command(Named):
-    log_path = maybe_field(Path, factory=Path)
-    parser = maybe_field(str)
+    log_path = optional_field(Path, factory=Path)
+    parser = optional_field(str)
     transient = bool_field()
     langs = list_field()
     kill = bool_field()
@@ -235,7 +235,7 @@ class Commands(Record):
 
     commands = list_field()
     history = list_field()
-    transient_cmd = maybe_field(Command)
+    transient_cmd = optional_field(Command)
 
     def __add__(self, command: Command):
         return self.append1.commands(command)

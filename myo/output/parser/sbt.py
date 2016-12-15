@@ -3,7 +3,7 @@ from networkx import DiGraph
 from amino.lazy import lazy
 from amino import List, _
 
-from ribosome.record import field, maybe_field
+from ribosome.record import field, optional_field
 
 from myo.output.data import (PositionEntry, OutputEntry, OutputEvent,
                              CodeEntry as CodeEntryBase, Location)
@@ -53,7 +53,7 @@ _col = EdgeData(
 
 
 class SbtOutputEvent(OutputEvent, Location):
-    col = maybe_field(ColEntry)
+    col = optional_field(ColEntry)
     file = field(FileEntry)
 
     @property

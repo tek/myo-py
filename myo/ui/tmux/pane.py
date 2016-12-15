@@ -12,7 +12,7 @@ from amino.task import task
 from amino import __, List, Boolean, Maybe, _, Map, Just, Try, L
 from amino.lazy import lazy
 
-from ribosome.record import maybe_field, either_field, bool_field
+from ribosome.record import optional_field, either_field, bool_field
 
 from myo.ui.tmux.view import View
 from myo.ui.tmux.adapter import Adapter
@@ -21,12 +21,12 @@ from myo.ui.tmux.util import parse_window_id, parse_pane_id, parse_session_id
 
 
 class Pane(View):
-    id = maybe_field(int)
-    pid = maybe_field(int)
-    shell_pid = maybe_field(int)
+    id = optional_field(int)
+    pid = optional_field(int)
+    shell_pid = optional_field(int)
     window_id = either_field(int)
     session_id = either_field(int)
-    log_path = maybe_field(Path)
+    log_path = optional_field(Path)
     pin = bool_field()
     focus = bool_field()
     kill = bool_field()
