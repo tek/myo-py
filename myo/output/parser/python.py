@@ -36,12 +36,12 @@ class ColEntry(OutputEntry):
         return List()
 
 _file = EdgeData(
-    r='  File "(?P<path>.+)", line (?P<line>\d+)(?:, in (?P<fun>\S+))?',
+    r='\s*File "(?P<path>.+)", line (?P<line>\d+)(?:, in (?P<fun>\S+))?',
     entry=FileEntry.create
 )
-_code = EdgeData(r='^    (?P<code>.+)', entry=CodeEntry)
-_error = EdgeData(r='^(?P<exc>\S+): (?P<error>.+)', entry=PyErrorEntry)
-_col = EdgeData(r='^    (?P<ws>\s+)\^', entry=ColEntry)
+_code = EdgeData(r='^\s*(?P<code>.+)', entry=CodeEntry)
+_error = EdgeData(r='^\s*(?P<exc>\S+): (?P<error>.+)', entry=PyErrorEntry)
+_col = EdgeData(r='^\s*(?P<ws>\s+)\^', entry=ColEntry)
 
 
 class Parser(SimpleParser):
