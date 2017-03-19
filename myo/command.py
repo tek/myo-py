@@ -260,12 +260,16 @@ class Commands(Record):
         return (self.commands.find(pred)
                 .to_either(self.no_such_shell_error.format(ident)))
 
-    def add_history(self, cmd):
+    def add_history(self, cmd: Command) -> 'Commands':
         new = (
             self.history.cons(cmd)
             .distinct_by(_history_cmp)
             .take(self.max_history)
         )
+        return self.set(history=new)
+
+    def delete_history(self, ident: Ident) -> 'Commands':
+        new = self.history.filter_not(_.uuid == ident)
         return self.set(history=new)
 
     def transient_command(self, cmd):

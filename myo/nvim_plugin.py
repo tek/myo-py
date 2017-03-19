@@ -18,7 +18,8 @@ from myo.logging import Logging
 from myo.plugins.command.message import (AddVimCommand, Run, AddShellCommand,
                                          AddShell, ShellRun, RunTest,
                                          RunVimTest, CommandShow, RunLatest,
-                                         RunLine, RunChained, RebootCommand)
+                                         RunLine, RunChained, RebootCommand,
+                                         DeleteHistory)
 from myo.plugins.tmux.message import (TmuxCreatePane, TmuxCreateSession,
                                       TmuxCreateLayout, TmuxSpawnSession,
                                       TmuxInfo, TmuxClosePane, TmuxPack,
@@ -252,5 +253,9 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
     @unite_action('run', 'name')
     def myo_unite_run(self, ident):
         return Run(ident, options=Map())
+
+    @unite_action('delete', 'ident')
+    def myo_unite_delete(self, ident):
+        return DeleteHistory(ident)
 
 __all__ = ('MyoNvimPlugin',)

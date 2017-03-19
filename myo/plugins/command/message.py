@@ -20,8 +20,10 @@ CommandExecuted = message('CommandExecuted', 'job', 'log_path')
 CommandShow = message('CommandShow')
 LoadHistory = message('LoadHistory')
 StoreHistory = message('StoreHistory')
+DeleteHistory = message('DeleteHistory', 'ident')
 
 __all__ = ('Run', 'ShellRun', 'Dispatch', 'AddCommand', 'AddShellCommand',
            'AddShell', 'AddVimCommand', 'SetShellTarget', 'CommandExecuted',
            'RunTest', 'RunVimTest', 'CommandAdded', 'CommandShow', 'RunLatest',
-           'LoadHistory', 'StoreHistory', 'RunLine', 'RunIn', 'RunChained')
+           'LoadHistory', 'StoreHistory', 'RunLine', 'RunIn', 'RunChained',
+           'DeleteHistory')

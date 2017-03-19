@@ -1,6 +1,7 @@
 import re
+from uuid import UUID
 
-from ribosome.machine import may_handle, handle, Nop
+from ribosome.machine import may_handle, handle, Nop, Message
 from ribosome.machine.transition import Fatal
 from ribosome.util.callback import parse_callback_spec
 from ribosome.machine.base import UnitTask
@@ -20,7 +21,8 @@ from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
                                          CommandExecuted, RunTest, RunVimTest,
                                          CommandAdded, CommandShow, RunLatest,
                                          LoadHistory, StoreHistory, RunLine,
-                                         RunChained, RebootCommand)
+                                         RunChained, RebootCommand,
+                                         DeleteHistory)
 from myo.plugins.command.util import assemble_vim_test_line
 
 
@@ -88,6 +90,11 @@ class CommandTransitions(MyoTransitions):
             Task.delay(encode_json, self.data.commands.history).join_either /
             L(self).vim.vars.set(self._history_var, _)
         )
+
+    @may_handle(DeleteHistory)
+    def delete_history(self) -> Message:
+        new = self.data.commands.delete_history(UUID(self.msg.ident))
+        return self.data.set(commands=new)
 
     @handle(AddCommand)
     def add_command(self):

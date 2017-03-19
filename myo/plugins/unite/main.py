@@ -48,16 +48,22 @@ class Plugin(UniteMachine, MyoComponent):
     def run_action(self):
         return Map(name='run', handler=UniteNames.run, desc='run command')
 
-    @property
-    def actions(self):
-        return List(self.run_action)
+    @lazy
+    def delete_action(self):
+        return Map(name='delete', handler=UniteNames.delete,
+                   desc='delete command')
 
     @lazy
-    def run_kind(self):
+    def command_kind(self):
         return UniteKind(UniteNames.command, List(self.run_action))
+
+    @lazy
+    def history_command_kind(self):
+        return UniteKind(UniteNames.history_command, List(self.run_action,
+                                                          self.delete_action))
 
     @property
     def kinds(self):
-        return List(self.run_kind)
+        return List(self.command_kind, self.history_command_kind)
 
 __all__ = ('Plugin',)

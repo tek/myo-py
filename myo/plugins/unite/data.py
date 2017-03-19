@@ -7,9 +7,11 @@ class UniteNames():
     history_candidates = '_myo_unite_history'
     commands_candidates = '_myo_unite_commands'
     run = '_myo_unite_run_command'
+    delete = '_myo_unite_delete_command'
     commands = 'myo_commands'
     command = 'myo_command'
     history = 'myo_history'
+    history_command = 'myo_history_command'
     syntax = '_myo_unite_syntax'
 
 
@@ -29,7 +31,7 @@ class HistorySource(UniteSource):
 
     def __init__(self) -> None:
         super().__init__(UniteNames.history, UniteNames.history_candidates,
-                         UniteNames.command, Just(UniteNames.syntax))
+                         UniteNames.history_command, Just(UniteNames.syntax))
 
     def syntax_task(self, syntax):
         return commands_syntax(syntax)
