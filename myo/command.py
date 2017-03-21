@@ -1,10 +1,10 @@
 import abc
 from functools import singledispatch  # type: ignore
 
-from amino import Path, __, Just, List, L, Maybe, _, Map, Left, Right
+from amino import Path, __, Just, List, L, Maybe, _, Map, Left, Right, Empty
 
 from ribosome.record import (list_field, field, optional_field, bool_field,
-                             dfield, map_field)
+                             dfield, map_field, maybe_field)
 from ribosome.util.callback import parse_callback_spec
 
 from myo.record import Record, Named
@@ -188,11 +188,24 @@ class CommandJob(Record):
     def history(self):
         return self.options.get('history') | self.command.history
 
+    @property
+    def desc(self) -> str:
+        return self.command.desc
+
+    @property
+    def shell(self) -> Maybe[Ident]:
+        return (
+            self.command.shell
+            if isinstance(self.command, ShellCommand) else
+            Empty()
+        )
+
 
 class TransientCommandJob(CommandJob):
     name = field(str)
     override_langs = list_field(str)
     override_line = field(str)
+    override_shell = ident_field()
 
     def __new__(cls, prefix='transient', command=None,
                 name=None, **kw):
@@ -214,6 +227,10 @@ class TransientCommandJob(CommandJob):
 
     def has_ident(self, ident: Ident):
         return self.name == ident
+
+    @property
+    def shell(self) -> Maybe[Ident]:
+        return self.override_shell.o(super().shell)
 
 
 @singledispatch

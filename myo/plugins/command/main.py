@@ -307,8 +307,10 @@ class CommandTransitions(MyoTransitions):
 
     def _test_line_job(self, options, line):
         def dispatch(cmd, line, langs, opt):
+            shell = opt.get('shell')
             job = TransientCommandJob(prefix='test_line', command=cmd,
-                                      override_line=line, override_langs=langs)
+                                      override_line=line, override_langs=langs,
+                                      override_shell=shell)
             return job, opt
         return self._test_line_params(options, line).map4(dispatch)
 

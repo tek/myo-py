@@ -1,11 +1,12 @@
 from typing import Callable
 
-from amino import List, _, __, Just, Map, Right, Empty, Either, Boolean, I
+from amino import (List, _, __, Just, Map, Right, Empty, Either, Boolean, I,
+                   Maybe)
 from amino.lazy import lazy
 from amino.task import Task
 from amino.anon import L
 
-from ribosome.machine import may_handle, handle, Quit, Nop
+from ribosome.machine import may_handle, handle, Quit, Nop, Message
 from ribosome.machine.base import UnitTask, DataTask
 from ribosome.machine.transition import Error, Fatal
 
@@ -195,12 +196,11 @@ class TmuxTransitions(MyoTransitions):
                 Right(TmuxPack().pub.at(1)))
 
     @handle(TmuxRunCommand)
-    def run_command(self):
+    def run_command(self) -> Maybe[Message]:
         job = self.msg.job
-        command = job.command
         options = self.msg.options
         shell = (options.get('shell')
-                 .o(command.shell) //
+                 .o(job.shell) //
                  self.data.shell)
         return shell.to_maybe.cata(
             L(self._run_in_shell)(job, _, options),
