@@ -19,7 +19,7 @@ from myo.plugins.command.message import (AddVimCommand, Run, AddShellCommand,
                                          AddShell, ShellRun, RunTest,
                                          RunVimTest, CommandShow, RunLatest,
                                          RunLine, RunChained, RebootCommand,
-                                         DeleteHistory)
+                                         DeleteHistory, CommandHistoryShow)
 from myo.plugins.tmux.message import (TmuxCreatePane, TmuxCreateSession,
                                       TmuxCreateLayout, TmuxSpawnSession,
                                       TmuxInfo, TmuxClosePane, TmuxPack,
@@ -178,6 +178,10 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
 
     @msg_command(CommandShow)
     def myo_command_show(self):
+        pass
+
+    @msg_command(CommandHistoryShow)
+    def myo_command_history_show(self):
         pass
 
     @json_msg_command(Parse)

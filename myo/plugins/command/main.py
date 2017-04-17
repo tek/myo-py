@@ -22,7 +22,7 @@ from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
                                          CommandAdded, CommandShow, RunLatest,
                                          LoadHistory, StoreHistory, RunLine,
                                          RunChained, RebootCommand,
-                                         DeleteHistory)
+                                         DeleteHistory, CommandHistoryShow)
 from myo.plugins.command.util import assemble_vim_test_line
 
 
@@ -281,6 +281,11 @@ class CommandTransitions(MyoTransitions):
     @may_handle(CommandShow)
     def show(self):
         msg = self.data.commands.commands / _.desc
+        self.log.info(msg.join_lines)
+
+    @may_handle(CommandHistoryShow)
+    def history_show(self):
+        msg = self.data.commands.history / _.desc
         self.log.info(msg.join_lines)
 
     def _command_job_fatal(self, ident):
