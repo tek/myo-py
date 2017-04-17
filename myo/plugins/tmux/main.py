@@ -216,7 +216,13 @@ class TmuxTransitions(MyoTransitions):
     def set_shell_target(self):
         target = self._pane(self.msg.target) / _.uuid
         setter = __.modify(__.set(target=target))
-        return (self.data.command_lens(self.msg.shell.uuid)).map(setter)
+        msg = 'cannot set shell target {} for {}: pane not found'
+        return (
+            target
+            .to_either(msg.format(self.msg.target, self.msg.shell.name)) //
+            self.data.command_lens(self.msg.shell.uuid) /
+            setter
+        )
 
     @handle(TmuxRunLineInShell)
     def run_line_in_shell(self):
