@@ -1,7 +1,8 @@
-import abc
-from pathlib import Path
-import tempfile
 import os
+import abc
+import tempfile
+from pathlib import Path
+from typing import Tuple
 
 from psutil import Process
 
@@ -9,7 +10,7 @@ from libtmux.pane import Pane as LTPane
 
 from amino.task import task
 
-from amino import __, List, Boolean, Maybe, _, Map, Just, Try, L
+from amino import __, List, Boolean, Maybe, _, Map, Just, Try, L, Either
 from amino.lazy import lazy
 
 from ribosome.record import optional_field, either_field, bool_field
@@ -71,19 +72,23 @@ class PaneI(metaclass=abc.ABCMeta):
         ...
 
     @lazy
-    def pid(self):
+    def pid(self) -> Maybe[int]:
         return self._raw_pid // parse_int
 
     @property
-    def command_pid(self) -> Maybe[int]:
+    def command_pid(self) -> Either[Exception, int]:
+        return self.command_pids // _.head
+
+    @property
+    def command_pids(self) -> Either[Exception, List[int]]:
         return (
-            self.pid //
-            L(Try)(Process, _) /
-            __.children() /
-            List.wrap //
-            _.head /
-            _.pid //
-            Maybe
+            (
+                self.pid //
+                L(Try)(Process, _) /
+                __.children() /
+                List.wrap /
+                __.map(_.pid)
+            )
         )
 
 
@@ -179,7 +184,7 @@ class PaneAdapter(Adapter, PaneI):
         return int(self.native.height)
 
     @lazy
-    def size(self):
+    def size(self) -> Tuple[int, int]:
         return self.width, self.height
 
     @lazy

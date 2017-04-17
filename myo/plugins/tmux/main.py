@@ -23,7 +23,7 @@ from myo.plugins.tmux.message import (TmuxOpen, TmuxRunCommand, TmuxCreatePane,
                                       UpdateVimWindow, TmuxRunTransient,
                                       TmuxPostCommand, TmuxRebootCommand)
 from myo.plugins.core.main import StageI
-from myo.ui.tmux.pane import Pane, VimPane
+from myo.ui.tmux.pane import Pane, VimPane, PaneData
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
 from myo.ui.tmux.session import Session, VimSession
 from myo.ui.tmux.server import Server, NativeServer
@@ -357,8 +357,11 @@ class TmuxTransitions(MyoTransitions):
     def native_vim_pane(self):
         return self._vim_pid // self._find_vim_pane_by_pid
 
-    def _find_vim_pane_by_pid(self, vim_pid):
-        return self.server.pane_data.find(__.command_pid.contains(vim_pid))
+    def _find_vim_pane_by_pid(self, vim_pid: int) -> Maybe[PaneData]:
+        return (
+            self.server.pane_data
+            .find(__.command_pids.exists(__.contains(vim_pid)))
+        )
 
     def _run_command(self, job: CommandJob, opt):
         args = opt.get('args') | job.args
