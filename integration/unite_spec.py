@@ -1,5 +1,8 @@
 from amino import List, __, Just, _
-from amino.test import later
+from ribosome.test.integration.klk import later
+
+from kallikrein import kf, k, Expectation
+from kallikrein.matchers import contain
 from amino.lazy import lazy
 
 from ribosome.test.unite import unite
@@ -73,22 +76,44 @@ class UniteLoadHistorySpec(_UniteSpecBase):
 
 
 class UniteHistorySpec(_UniteSpecBase):
+    ''' unite history
+    run a command $run
+    delete a history entry $delete
+    '''
+
+    @property
+    def target(self) -> List[str]:
+        return List(self._format(self._name2, self._cmd),
+                    self._format(self._name1, self._cmd))
 
     @unite
-    def history(self):
+    def run(self):
         self._create_commands()
         self._run_command(self._name1)
         self._run_command(self._name2)
         later(lambda: self._last().should.contain(self._name2))
         self.vim.cmd_sync('MyoUniteHistory')
-        target = List(self._format(self._name2, self._cmd),
-                      self._format(self._name1, self._cmd))
-        later(lambda: self.vim.buffer.content.should.equal(target))
+        later(lambda: self.vim.buffer.content.should.equal(self.target))
         self.vim.window.set_cursor(2)
         self.vim.feedkeys('\r')
         later(lambda: self._last().should.contain(self._name2))
         self.vim.cmd_sync('MyoUniteHistory')
-        later(lambda: self.vim.buffer.content.should.equal(target.reversed))
+        later(self.contentkf == self.target.reversed)
+
+    @unite
+    def delete(self) -> Expectation:
+        self._create_commands()
+        self._run_command(self._name1)
+        self._run_command(self._name2)
+        later(kf(self._last).must(contain(self._name2)))
+        self.vim.cmd_sync('MyoUniteHistory')
+        later(self.contentkf == self.target)
+        self.vim.window.set_cursor(2)
+        self.vim.feedkeys('d')
+        self._wait(2)
+        self.vim.cmd_sync('MyoUniteHistory')
+        self._wait(1)
+        return later(self.contentkf == self.target[:1])
 
 _test_line = 'echo \'testing\''
 

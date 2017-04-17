@@ -14,7 +14,7 @@ setup(
     packages=find_packages(exclude=['unit', 'unit.*', 'integration',
                                     'integration.*']),
     install_requires=[
-        'ribosome>=10.1.0',
+        'ribosome>=10.1.2',
         'amino>=9.5.7',
         'libtmux',
         'psutil',

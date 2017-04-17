@@ -1,18 +1,23 @@
-from integration._support.base import MyoIntegrationSpec
+from kallikrein.matchers import contain
+from kallikrein.matchers.length import have_length
+from kallikrein import unsafe_k, kf
 
 from amino.test.path import fixture_path
 from amino import Map, Just, List, _, __
-from amino.test import temp_file, later
 from amino.lazy import lazy
+from amino.test import temp_file
 
-from ribosome.test.integration import main_looped
 from ribosome.machine.scratch import Mapping
+from ribosome.test.integration.spec import main_looped
+from ribosome.test.integration.klk import later
 
 from myo.command import ShellCommand
 from myo.plugins.core.message import ParseOutput
 from myo.output.machine import (error_filtered_result_empty, EventNext,
                                 EventPrev, OutputMachine)
 from myo.plugins.core.main import error_no_output_events
+
+from integration._support.base import MyoIntegrationSpec
 
 _trace_len = 3
 _line_count = _trace_len * 4 + 2
@@ -118,7 +123,7 @@ class ParseTwiceSpec(MyoIntegrationSpec, ParseHelpers):
 
 class ParseEmptySpec(MyoIntegrationSpec, ParseHelpers):
 
-    def empty(self):
+    def empty(self) -> None:
         cmd = ShellCommand(name='a', line='a', langs=List('python'))
         msg = ParseOutput(cmd, List(), None, Map())
         self.root.send_sync(msg)
@@ -129,7 +134,7 @@ class ParseEmptySpec(MyoIntegrationSpec, ParseHelpers):
 
 class ParseOpenModifiedSpec(MyoIntegrationSpec, ParseHelpers):
 
-    def modified(self):
+    def modified(self) -> None:
         self.vim.edit(self._file).run_sync()
         self.vim.buffer.options.set('modified', True)
         cmd = ShellCommand(name='a', line='a', langs=List('python'))
@@ -142,12 +147,12 @@ class ParseOpenModifiedSpec(MyoIntegrationSpec, ParseHelpers):
 
 class ParseSpecBase(MyoIntegrationSpec, ParseHelpers):
 
-    def _pre_start(self):
+    def _pre_start(self) -> None:
         super()._pre_start()
         self.vim.vars.set_p('jump_to_error', False)
 
-    def _cursor(self, x, y):
-        later(lambda: self.vim.window.cursor.should.equal(List(x, y)))
+    def _cursor(self, x: int, y: int) -> None:
+        later(kf(lambda: self.vim.window.cursor) == List(x, y))
 
 
 class PythonParseSpec(ParseSpecBase):
@@ -300,6 +305,7 @@ def _initial_error(a):
 
 
 class SbtParseSpec(ParseSpecBase):
+    __unsafe__ = None
 
     @lazy
     def _scala_file(self):
@@ -343,17 +349,17 @@ class SbtParseSpec(ParseSpecBase):
         msg = ParseOutput(cmd, output, None, Map())
         self.root.send_sync(msg)
 
-    def complete(self):
+    def complete(self) -> None:
         self.vim.vars.set_p('output_reifier',
                             'py:myo.output.reifier.base.LiteralReifier')
         output = self._mk_scala_errors(1)
         self._run(output)
-        self.vim.buffer.content.should.contain(output[-1])
-        self.vim.buffer.options('modifiable').should.contain(False)
+        unsafe_k(self.vim.buffer.content).must(contain(output[-1]))
+        unsafe_k(self.vim.buffer.options('modifiable')).must(contain(False))
         self.vim.window.set_cursor(4)
         self.root.send_sync(Mapping(self._output_machine.uuid, '%cr%'))
-        self.vim.windows.should.have.length_of(2)
-        self.vim.window.buffer.name.should.equal(str(self._scala_file))
+        unsafe_k(self.vim.windows).must(have_length(2))
+        unsafe_k(self.vim.window.buffer.name) == str(self._scala_file)
         self._cursor(3, 4)
 
     def filter_format(self):

@@ -1,4 +1,4 @@
-from amino.test import later
+from ribosome.test.integration.klk import later
 from amino import _
 
 from myo.ui.tmux.facade.window import pane_not_found_error

@@ -2,22 +2,30 @@ from integration._support.base import (MyoPluginIntegrationSpec,
                                        MyoIntegrationSpec)
 from integration._support.command import CmdPluginSpecConf
 
-from amino.test import later
-from amino import _, __, Map, Maybe
+from kallikrein import kf, Expectation
+from kallikrein.matchers import contain
+from kallikrein.matchers.length import have_length
+
+from ribosome.test.integration.klk import later
+
+from amino import _, __, Map, Maybe, List
 
 from myo.test.spec import TmuxSpecBase
 from myo.plugins.tmux.message import TmuxCreateLayout, TmuxCreatePane
 from myo.plugins.tmux import TmuxOpen
+from myo.ui.tmux.window import WindowAdapter
+from myo.state import MyoComponent
+from myo.ui.tmux.data import TmuxState
 
 
 class TmuxIntegrationSpecBase(TmuxSpecBase):
 
-    def _pre_start_neovim(self):
+    def _pre_start_neovim(self) -> None:
         super()._pre_start_neovim()
         self._debug = True
         self._setup_server()
 
-    def _post_start_neovim(self):
+    def _post_start_neovim(self) -> None:
         super()._post_start_neovim()
         if self.external_server:
             self.vim.vars.set_p('tmux_socket', self.socket)
@@ -30,51 +38,52 @@ class TmuxIntegrationSpecBase(TmuxSpecBase):
         else:
             self._create_window()
 
-    def teardown(self):
+    def teardown(self) -> None:
         super().teardown()
         self._teardown_server()
         if not self.external_server:
             self._close_window()
 
     @property
-    def _plugins(self):
+    def _plugins(self) -> List[str]:
         return super()._plugins.cons('myo.plugins.tmux')
 
     @property
-    def _window_name(self):
+    def _window_name(self) -> str:
         return 'myo-spec-vim'
 
-    def _create_window(self):
+    def _create_window(self) -> None:
         self._vim_window = self.session.new_window(
             window_name=self._window_name)
         self._vim_pane = self._vim_window.panes[0]
-        self.vim.vars.set_p('tmux_force_vim_session_id', self.session.id_i |
-                            -1)
+        self.vim.vars.set_p('tmux_force_vim_session_id',
+                            self.session.id_i | -1)
         self.vim.vars.set_p('tmux_force_vim_win_id',
                             self._vim_window.id_i | -1)
         self.vim.vars.set_p('tmux_force_vim_pane_id', self._vim_pane.id_i | -1)
 
-    def _close_window(self):
+    def _close_window(self) -> None:
         self._vim_window.kill()
 
     @property
-    def _window(self):
+    def _window(self) -> WindowAdapter:
         return (
             super()._window if self.external_server else
             self.session.windows.find(_.name == self._window_name)
             .get_or_fail('no window')
         )
 
-    def _pane_count(self, count: int):
-        return later(lambda: self._panes.should.have.length_of(count))
+    def _pane_count(self, count: int) -> Expectation:
+        return later(kf(lambda: self._panes).must(have_length(count)))
 
-    def _size(self, attr, id, h):
-        later(lambda: (self._pane_with_id(id) / attr).should.contain(h))
+    def _size(self, attr: str, id: int, h: int) -> Expectation:
+        exp = kf(lambda: self._pane_with_id(id) / attr).must(contain(h))
+        return later(exp)
 
-    def _height(self, id, h):
+    def _height(self, id: int, h: int) -> Expectation:
         return self._size(_.height, id, h)
 
-    def _width(self, id, h):
+    def _width(self, id: int, h: int) -> Expectation:
         return self._size(_.width, id, h)
 
 
@@ -82,35 +91,34 @@ class ExternalTmuxIntegrationSpec(TmuxIntegrationSpecBase,
                                   MyoIntegrationSpec):
 
     @property
-    def _tmux(self):
+    def _tmux(self) -> Maybe[MyoComponent]:
         return self.root.sub.find(_.title == 'tmux')
 
     @property
-    def tmux(self):
-        return (self.root.sub.find(_.title == 'tmux')
-                .get_or_fail('no tmux plugin'))
+    def tmux(self) -> MyoComponent:
+        return self._tmux.get_or_fail('no tmux plugin')
 
     @property
-    def _state(self):
+    def _state(self) -> Maybe[TmuxState]:
         return Maybe(self.root.data.sub_state('tmux', None))
 
     @property
-    def state(self):
+    def state(self) -> TmuxState:
         return self._state.get_or_fail('no tmux state yet')
 
-    def wait_for_tmux(self):
+    def wait_for_tmux(self) -> None:
         self._wait_for(lambda: self._tmux.present)
 
-    def wait_for_state(self):
+    def wait_for_state(self) -> None:
         self._wait_for(lambda: self._state.present)
 
-    def _create_layout(self, name, **options):
+    def _create_layout(self, name: str, **options: Map) -> None:
         self.root.send_sync(TmuxCreateLayout(name, options=Map(options)))
 
-    def _create_pane(self, name, **options):
+    def _create_pane(self, name: str, **options: Map) -> None:
         self.root.send_sync(TmuxCreatePane(name, options=Map(options)))
 
-    def _open_pane(self, name, **options):
+    def _open_pane(self, name: str, **options: Map) -> None:
         self.root.send_sync(TmuxOpen(name, options=Map(options)))
 
 

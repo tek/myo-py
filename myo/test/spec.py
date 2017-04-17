@@ -2,16 +2,19 @@ from subprocess import Popen, PIPE, STDOUT
 
 from libtmux.exc import LibTmuxException
 
-import amino.test
 from amino.test.path import fixture_path
 from amino import _, __, List
-from amino.test import later
+from ribosome.test.integration.klk import later
+
+from kallikrein.matchers import contain
+from kallikrein import kf
 from amino.lazy import lazy
+from amino.test.spec import SpecBase
 
 from myo.ui.tmux.server import Server, NativeServer
 
 
-class Spec(amino.test.Spec):
+class Spec(SpecBase):
     pass
 
 
@@ -120,7 +123,7 @@ class TmuxSpecBase(Spec):
         return self._panes // _.capture
 
     def _output_contains(self, target):
-        later(lambda: self._output.should.contain(target))
+        return later(kf(lambda: self._output).must(contain(target)))
 
     def _pane_output(self, id):
         return self._pane_with_id(id) / _.capture

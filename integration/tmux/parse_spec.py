@@ -1,7 +1,7 @@
 import re
 
 from amino import Maybe, List, __, _
-from amino.test import later
+from ribosome.test.integration.klk import later
 from amino.test.path import fixture_path
 
 from ribosome.record import encode_json

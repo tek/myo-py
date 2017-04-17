@@ -1,10 +1,14 @@
 from pathlib import Path
 
 from amino import List, Right
-from amino.test import later
+
+from kallikrein.matchers.either import be_right
+from kallikrein import k, kf
 
 from ribosome.test import PluginIntegrationSpec
-from ribosome.test.integration import ExternalIntegrationSpec
+from ribosome.test.integration.spec import ExternalIntegrationSpec
+from ribosome.test.integration.klk import VimIntegrationKlkHelpers
+from ribosome.test.integration.klk import later
 
 from myo.test.spec import Spec
 from myo.logging import Logging
@@ -12,7 +16,7 @@ from myo.logging import Logging
 from integration._support.plugin import MyoSpecPlugin
 
 
-class IntegrationCommon:
+class IntegrationCommon(VimIntegrationKlkHelpers):
 
     @property
     def plugin_class(self):
@@ -50,9 +54,13 @@ class MyoIntegrationSpec(IntegrationCommon, ExternalIntegrationSpec):
 class MyoPluginIntegrationSpec(IntegrationCommon, PluginIntegrationSpec, Spec,
                                Logging):
 
-    def _pre_start(self):
+    def __init__(self) -> None:
+        super().__init__()
+        self.log_format = '{message}'
+
+    def _pre_start(self) -> None:
         super()._pre_start()
         self.vim.cmd_sync('MyoStart')
-        later(lambda: self.vim.vars.p('started').present)
+        later(kf(self.vim.vars.p, 'started').must(be_right))
 
 __all__ = ('MyoIntegrationSpec', 'MyoPluginIntegrationSpec')

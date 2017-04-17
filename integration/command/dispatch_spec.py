@@ -1,6 +1,6 @@
 from flexmock import flexmock
 
-from amino.test import later
+from ribosome.test.integration.klk import later
 from amino import List, Path, Just, Map, _, __
 from amino.lazy import lazy
 

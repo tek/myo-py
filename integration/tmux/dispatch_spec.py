@@ -1,6 +1,8 @@
 from psutil import Process
 
-from amino.test import later
+from ribosome.test.integration.klk import later
+
+from kallikrein import Expectation
 from amino import __, _, List, Just
 
 from ribosome.util.callback import VimCallback
@@ -28,16 +30,20 @@ class EvalArgsCallback(VimCallback):
 
 
 class DispatchSpec(TmuxCmdSpec):
+    ''' dispatch tmux commands
 
-    def simple(self):
+    simple command in default pane `make` $simple
+    '''
+
+    def simple(self) -> Expectation:
         target = r()
         cmd = r()
         self._create_command(cmd, "echo '{}'".format(target))
         self._open_pane('make')
         self._run_command(cmd)
-        self._output_contains(target)
+        return self._output_contains(target)
 
-    def target_pane(self):
+    def target_pane(self) -> Expectation:
         marker = r()
         pane = r()
         cmd = r()
@@ -60,17 +66,17 @@ class DispatchSpec(TmuxCmdSpec):
         create(line)
         self._output_contains(target)
 
-    def run_in_shell(self):
-        def create(line):
+    def run_in_shell(self) -> Expectation:
+        def create(line) -> Expectation:
             self.json_cmd_sync('MyoRun py')
             self.json_cmd_sync('MyoRunInShell py', line=line)
         self._shell(create)
 
-    def kill_shell_command(self):
-        def create(line):
+    def kill_shell_command(self) -> Expectation:
+        def create(line) -> Expectation:
             self._create_command('test', line, shell='py')
             self.json_cmd('MyoRun test')
-        def pid():
+        def pid() -> Expectation:
             expr = '''data.pane("py") // (lambda a: a.pid) | -1'''
             return self.vim.call('MyoTmuxEval', expr) | -2
         self._shell(create)
@@ -78,33 +84,33 @@ class DispatchSpec(TmuxCmdSpec):
         Process(pid()).kill()
         later(lambda: pid().should.equal(-1))
 
-    def pvar_test_target(self):
+    def pvar_test_target(self) -> Expectation:
         self.vim.buffer.vars.set_p('test_target', 'test')
         self._create_pane('test', parent='main')
         self.json_cmd_sync('MyoTest',
                            ctor='py:integration.tmux.dispatch_spec._test_ctor')
         self._pane_count(3)
 
-    def pvar_test_shell(self):
+    def pvar_test_shell(self) -> Expectation:
         self.vim.buffer.vars.set_p('test_shell', 'py')
         ctor = 'py:integration.tmux.dispatch_spec._test_shell_ctor'
         self._py_shell()
         self.json_cmd_sync('MyoTest', ctor=ctor)
         self._output_contains(_test_line)
 
-    def nostart(self):
+    def nostart(self) -> Expectation:
         self._create_pane('py', parent='main')
         self.json_cmd('MyoShell py', line='python', target='py', start=False)
         self._wait(0.2)
         self._pane_count(1)
 
-    def start(self):
+    def start(self) -> Expectation:
         self._create_pane('py', parent='main')
         self.json_cmd('MyoShell py', line='python', target='py', start=True)
         self._pane_count(2)
 
-    def quit_copy_mode(self):
-        def copy_mode(v):
+    def quit_copy_mode(self) -> Expectation:
+        def copy_mode(v) -> Expectation:
             later(lambda: (self._panes.last / _.in_copy_mode)
                   .should.contain(v))
         target = 'cmd test'
@@ -117,7 +123,7 @@ class DispatchSpec(TmuxCmdSpec):
         copy_mode(False)
         self._output_contains(target)
 
-    def kill_process(self):
+    def kill_process(self) -> Expectation:
         pid = lambda: self._panes.last // _.command_pid | 0
         self._create_command('test', 'tee', kill=True, signals=['int'])
         self.vim.cmd_sync('MyoRun test')
@@ -129,14 +135,14 @@ class DispatchSpec(TmuxCmdSpec):
         later(lambda: pid().should.be.greater_than(0))
         later(lambda: pid().should_not.equal(pid1))
 
-    def pane_kill(self):
+    def pane_kill(self) -> Expectation:
         pid = lambda: self._panes.last // _.command_pid | 0
         self._create_command('test', 'tee', signals=['int'])
         self.json_cmd('MyoUpdate pane make', kill=True)
         self._open_pane('make')
         self._pane_count(2)
         self._panes.last / __.send_keys('tail')
-        def check():
+        def check() -> Expectation:
             pid().should.be.greater_than(0)
         later(check)
         pid1 = pid()
@@ -144,18 +150,18 @@ class DispatchSpec(TmuxCmdSpec):
         later(check)
         later(lambda: pid().should_not.equal(pid1))
 
-    def manual_kill(self):
+    def manual_kill(self) -> Expectation:
         self.vim.cmd_sync('MyoRunLine make tail')
         later(lambda: self._output.exists(lambda a: 'tail' in a).should.be.ok)
         self._cmd_pid(1).should.be.greater_than(0)
         self.vim.cmd('MyoTmuxKill make')
         later(lambda: self._cmd_pid(1).should.equal(0))
 
-    def kill_nonexisting(self):
+    def kill_nonexisting(self) -> Expectation:
         self.vim.cmd('MyoTmuxKill make')
         self._log_contains('pane not found: make')
 
-    def vim_eval_func(self):
+    def vim_eval_func(self) -> Expectation:
         text = r()
         name = 'test'
         func = 'TestLine'
@@ -169,7 +175,7 @@ class DispatchSpec(TmuxCmdSpec):
         self.json_cmd_sync('MyoRun {}'.format(name))
         self._output_contains(text)
 
-    def eval_args(self):
+    def eval_args(self) -> Expectation:
         name = 'test'
         line = 'py:integration.tmux.dispatch_spec.EvalArgsCallback'
         args = List(r(), r())
@@ -178,7 +184,7 @@ class DispatchSpec(TmuxCmdSpec):
         text = _eval_args_line.format(*args)
         self._output_contains(text)
 
-    def reboot(self):
+    def reboot(self) -> Expectation:
         line = List.random_string()
         self._py_shell()
         self._run_command('py')

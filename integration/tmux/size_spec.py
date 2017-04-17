@@ -1,44 +1,54 @@
 from amino import List, __, _
-from amino.test import later
+from ribosome.test.integration.klk import later
+
+from kallikrein import kf, Expectation
+from kallikrein.matchers import contain
+from kallikrein.matchers.comparison import less_equal
 
 from integration._support.tmux import TmuxIntegrationSpec, DefaultLayoutSpec
 
 
 class OpenPaneSizeSpec(TmuxIntegrationSpec):
+    ''' size of an opened pane $open_pane_size
+    '''
 
-    def _pre_start(self):
+    def _pre_start(self) -> None:
         self.vim.vars.set_p('tmux_vim_width', 20)
         super()._pre_start()
 
-    def open_pane_size(self):
+    def open_pane_size(self) -> Expectation:
         self._create_pane('pan1', parent='root', fixed_size=20)
         self._open_pane('pan1')
-        self._width(1, 20)
+        return self._width(1, 20)
 
 
 class CutSizeSpec(TmuxIntegrationSpec):
+    ''' cut sizes $cut_size
+    '''
 
-    def cut_size(self):
-        def check():
-            diff = (
-                (self._panes.lift(1) & self._panes.lift(2))
-                .map2(lambda a, b: abs(a.height - b.height)) |
-                10)
-            (diff <= 1).should.be.ok
+    def cut_size(self) -> Expectation:
+        diff = lambda: (
+            (self._panes.lift(1) & self._panes.lift(2))
+            .map2(lambda a, b: abs(a.height - b.height)) |
+            10)
         self.json_cmd('MyoTmuxCreateLayout test', parent='root')
         self._create_pane('pan1', parent='test', min_size=100)
         self._create_pane('pan2', parent='test', min_size=100)
         self._open_pane('pan1')
         self._open_pane('pan2')
-        later(check)
+        return later(kf(diff).must(less_equal(1)))
 
 
 class DistributeSizeSpec(TmuxIntegrationSpec):
+    ''' distribute sizes
+    simple distribute with min/max sizes
+    sizes and weights are chosen exactly $basic
+    default positions $default_positions
+    move a pane $move
+    close a pane $close
+    '''
 
-    def distribute(self):
-        ''' Simple distribute with min/max sizes.
-        Sizes and weights are chosen exactly.
-        '''
+    def basic(self) -> Expectation:
         h1 = 8
         self.json_cmd('MyoTmuxCreateLayout test', parent='root')
         self._create_pane('pan1', parent='test', min_size=5, max_size=h1,
@@ -47,9 +57,9 @@ class DistributeSizeSpec(TmuxIntegrationSpec):
                           weight=h1 + 1)
         self._open_pane('pan1')
         self._open_pane('pan2')
-        self._height(1, h1 - 1)
+        return self._height(1, h1 - 1)
 
-    def default_positions(self):
+    def default_positions(self) -> Expectation:
         sz1, sz2 = 5, 10
         check = lambda: (
             self._panes
@@ -57,7 +67,6 @@ class DistributeSizeSpec(TmuxIntegrationSpec):
             .sort_by(_.top)
             .map(_.height)
             .drop(1)
-            .should.equal(List(sz1, sz2))
         )
         self.json_cmd('MyoTmuxCreateLayout test', parent='root')
         self._create_pane('pan1', parent='test', weight=1)
@@ -70,16 +79,15 @@ class DistributeSizeSpec(TmuxIntegrationSpec):
         self._open_pane('pan2')
         self._wait(.1)
         self._open_pane('pan3')
-        later(check)
+        return later(kf(check) == List(sz1, sz2))
 
-    def move(self):
+    def move(self) -> Expectation:
         sz1, sz2 = 5, 10
         check = lambda: (
             self._panes
             .filter((_.id_i | 0) > 0)
             .sort_by(_.top)
             .map(_.height)[:2]
-            .should.equal(List(sz1, sz2))
         )
         self.json_cmd('MyoTmuxCreateLayout test', parent='root')
         self._create_pane('pan1', parent='test', position=1, weight=1)
@@ -88,9 +96,9 @@ class DistributeSizeSpec(TmuxIntegrationSpec):
         self._open_pane('pan1')
         self._open_pane('pan2')
         self._open_pane('pan3')
-        later(check)
+        return later(kf(check) == List(sz1, sz2))
 
-    def close(self):
+    def close(self) -> Expectation:
         self.json_cmd('MyoTmuxCreateLayout test', parent='root')
         self._create_pane('pan1', parent='test', weight=1)
         self._create_pane('pan2', parent='test', weight=1)
@@ -101,50 +109,52 @@ class DistributeSizeSpec(TmuxIntegrationSpec):
         self._height(3, 13)
         self.vim.cmd_sync('MyoTmuxClosePane pan2')
         self._pane_count(3)
-        self._height(3, 20)
+        return self._height(3, 20)
 
 
 class DefaultLayoutDistributeSizeSpec(DefaultLayoutSpec):
+    ''' size distribution in the default layout
 
-    def _set_vars(self):
+    basic $basic
+    minimize a pane $minimize
+    minimize a layout $minimize_layout
+    '''
+
+    def _set_vars(self) -> None:
         super()._set_vars()
         self.vim_width = 10
         self.vim.vars.set_p('tmux_vim_width', self.vim_width)
 
-    def distribute(self):
-        def check():
-            widths = self._sizes / __[0]
-            target = List(self.vim_width, self.win_width - self.vim_width)
-            widths.should.equal(target)
+    def basic(self) -> Expectation:
+        target = List(self.vim_width, self.win_width - self.vim_width)
         self._open_pane('make')
-        later(check)
+        return later(kf(lambda: self._sizes / __[0]) == target)
 
-    def minimize(self):
+    def minimize(self) -> Expectation:
         mini = 5
         self._create_pane('pan', parent='root', fixed_size=20,
                           minimized_size=mini, weight=0)
         self._open_pane('pan')
         self.vim.cmd_sync('MyoTmuxMinimize pan')
-        self._width(1, mini)
+        return self._width(1, mini)
 
-    def minimize_layout(self):
+    def minimize_layout(self) -> Expectation:
         mini = 5
         self.json_cmd_sync('MyoTmuxCreateLayout lay', parent='root',
                            fixed_size=20, minimized_size=mini, weight=0)
         self._create_pane('pan', parent='lay')
         self._open_pane('lay')
         self.vim.cmd_sync('MyoTmuxMinimize lay')
-        self._width(1, mini)
+        return self._width(1, mini)
 
 
 class MinimizeSpec(TmuxIntegrationSpec):
 
-    def _check(self, size):
-        later(lambda: self._panes.find(__.id_i.contains(1))
-              .map(_.height)
-              .should.contain(size))
+    def _check(self, size: int) -> Expectation:
+        return later(kf(lambda: self._pane_with_id(1).map(_.height))
+                     .must(contain(size)))
 
-    def minimize(self):
+    def minimize(self) -> Expectation:
         self.json_cmd('MyoTmuxCreateLayout test', parent='root')
         self._create_pane('pan1', minimized_size=5, fixed_size=10,
                           parent='test')
@@ -158,9 +168,9 @@ class MinimizeSpec(TmuxIntegrationSpec):
         self.json_cmd_sync('MyoTmuxMinimize pan1')
         self._check(5)
         self.json_cmd_sync('MyoTmuxRestore pan1')
-        self._check(10)
+        return self._check(10)
 
-    def minimize_default(self):
+    def minimize_default(self) -> Expectation:
         self.json_cmd('MyoTmuxCreateLayout test', parent='root')
         self._create_pane('pan1', parent='test')
         self._create_pane('pan2', parent='test')
@@ -168,12 +178,13 @@ class MinimizeSpec(TmuxIntegrationSpec):
         self._open_pane('pan2')
         self._pane_count(3)
         self.json_cmd_sync('MyoTmuxMinimize pan1')
-        self._check(2)
+        return self._check(2)
 
-    def open_or_toggle_pane(self):
+    def open_or_toggle_pane(self) -> Expectation:
         fix = 10
         mini = 5
-        cmd = lambda: self.json_cmd_sync('MyoTmuxOpenOrToggle pan')
+        def cmd() -> None:
+            return self.json_cmd_sync('MyoTmuxOpenOrToggle pan')
         self.json_cmd_sync('MyoTmuxCreateLayout lay', parent='root')
         self._create_pane('pan', fixed_size=fix, minimized_size=mini,
                           parent='lay')
@@ -186,12 +197,13 @@ class MinimizeSpec(TmuxIntegrationSpec):
         cmd()
         self._height(1, mini)
         cmd()
-        self._height(1, fix)
+        return self._height(1, fix)
 
-    def open_or_toggle_layout(self):
+    def open_or_toggle_layout(self) -> Expectation:
         fix = 10
         mini = 5
-        cmd = lambda: self.json_cmd_sync('MyoTmuxOpenOrToggle inner')
+        def cmd() -> None:
+            return self.json_cmd_sync('MyoTmuxOpenOrToggle inner')
         self._create_layout('outer')
         self._create_layout('inner', 'outer', fixed_size=fix,
                             minimized_size=mini, weight=0)
@@ -204,7 +216,7 @@ class MinimizeSpec(TmuxIntegrationSpec):
         cmd()
         self._height(1, mini)
         cmd()
-        self._height(1, fix)
+        return self._height(1, fix)
 
 __all__ = ('CutSizeSpec', 'DistributeSizeSpec',
            'DefaultLayoutDistributeSizeSpec')
