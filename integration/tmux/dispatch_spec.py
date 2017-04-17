@@ -35,6 +35,7 @@ class DispatchSpec(TmuxCmdSpec):
 
     simple command in default pane `make` $simple
     kill the currently running process when running $kill_process
+    run a command in a shell $run_in_shell
     '''
 
     def simple(self) -> Expectation:
@@ -66,13 +67,13 @@ class DispatchSpec(TmuxCmdSpec):
         self._py_shell()
         self._wait(.1)
         create(line)
-        self._output_contains(target)
+        return self._output_contains(target)
 
     def run_in_shell(self) -> Expectation:
         def create(line) -> Expectation:
             self.json_cmd_sync('MyoRun py')
             self.json_cmd_sync('MyoRunInShell py', line=line)
-        self._shell(create)
+        return self._shell(create)
 
     def kill_shell_command(self) -> Expectation:
         def create(line) -> Expectation:
