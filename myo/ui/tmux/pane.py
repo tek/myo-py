@@ -10,7 +10,7 @@ from libtmux.pane import Pane as LTPane
 
 from amino.task import task
 
-from amino import __, List, Boolean, Maybe, _, Map, Just, Try, L, Either
+from amino import __, List, Boolean, Maybe, _, Map, Just, Try, Either
 from amino.lazy import lazy
 
 from ribosome.record import optional_field, either_field, bool_field
@@ -19,6 +19,21 @@ from myo.ui.tmux.view import View
 from myo.ui.tmux.adapter import Adapter
 from myo.util import parse_int
 from myo.ui.tmux.util import parse_window_id, parse_pane_id, parse_session_id
+
+
+def child_pids(root: int) -> Either[Exception, List[int]]:
+    return (
+        Try(Process, root) /
+        __.children() /
+        List.wrap /
+        __.map(_.pid)
+    )
+
+
+def descendant_pids(root: int) -> Either[Exception, List[int]]:
+    def recurse(pids: List[int]) -> Either[Exception, List[int]]:
+        return pids.traverse(descendant_pids, Either) / _.join / pids.add
+    return child_pids(root) // recurse
 
 
 class Pane(View):
@@ -77,19 +92,11 @@ class PaneI(metaclass=abc.ABCMeta):
 
     @property
     def command_pid(self) -> Either[Exception, int]:
-        return self.command_pids // _.head
+        return self.pid // child_pids / _.head
 
     @property
     def command_pids(self) -> Either[Exception, List[int]]:
-        return (
-            (
-                self.pid //
-                L(Try)(Process, _) /
-                __.children() /
-                List.wrap /
-                __.map(_.pid)
-            )
-        )
+        return self.pid // descendant_pids
 
 
 class PaneData(PaneI):
