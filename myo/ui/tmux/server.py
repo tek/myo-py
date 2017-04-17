@@ -4,7 +4,7 @@ import libtmux.formats
 from myo.logging import Logging
 from myo.ui.tmux.session import SessionAdapter, NativeSession
 from myo.ui.tmux.pane import PaneData
-from amino import _, List, __, Map
+from amino import _, List, __, Map, Maybe
 from amino.task import task
 from amino.lazy import lazy
 
@@ -26,10 +26,10 @@ class Server(Logging):
         self.native = native
 
     @lazy
-    def sessions(self):
+    def sessions(self) -> List[SessionAdapter]:
         return List.wrap(self.native.sessions) / SessionAdapter
 
-    def session_by_id(self, id: int):
+    def session_by_id(self, id: int) -> Maybe[SessionAdapter]:
         return self.sessions.find(__.id_i.contains(id))
 
     @lazy
