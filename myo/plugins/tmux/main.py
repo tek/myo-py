@@ -213,14 +213,14 @@ class TmuxTransitions(MyoTransitions):
                 Just(TmuxRunCommand(self.msg.job)))
 
     @handle(SetShellTarget)
-    def set_shell_target(self):
+    def set_shell_target(self) -> Maybe[Message]:
         target = self._pane(self.msg.target) / _.uuid
         setter = __.modify(__.set(target=target))
         msg = 'cannot set shell target {} for {}: pane not found'
         return (
             target
             .to_either(msg.format(self.msg.target, self.msg.shell.name)) //
-            self.data.command_lens(self.msg.shell.uuid) /
+            (lambda a: self.data.command_lens(self.msg.shell.uuid)) /
             setter
         )
 
