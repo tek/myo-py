@@ -2,7 +2,8 @@ from psutil import Process
 
 from ribosome.test.integration.klk import later
 
-from kallikrein import Expectation
+from kallikrein import Expectation, kf
+from kallikrein.matchers.comparison import greater, not_equal
 from amino import __, _, List, Just
 
 from ribosome.util.callback import VimCallback
@@ -33,6 +34,7 @@ class DispatchSpec(TmuxCmdSpec):
     ''' dispatch tmux commands
 
     simple command in default pane `make` $simple
+    kill the currently running process when running $kill_process
     '''
 
     def simple(self) -> Expectation:
@@ -124,16 +126,17 @@ class DispatchSpec(TmuxCmdSpec):
         self._output_contains(target)
 
     def kill_process(self) -> Expectation:
-        pid = lambda: self._panes.last // _.command_pid | 0
+        def pid() -> int:
+            return self._panes.last // _.command_pid | 0
         self._create_command('test', 'tee', kill=True, signals=['int'])
         self.vim.cmd_sync('MyoRun test')
         pid()
-        later(lambda: pid().should.be.greater_than(0))
+        later(kf(pid).must(greater(0)))
         pid1 = pid()
         self.vim.cmd_sync('MyoRun test')
         self._wait(.5)
-        later(lambda: pid().should.be.greater_than(0))
-        later(lambda: pid().should_not.equal(pid1))
+        later(kf(pid).must(greater(0)))
+        return later(kf(pid).must(not_equal(pid1)))
 
     def pane_kill(self) -> Expectation:
         pid = lambda: self._panes.last // _.command_pid | 0
