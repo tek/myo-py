@@ -1,10 +1,12 @@
 from psutil import Process
+from typing import Tuple, Callable
 
 from ribosome.test.integration.klk import later
 
-from kallikrein import Expectation, kf
-from kallikrein.matchers.comparison import greater, not_equal
-from amino import __, _, List, Just
+from kallikrein import Expectation, kf, k
+from kallikrein.matchers.comparison import greater, not_equal, eq
+from kallikrein.matchers import contain
+from amino import __, _, List, Just, Maybe
 
 from ribosome.util.callback import VimCallback
 
@@ -12,20 +14,23 @@ from integration._support.tmux import TmuxCmdSpec
 
 _test_line = 'this is a test'
 _eval_args_line = 'test {} / {}'
-r = lambda: List.random_string()
 
 
-def _test_ctor():
+def r() -> str:
+    return List.random_string()
+
+
+def _test_ctor() -> Maybe[str]:
     return Just('echo \'{}\''.format(_test_line))
 
 
-def _test_shell_ctor():
+def _test_shell_ctor() -> Maybe[str]:
     return Just('print(\'{}\')'.format(_test_line))
 
 
 class EvalArgsCallback(VimCallback):
 
-    def __call__(self, *args):
+    def __call__(self, *args: Tuple[str, str]) -> Maybe[str]:
         a1, a2 = args
         return Just('echo \'{}\''.format(_eval_args_line.format(a1, a2)))
 
@@ -34,8 +39,21 @@ class DispatchSpec(TmuxCmdSpec):
     ''' dispatch tmux commands
 
     simple command in default pane `make` $simple
-    kill the currently running process when running $kill_process
+    run command in an explicitly specified pane $target_pane
     run a command in a shell $run_in_shell
+    update pane pid when it was killed externally $kill_shell_command
+    read target pane from variable $pvar_test_target
+    read command shell from variable $pvar_test_shell
+    don't autostart a shell if specified $nostart
+    autostart a shell if specified $start
+    quit active copy mode when running command $quit_copy_mode
+    kill running process when running command $kill_process
+    kill running process when dispatching in pane $pane_kill
+    kill running process via command $manual_kill
+    killing closed pane prints an error $kill_nonexisting
+    evaluate a vim function for the command line $vim_eval_func
+    pass args to the eval function $eval_args
+    close and reopen pane with the reboot command $reboot
     '''
 
     def simple(self) -> Expectation:
@@ -57,9 +75,9 @@ class DispatchSpec(TmuxCmdSpec):
         self._run_command(cmd)
         self._pane_count(3)
         self._pane_output_contains(2, marker)
-        self._height(2, sz)
+        return self._height(2, sz)
 
-    def _shell(self, create):
+    def _shell(self, create: Callable[[str], None]) -> Expectation:
         s = 'cmd test {}'
         i = 5342
         target = s.format(i)
@@ -70,52 +88,53 @@ class DispatchSpec(TmuxCmdSpec):
         return self._output_contains(target)
 
     def run_in_shell(self) -> Expectation:
-        def create(line) -> Expectation:
+        def create(line: str) -> Expectation:
             self.json_cmd_sync('MyoRun py')
             self.json_cmd_sync('MyoRunInShell py', line=line)
         return self._shell(create)
 
     def kill_shell_command(self) -> Expectation:
-        def create(line) -> Expectation:
+        def create(line: str) -> Expectation:
             self._create_command('test', line, shell='py')
             self.json_cmd('MyoRun test')
-        def pid() -> Expectation:
+        def pid() -> int:
             expr = '''data.pane("py") // (lambda a: a.pid) | -1'''
             return self.vim.call('MyoTmuxEval', expr) | -2
         self._shell(create)
-        later(lambda: pid().should.be.greater_than(0))
+        later(kf(pid).must(greater(0)))
         Process(pid()).kill()
-        later(lambda: pid().should.equal(-1))
+        return later(kf(pid) == -1)
 
     def pvar_test_target(self) -> Expectation:
         self.vim.buffer.vars.set_p('test_target', 'test')
         self._create_pane('test', parent='main')
         self.json_cmd_sync('MyoTest',
                            ctor='py:integration.tmux.dispatch_spec._test_ctor')
-        self._pane_count(3)
+        return self._pane_count(3)
 
     def pvar_test_shell(self) -> Expectation:
         self.vim.buffer.vars.set_p('test_shell', 'py')
         ctor = 'py:integration.tmux.dispatch_spec._test_shell_ctor'
         self._py_shell()
         self.json_cmd_sync('MyoTest', ctor=ctor)
-        self._output_contains(_test_line)
+        return self._output_contains(_test_line)
 
     def nostart(self) -> Expectation:
         self._create_pane('py', parent='main')
         self.json_cmd('MyoShell py', line='python', target='py', start=False)
         self._wait(0.2)
-        self._pane_count(1)
+        return self._pane_count(1)
 
     def start(self) -> Expectation:
         self._create_pane('py', parent='main')
         self.json_cmd('MyoShell py', line='python', target='py', start=True)
-        self._pane_count(2)
+        return self._pane_count(2)
 
     def quit_copy_mode(self) -> Expectation:
-        def copy_mode(v) -> Expectation:
-            later(lambda: (self._panes.last / _.in_copy_mode)
-                  .should.contain(v))
+        def copy_mode(v: bool) -> Expectation:
+            return later(
+                kf(lambda: self._panes.last / _.in_copy_mode).must(contain(v))
+            )
         target = 'cmd test'
         self._create_command('test', "echo '{}'".format(target))
         self._open_pane('make')
@@ -124,7 +143,7 @@ class DispatchSpec(TmuxCmdSpec):
         copy_mode(True)
         self.json_cmd('MyoRun test')
         copy_mode(False)
-        self._output_contains(target)
+        return self._output_contains(target)
 
     def kill_process(self) -> Expectation:
         def pid() -> int:
@@ -140,30 +159,31 @@ class DispatchSpec(TmuxCmdSpec):
         return later(kf(pid).must(not_equal(pid1)))
 
     def pane_kill(self) -> Expectation:
-        pid = lambda: self._panes.last // _.command_pid | 0
+        def pid() -> int:
+            return self._panes.last // _.command_pid | 0
         self._create_command('test', 'tee', signals=['int'])
         self.json_cmd('MyoUpdate pane make', kill=True)
         self._open_pane('make')
         self._pane_count(2)
         self._panes.last / __.send_keys('tail')
-        def check() -> Expectation:
-            pid().should.be.greater_than(0)
+        check = kf(pid).must(greater(0))
         later(check)
         pid1 = pid()
         self.vim.cmd_sync('MyoRun test')
         later(check)
-        later(lambda: pid().should_not.equal(pid1))
+        return kf(pid) == pid1
 
     def manual_kill(self) -> Expectation:
         self.vim.cmd_sync('MyoRunLine make tail')
-        later(lambda: self._output.exists(lambda a: 'tail' in a).should.be.ok)
-        self._cmd_pid(1).should.be.greater_than(0)
+        later(kf(
+            lambda: self._output.exists(lambda a: 'tail' in a)).must(eq(True)))
+        k(self._cmd_pid(1)).must(greater(0))
         self.vim.cmd('MyoTmuxKill make')
-        later(lambda: self._cmd_pid(1).should.equal(0))
+        return later(kf(lambda: self._cmd_pid(1)) == 0)
 
     def kill_nonexisting(self) -> Expectation:
         self.vim.cmd('MyoTmuxKill make')
-        self._log_contains('pane not found: make')
+        return self._log_contains('pane not found: make')
 
     def vim_eval_func(self) -> Expectation:
         text = r()
@@ -177,7 +197,7 @@ class DispatchSpec(TmuxCmdSpec):
             endfunction'''.format(func, cmd))
         self._create_command(name, callback, eval=True)
         self.json_cmd_sync('MyoRun {}'.format(name))
-        self._output_contains(text)
+        return self._output_contains(text)
 
     def eval_args(self) -> Expectation:
         name = 'test'
@@ -186,7 +206,7 @@ class DispatchSpec(TmuxCmdSpec):
         self._create_command(name, line, args=args, eval=True)
         self.json_cmd_sync('MyoRun {}'.format(name))
         text = _eval_args_line.format(*args)
-        self._output_contains(text)
+        return self._output_contains(text)
 
     def reboot(self) -> Expectation:
         line = List.random_string()
@@ -196,6 +216,6 @@ class DispatchSpec(TmuxCmdSpec):
                            line='print(\'{}\')'.format(line))
         self._pane_output_contains(1, line)
         self.json_cmd_sync('MyoRebootCommand py')
-        self._pane_output_contains_not(3, line)
+        return self._pane_output_contains_not(3, line)
 
 __all__ = ('DispatchSpec',)
