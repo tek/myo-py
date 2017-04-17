@@ -151,7 +151,7 @@ class WindowFacade(Logging):
     def _kill_process(self, adapter, signals):
         def _wait_killed(timeout):
             start = time.time()
-            while time.time() - start > timeout and adapter.running:
+            while time.time() - start < timeout and adapter.running:
                 time.sleep(.1)
         def kill(signame):
             if adapter.running:
