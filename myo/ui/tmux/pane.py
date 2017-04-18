@@ -92,7 +92,7 @@ class PaneI(metaclass=abc.ABCMeta):
 
     @property
     def command_pid(self) -> Either[Exception, int]:
-        return self.pid // child_pids / _.head
+        return self.pid // child_pids // __.head.to_either('no child pids')
 
     @property
     def command_pids(self) -> Either[Exception, List[int]]:
