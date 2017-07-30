@@ -7,14 +7,14 @@ from myo.logging import Logging
 from myo.env import Env
 
 
-class MyoComponent(SubMachine, HasNvim, Logging):
+class MyoComponent(Logging, SubMachine, HasNvim):
 
     def __init__(self, vim: NvimFacade, parent=None, title=None) -> None:
         Machine.__init__(self, parent, title=title)
         HasNvim.__init__(self, vim)
 
 
-class MyoState(RootMachine, Logging):
+class MyoState(Logging, RootMachine):
     _data_type = Env
 
     @property
@@ -22,7 +22,7 @@ class MyoState(RootMachine, Logging):
         return 'myo'
 
 
-class MyoTransitions(SubTransitions, HasNvim, Logging):
+class MyoTransitions(Logging, SubTransitions, HasNvim):
 
     def __init__(self, machine, *a, **kw):
         SubTransitions.__init__(self, machine, *a, **kw)

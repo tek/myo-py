@@ -1,7 +1,12 @@
 import re
 
-from amino import Maybe, List, __, _
+from amino import Maybe, List, __, _, Path
 from ribosome.test.integration.klk import later
+
+from kallikrein import Expectation, kf
+from kallikrein.matchers import contain
+from kallikrein.matchers.length import have_length
+from kallikrein.matchers.comparison import ge
 from amino.test.path import fixture_path
 
 from ribosome.record import encode_json
@@ -16,7 +21,7 @@ _parse_head = 'parsed output:'
 _event_head = 'event 1:'
 
 
-def _parse_echo(data):
+def _parse_echo(data: List[str]) -> ParseResult:
     matcher = re.compile('^line (\d+)')
     matches = data / matcher.match // Maybe / __.group(1)
     entries = matches / (lambda a: OutputEntry(text='entry {}'.format(a)))
@@ -25,8 +30,12 @@ def _parse_echo(data):
 
 
 class TmuxParseSpec(TmuxCmdSpec):
+    '''parse output from a tmux pane
+    custom python func as parser set by `parser` command option $custom
+    parser output in a shell $shell
+    '''
 
-    def custom(self):
+    def custom(self) -> Expectation:
         l3 = 'line 3'
         lines = List('line 1', 'line 2', l3)
         s = lines.mk_string('\\n')
@@ -42,10 +51,9 @@ class TmuxParseSpec(TmuxCmdSpec):
         self.json_cmd('MyoRun com')
         self._output_contains(l3)
         self.json_cmd('MyoParse')
-        check = lambda: self.vim.buffer.content.should.equal(target)
-        later(check)
+        return self._buffer_content(target)
 
-    def shell(self):
+    def shell(self) -> Expectation:
         self.vim.vars.set_p('jump_to_error', False)
         self.vim.vars.set_p('lang_reifier', False)
         err = List.random_string()
@@ -56,84 +64,84 @@ class TmuxParseSpec(TmuxCmdSpec):
         self.json_cmd_sync('MyoRun test')
         self._output_contains(target)
         self.json_cmd_sync('MyoRun test')
-        later(lambda: self._output.filter(_ == target).should.have.length_of(2)
-              )
+        later(kf(lambda: self._output.filter(_ == target)).must(have_length(2)))
         self.json_cmd_sync('MyoParse')
         text = '  File "<stdin>", line 1, in <module>'
-        later(lambda: self.vim.buffer.content.head.should.contain(text))
+        return self._buffer_line(0, text)
 
 
 class PythonVimTestBase(TmuxCmdSpec):
 
     @property
-    def _fname(self):
+    def _fname(self) -> Path:
         return fixture_path('tmux', 'vim_test', 'test.py')
 
     @property
-    def _target(self):
+    def _target(self) -> str:
         return 'RuntimeError: supernova'
 
-    def _set_vars(self):
+    def _set_vars(self) -> None:
         super()._set_vars()
         self.vim.vars.set_p('tmux_no_watcher', True)
         self.vim.vars.set_p('jump_to_error', False)
         self.vim.vars.set('test#python#runner', 'nose')
-        self.vim.vars.set_p('output_reifier',
-                            'py:myo.output.reifier.base.LiteralReifier')
+        self.vim.vars.set_p('output_reifier', 'py:myo.output.reifier.base.LiteralReifier')
 
-    def _pre_start(self):
+    def _pre_start(self) -> None:
         super()._pre_start()
         self.vim.cmd_sync('noswapfile edit {}'.format(self._fname))
         self.vim.buffer.vars.set_p('test_langs', ['python'])
 
-    def _run_test(self):
+    def _check_test(self, len_pre: int) -> Expectation:
+        later(kf(lambda: self._output.length).must(ge(len_pre)))
+        return self._output_contains(self._target)
+
+    def _run_test(self) -> Expectation:
         self.vim.cursor(4, 1)
         len_pre = self._output.length
         self.json_cmd('MyoVimTest')
-        self._check_test(len_pre)
+        return self._check_test(len_pre)
 
-    def _check_test(self, len_pre):
-        later(lambda: self._output.length.should.be.greater_than(len_pre))
-        later(lambda: self._output.should.contain(self._target))
-
-    def _run_parse(self):
-        check = lambda: self.vim.buffer.content.last.should.contain(
-            self._target)
+    def _run_parse(self) -> Expectation:
         self.json_cmd_sync('MyoParse')
-        later(check)
+        return self._buffer_line(-1, contain(self._target))
 
 
 class PythonVimTestSpec(PythonVimTestBase):
+    '''run tests using the `vim-test` plugin
+    complete process using vim key mappings $complete
+    run tests twice in a row, closing the window in between $twice
+    '''
 
     @vimtest
-    def complete(self):
+    def complete(self) -> Expectation:
         self._run_test()
         self._run_parse()
-        self.vim.cursor(6, 1)
+        self.vim.cursor(4, 1)
         self.vim.cmd_sync('call feedkeys("\\<cr>")')
-        check1 = lambda: self.vim.buffer.name.should.equal(str(self._fname))
-        later(check1)
+        self._buffer_name(str(self._fname))
         self.vim.focus(1).run_sync()
         self.vim.cmd_sync('call feedkeys("q")')
-        check2 = lambda: self.vim.buffers.should.have.length_of(1)
-        later(check2)
+        return self._buffer_count(1)
 
     @vimtest
-    def twice(self):
+    def twice(self) -> Expectation:
         self._run_test()
         self._run_parse()
         self.vim.window.close()
         self._run_test()
-        self._run_parse()
+        return self._run_parse()
 
 
 class PythonVimTestLoadHistorySpec(PythonVimTestBase):
+    '''run a vim-test history job that was saved in the session $history
+    '''
 
     @property
-    def _line(self):
+    def _line(self) -> str:
         return 'nosetests {}:Namespace.test_something'.format(self._fname)
 
-    def _set_vars(self):
+    def _set_vars(self) -> None:
         super()._set_vars()
         cmd = ShellCommand(line='', name='<test>')
         job = TransientCommandJob(override_line=self._line,
@@ -144,10 +152,10 @@ class PythonVimTestLoadHistorySpec(PythonVimTestBase):
         self.vim.vars.set('Myo_history', history)
 
     @vimtest
-    def history(self):
+    def history(self) -> Expectation:
         len_pre = self._output.length
         self.json_cmd('MyoRunLatest')
         self._check_test(len_pre)
-        self._run_parse()
+        return self._run_parse()
 
-__all__ = ('TmuxParseSpec', 'PythonVimTestSpec')
+__all__ = ('TmuxParseSpec', 'PythonVimTestSpec', 'PythonVimTestLoadHistorySpec')

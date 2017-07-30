@@ -20,7 +20,7 @@ class DummyTransitions(MyoTransitions):
     @may_handle(DummyRun)
     def run(self):
         cmd = self.msg.cmd
-        job = cmd if isinstance(cmd, CommandJob) else CommandJob(cmd)
+        job = cmd if isinstance(cmd, CommandJob) else CommandJob(command=cmd)
         return CommandExecuted(job, Empty()).pub
 
 

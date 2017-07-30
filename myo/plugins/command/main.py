@@ -9,20 +9,15 @@ from ribosome.record import decode_json, encode_json
 
 from myo.state import MyoComponent, MyoTransitions
 
-from amino import (L, _, List, Try, __, Maybe, Map, I, Task, Just, Boolean,
-                   Left, Either)
-from myo.command import (Command, VimCommand, ShellCommand, Shell, CommandJob,
-                         TransientCommandJob)
-from myo.util import amend_options
+from amino import L, _, List, Try, __, Maybe, Map, I, Task, Just, Boolean, Left, Either, env
+from myo.command import Command, VimCommand, ShellCommand, Shell, CommandJob, TransientCommandJob
+from myo.util import amend_options, Ident
 from myo.plugins.core.message import Parse, ParseOutput, StageI
-from myo.plugins.command.message import (Run, ShellRun, Dispatch, AddCommand,
-                                         AddShellCommand, AddShell,
-                                         AddVimCommand, SetShellTarget,
-                                         CommandExecuted, RunTest, RunVimTest,
-                                         CommandAdded, CommandShow, RunLatest,
-                                         LoadHistory, StoreHistory, RunLine,
-                                         RunChained, RebootCommand,
-                                         DeleteHistory, CommandHistoryShow)
+from myo.plugins.command.message import (
+    Run, ShellRun, Dispatch, AddCommand, AddShellCommand, AddShell, AddVimCommand, SetShellTarget, CommandExecuted,
+    RunTest, RunVimTest, CommandAdded, CommandShow, RunLatest, LoadHistory, StoreHistory, RunLine, RunChained,
+    RebootCommand, DeleteHistory, CommandHistoryShow
+)
 from myo.plugins.command.util import assemble_vim_test_line
 
 
@@ -56,10 +51,7 @@ class CommandTransitions(MyoTransitions):
         opt1 = Map(line=line)
         opt = shell / (lambda a: opt1.cat(('shell', a))) | opt1
         return (
-            test_cmd.cata(
-                AddShellCommand(name=self._test_cmd_name, options=opt),
-                Nop()
-            ),
+            test_cmd.cata(AddShellCommand(name=self._test_cmd_name, options=opt), Nop()),
             LoadHistory()
         )
 
@@ -136,7 +128,7 @@ class CommandTransitions(MyoTransitions):
                         Map(target=self.msg.target))
 
     @handle(ShellRun)
-    def run_in_shell(self):
+    def run_in_shell(self) -> Either[Fatal, Message]:
         line = self.msg.options.get('line') | ''
         def send(cmd):
             return (
@@ -149,8 +141,7 @@ class CommandTransitions(MyoTransitions):
             self._shell_fatal(self.msg.shell) /
             _.ident /
             Maybe /
-            (lambda a: ShellCommand(name='shell_run', shell=a, line=line,
-                                    transient=True)) /
+            (lambda a: ShellCommand(name='shell_run', shell=a, line=line, transient=True)) /
             send
         )
 
@@ -293,7 +284,7 @@ class CommandTransitions(MyoTransitions):
                 .lmap(Fatal) /
                 __.left_or_map(CommandJob.from_attr('command')))
 
-    def _shell_fatal(self, ident):
+    def _shell_fatal(self, ident: Ident) -> Either[str, Shell]:
         return self.data.shell(ident).lmap(Fatal)
 
     @property

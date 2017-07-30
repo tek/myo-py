@@ -1,6 +1,6 @@
 from typing import Callable, Tuple
 
-from amino import Maybe, __, _, Just, Task, Either, F, L, Right, List, Map
+from amino import Maybe, __, _, Just, Task, Either, L, Right, List, Map, Boolean
 
 from myo.logging import Logging
 from myo.ui.tmux.data import TmuxState
@@ -118,7 +118,7 @@ class TmuxFacade(Logging):
         return self._focus(ident, Just)
 
     def fix_focus(self, ident: Ident, alt: Ident):
-        check = lambda a: a.view.focus.c(Just(a), F(self.pane_loc, alt))
+        check = lambda a: a.view.focus.c(Just(a), L(self.pane_loc)(alt))
         return self._focus(ident, check)
 
     def _focus(self, ident: Ident, f: Callable):
@@ -234,8 +234,8 @@ class TmuxFacade(Logging):
             return sub + add
         return (self.state.all_windows / _.root // layout) / _.ident
 
-    def pane_open(self, ident: Ident):
-        return self.pane_window(ident).map2(__.pane_open(_)).true
+    def pane_open(self, ident: Ident) -> Boolean:
+        return self.pane_window(ident).map2(lambda a, b: a.pane_open(b)).true
 
     def view_exists(self, ident: Ident):
         return self.view_loc(ident).present

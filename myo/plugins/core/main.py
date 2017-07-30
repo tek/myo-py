@@ -1,5 +1,5 @@
 import amino
-from amino import __, F, List, Left, Task, Map
+from amino import __, List, Left, Task, Map, _, L
 
 from ribosome.machine import may_handle, Error, RunTask, handle
 from ribosome.machine.base import io
@@ -30,7 +30,7 @@ class CoreTransitions(MyoTransitions):
     @may_handle(Error)
     def error(self):
         m = self.msg.message
-        handler = (F(self.log.caught_exception, 'transition') if
+        handler = (L(self.log.caught_exception)('transition', _) if
                    amino.development and isinstance(m, Exception) else
                    self.log.error)
         handler(m)
@@ -46,8 +46,7 @@ class CoreTransitions(MyoTransitions):
                     if result.events.empty else
                     parser.display(result, opt)
                 )
-            return RunTask(parser.parse(self.msg.output, self.msg.path) //
-                           display)
+            return RunTask(parser.parse(self.msg.output, self.msg.path) // display)
         return self._error_handler(job) / handle
 
     def _error_handler(self, job):

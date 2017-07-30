@@ -51,8 +51,7 @@ class MyoIntegrationSpec(IntegrationCommon, ExternalIntegrationSpec):
         self._wait_for(lambda: self.vim.vars.p('started').present)
 
 
-class MyoPluginIntegrationSpec(IntegrationCommon, PluginIntegrationSpec, Spec,
-                               Logging):
+class MyoPluginIntegrationSpec(IntegrationCommon, PluginIntegrationSpec, Spec, Logging):
 
     def __init__(self) -> None:
         super().__init__()

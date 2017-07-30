@@ -243,6 +243,7 @@ class PaneAdapter(Adapter, PaneI):
 
     @property
     def _pipe_filter(self):
+        # return 'cat'
         return 'sed -u -e \'s/\r//g\' -e \'s/\x1b\[[0-9;?]*[mlK]//g\''
 
     def pipe(self, base):
