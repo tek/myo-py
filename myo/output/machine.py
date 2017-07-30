@@ -334,8 +334,7 @@ class OutputMachineTransitions(MyoTransitions):
                 __.focus()
             )
             def load_buffer(buf):
-                return Task.delay(self.vim.window.cmd,
-                                  'buffer {}'.format(buf.id))
+                return Task.delay(self.vim.window.cmd, 'buffer {}'.format(buf.id))
             def edit():
                 return Task.delay(self.vim.edit, path) / __.run_async()
             def load_file():

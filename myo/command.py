@@ -1,7 +1,7 @@
 import abc
 from functools import singledispatch  # type: ignore
 
-from amino import Path, __, Just, List, L, Maybe, _, Map, Left, Right, Empty
+from amino import Path, __, Just, List, L, Maybe, _, Map, Left, Right, Empty, Either
 
 from ribosome.record import (list_field, field, optional_field, bool_field,
                              dfield, map_field, maybe_field)
@@ -272,10 +272,9 @@ class Commands(Record):
     def _str_extra(self):
         return super()._str_extra.cat(self.commands)
 
-    def shell(self, ident):
+    def shell(self, ident: Ident) -> Either[str, Command]:
         pred = lambda a: isinstance(a, Shell) and a.has_ident(ident)
-        return (self.commands.find(pred)
-                .to_either(self.no_such_shell_error.format(ident)))
+        return self.commands.find(pred).to_either(self.no_such_shell_error.format(ident))
 
     def add_history(self, cmd: Command) -> 'Commands':
         new = (

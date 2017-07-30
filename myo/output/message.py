@@ -12,6 +12,5 @@ EventNext = message('EventNext')
 EventPrev = message('EventPrev')
 CursorToCurrent = message('CursorToCurrent')
 
-__all__ = ('JumpCurrent', 'JumpCursor', 'Jump', 'SetLoc', 'InitialError',
-           'DisplayLines', 'SetResult', 'ToggleFilters', 'EventNext',
-           'EventPrev', 'CursorToCurrent')
+__all__ = ('JumpCurrent', 'JumpCursor', 'Jump', 'SetLoc', 'InitialError', 'DisplayLines', 'SetResult', 'ToggleFilters',
+           'EventNext', 'EventPrev', 'CursorToCurrent')

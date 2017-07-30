@@ -3,7 +3,7 @@ from typing import Callable, Any
 from amino.task import Task
 
 from lenses import Lens, lens
-from amino import Either, List, F, _, L, Left, __, Right, I, Just, Boolean
+from amino import Either, List, _, L, Left, __, Right, I, Just, Boolean
 from amino.lens.tree import path_lens_unbound
 
 from ribosome.record import field, list_field, map_field
@@ -99,7 +99,7 @@ class ViewPathLens(Record):
         def result(r):
             self._check_result_type(r)
             return r / _.view_list / set
-        return Task.from_either(path) // F(f) / result
+        return Task.from_either(path) // f / result
 
 
 def _initial_ppm_f(pp, window) -> Task[Either[Any, Window]]:
@@ -136,7 +136,7 @@ class ViewPathMod(Logging, Message):
         return type(self)(pred=self.pred, _f=chain)  # type: ignore
 
     def map(self, f: PPTrans) -> Task[Either[Any, Window]]:
-        keep_error = F(Left) >> Task.now
+        keep_error = L(Left)() >> Task.now
         return self._chain(f, lambda w, d: __.cata(keep_error, d))
 
     __truediv__ = map

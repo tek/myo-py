@@ -63,9 +63,8 @@ class MyoNvimPlugin(NvimStatePlugin, Logging):
             self.vim.clean()
             self.myo = None
 
-    def start_plugin(self):
-        config_path = self.vim.vars.ppath('config_path')\
-            .get_or_else(Path('/dev/null'))
+    def start_plugin(self) -> None:
+        config_path = self.vim.vars.ppath('config_path').get_or_else(Path('/dev/null'))
         plugins = self.vim.vars.pl('plugins') | self._default_plugins
         self.myo = Myo(self.vim.proxy, Path(config_path), plugins)
         self.myo.start()

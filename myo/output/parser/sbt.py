@@ -5,8 +5,7 @@ from amino import List, _
 
 from ribosome.record import field, optional_field
 
-from myo.output.data import (PositionEntry, OutputEntry, OutputEvent,
-                             CodeEntry as CodeEntryBase, Location)
+from myo.output.data import PositionEntry, OutputEntry, OutputEvent, CodeEntry as CodeEntryBase, Location
 from myo.output.parser.base import EdgeData, SimpleParser
 
 
@@ -38,8 +37,7 @@ class ColEntry(OutputEntry):
 
 _msg_type = '\[(?P<tag>\w+)\] '
 _file = EdgeData(
-    r='^{}\s*(?P<path>[^:]+):(?P<line>\d+):\s*(?P<error>.*?);?$'
-    .format(_msg_type),
+    r='^{}\s*(?P<path>[^:]+):(?P<line>\d+):\s*(?P<error>.*?);?$'.format(_msg_type),
     entry=FileEntry
 )
 _code = EdgeData(
@@ -80,7 +78,7 @@ class SbtOutputEvent(OutputEvent, Location):
 class Parser(SimpleParser):
 
     @lazy
-    def graph(self):
+    def graph(self) -> DiGraph:
         g = DiGraph()
         g.add_edge('start', 'file', data=_file)
         g.add_edge('file', 'error', data=_code)

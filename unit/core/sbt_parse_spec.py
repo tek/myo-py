@@ -3,6 +3,10 @@ from myo.output.data import ParseResult
 
 from unit._support.spec import UnitSpec
 
+from kallikrein import Expectation, k
+from kallikrein.matchers.length import have_length
+from kallikrein.matchers import contain
+
 from amino import List, _, __
 
 _errmsg = 'error 23'
@@ -28,17 +32,20 @@ trace = '''
 
 
 class SbtParseSpec(UnitSpec):
+    '''parse sbt output $parse
+    '''
 
-    def parse(self):
+    def parse(self) -> Expectation:
         parser = Parser()
         e = parser.events(List.lines(trace))
-        e.should.have.length_of(2)
-        (e / _.entries.length).should.equal(List(3, 6))
-        (e.head / __.entries.map(type)).should.contain(
-            List(FileEntry, CodeEntry, ColEntry))
-        (e.last // _.entries.head / _.error).should.contain(_errmsg)
         res = ParseResult(head=List('head'), events=e)
-        (res.lines.lift(1) / _.target).should.equal(e.head)
-        (e.head / _.coords).should.contain((_line, _col))
+        return (
+            k(e).must(have_length(2)) &
+            (k(e / _.entries.length) == List(3, 6)) &
+            k(e.head / __.entries.map(type)).must(contain(List(FileEntry, CodeEntry, ColEntry))) &
+            k(e.last // _.entries.head / _.error).must(contain(_errmsg)) &
+            (k(res.lines.lift(1) / _.target) == e.head) &
+            k(e.head / _.coords).must(contain((_line, _col)))
+        )
 
 __all__ = ('SbtParseSpec',)

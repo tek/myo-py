@@ -1,12 +1,15 @@
-from amino import List, __, Just, _
-from ribosome.test.integration.klk import later
+from typing import Callable
 
-from kallikrein import kf, k, Expectation
+from kallikrein import kf, Expectation
 from kallikrein.matchers import contain
+from kallikrein.matchers.lines import have_lines
+
 from amino.lazy import lazy
+from amino import List, __, Just, Maybe
 
 from ribosome.test.unite import unite
 from ribosome.record import encode_json
+from ribosome.test.integration.klk import later
 
 from myo.command import ShellCommand, CommandJob, TransientCommandJob
 from myo.plugins.unite.format import unite_format, unite_format_str_command
@@ -20,63 +23,64 @@ indent = ' {}'.format
 class _UniteSpecBase(CmdSpec):
 
     @lazy
-    def _name1(self):
+    def _name1(self) -> str:
         return 'com1'
 
     @lazy
-    def _name2(self):
+    def _name2(self) -> str:
         return 'com2'
 
     @lazy
-    def _cmd(self):
+    def _cmd(self) -> str:
         return 'ls'
 
-    def _create_commands(self):
+    def _create_commands(self) -> None:
         self._create_command(self._name1, self._cmd)
         self._create_command(self._name2, self._cmd)
 
     @property
-    def _plugins(self):
-        return super()._plugins + List('myo.plugins.unite',
-                                       'integration._support.plugins.dummy')
+    def _plugins(self) -> List[str]:
+        return super()._plugins + List('myo.plugins.unite', 'integration._support.plugins.dummy')
 
-    def _format(self, name, line):
+    def _format(self, name: str, line: str) -> str:
         return indent(unite_format_str_command.format(name=name, line=line))
 
 
 class UniteLoadHistorySpec(_UniteSpecBase):
+    '''show the command history in a unite window $history
+    '''
 
     @property
-    def _cmd(self):
+    def _cmd(self) -> str:
         return 'test1'
 
     @lazy
-    def _history(self):
+    def _history(self) -> List[CommandJob]:
         cmd = ShellCommand(name='other', line='ls')
         return List(
             CommandJob(command=ShellCommand(name=self._cmd, line='tee')),
             TransientCommandJob(command=cmd, override_line='tail')
         )
 
-    def _set_vars(self):
+    def _set_vars(self) -> None:
         super()._set_vars()
         self.vim.vars.set('Myo_history',
                           encode_json(self._history).get_or_raise)
 
     @property
-    def _last(self):
+    def _last(self) -> Callable[[], str]:
         return (lambda: self.vim.vars.pd('last_command') // __.get('name'))
 
     @unite
-    def history(self):
+    def history(self) -> Expectation:
         self._create_command(self._cmd, 'ls')
         self.vim.cmd_sync('MyoUniteHistory')
-        target = self._history / unite_format / _['word'] / indent
-        later(lambda: self.vim.buffer.content.should.equal(target))
+        target = self._history / unite_format / (lambda a: a['word']) / indent
+        return self._buffer_content(target)
 
 
-class UniteHistorySpec(_UniteSpecBase):
-    ''' unite history
+class UniteHistoryRunSpec(_UniteSpecBase):
+    ''' interact with history commands from unite
     run a command $run
     delete a history entry $delete
     '''
@@ -87,18 +91,18 @@ class UniteHistorySpec(_UniteSpecBase):
                     self._format(self._name1, self._cmd))
 
     @unite
-    def run(self):
+    def run(self) -> Expectation:
         self._create_commands()
         self._run_command(self._name1)
         self._run_command(self._name2)
-        later(lambda: self._last().should.contain(self._name2))
+        later(kf(self._last).must(contain(self._name2)))
         self.vim.cmd_sync('MyoUniteHistory')
-        later(lambda: self.vim.buffer.content.should.equal(self.target))
+        self._buffer_content(self.target)
         self.vim.window.set_cursor(2)
         self.vim.feedkeys('\r')
-        later(lambda: self._last().should.contain(self._name2))
+        later(kf(self._last).must(contain(self._name2)))
         self.vim.cmd_sync('MyoUniteHistory')
-        later(self.contentkf == self.target.reversed)
+        return later(self.contentkf.must(have_lines(self.target.reversed)))
 
     @unite
     def delete(self) -> Expectation:
@@ -118,43 +122,47 @@ class UniteHistorySpec(_UniteSpecBase):
 _test_line = 'echo \'testing\''
 
 
-def _test_ctor():
+def _test_ctor() -> Maybe[str]:
     return Just(_test_line)
 
 
 class UniteTestSpec(_UniteSpecBase):
+    '''test command formatting in the history $unite_test_history
+    '''
 
     @unite
-    def unite_test_run(self):
-        self.json_cmd_sync('MyoTest',
-                           ctor='py:integration.unite_spec._test_ctor')
-        later(lambda: (self._last() | '').should.contain('test_line'))
+    def unite_test_history(self) -> Expectation:
+        def check() -> Expectation:
+            return later(kf(self._last).must(contain(contain('test_line'))))
+        self.json_cmd_sync('MyoTest', ctor='py:integration.unite_spec._test_ctor')
+        check()
         self.vim.vars.set_p('last_command', {})
         self.vim.cmd_sync('MyoUniteHistory')
-        target = unite_format_str_command.format(name='<test>',
-                                                 line=_test_line)
+        target = unite_format_str_command.format(name='<test>', line=_test_line)
         self._buffer_content(List(indent(target)))
         self.vim.feedkeys('\r')
-        later(lambda: (self._last() | '').should.contain('test_line'))
+        return check()
 
 
 class UniteCommandsSpec(_UniteSpecBase):
+    '''show all commands in unite $commands
+    '''
 
-    def _pre_start(self):
-        super()._pre_start()
+    def _pre_start(self) -> None:
         self.vim.vars.set_p(CommandTransitions._test_cmd_var, False)
+        super()._pre_start()
 
     @unite
-    def commands(self):
+    def commands(self) -> Expectation:
         self._create_commands()
         self.vim.cmd_sync('MyoUniteCommands')
         target = List(self._format(name=self._name1, line=self._cmd),
                       self._format(name=self._name2, line=self._cmd))
-        later(lambda: self.vim.buffer.content.should.equal(target))
+        self._buffer_content(target)
         self.vim.window.set_cursor(2)
         self.vim.feedkeys('\r')
-        later(lambda: self._last().should.contain(self._name2))
+        later(kf(self._last).must(contain(self._name2)))
         self.vim.cmd_sync('MyoUniteCommands')
-        later(lambda: self.vim.buffer.content.should.equal(target))
+        return self._buffer_content(target)
 
-__all__ = ('UniteLoadHistorySpec', 'UniteHistorySpec', 'UniteCommandsSpec')
+__all__ = ('UniteLoadHistorySpec', 'UniteHistoryRunSpec', 'UniteCommandsSpec', 'UniteTestSpec')

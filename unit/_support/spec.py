@@ -6,20 +6,17 @@ from myo.test.spec import TmuxSpecBase
 
 class UnitSpec(MockNvimSpec, myo.test.Spec):
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__('myo')
-
-    def setup(self):
-        super().setup()
 
 
 class TmuxUnitSpec(UnitSpec, TmuxSpecBase):
 
-    def setup(self):
+    def setup(self) -> None:
         super().setup()
         self._setup_server()
 
-    def teardown(self):
+    def teardown(self) -> None:
         super().teardown()
         self._teardown_server()
 

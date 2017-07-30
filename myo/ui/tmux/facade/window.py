@@ -4,8 +4,7 @@ from typing import Tuple
 
 from psutil import Process
 
-from amino import (L, Task, _, Maybe, F, __, Either, I, Right, Left, List,
-                   Empty, Try)
+from amino import L, Task, _, Maybe, __, Either, I, Right, Left, List, Empty, Try
 from amino.lazy import lazy
 from amino.task import task
 
@@ -220,7 +219,7 @@ class WindowFacade(Logging):
             return self._open_in_layout(pane, layout) / (_ + (outer,))
         else:
             return (
-                outer.detach_last.map2(F(self._open_in_layouts_path, pane)) |
+                outer.detach_last.map2(L(self._open_in_layouts_path)(pane, _, _)) |
                 Task.failed('cannot open {} without open layout'.format(pane))
             ).map3(lambda p, l, o: (p, layout, o.cat(l)))
 
