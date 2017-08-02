@@ -1,10 +1,8 @@
 from typing import Callable
 
-from amino import (List, _, __, Just, Map, Right, Empty, Either, Boolean, I,
-                   Maybe)
+from amino import List, _, __, Just, Map, Right, Empty, Either, Boolean, I, Maybe, L
 from amino.lazy import lazy
 from amino.task import Task
-from amino.anon import L
 
 from ribosome.machine import may_handle, handle, Quit, Nop, Message
 from ribosome.machine.base import UnitTask, DataTask

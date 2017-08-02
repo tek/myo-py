@@ -5,9 +5,7 @@ from amino import List, Right
 from kallikrein.matchers.either import be_right
 from kallikrein import k, kf
 
-from ribosome.test import PluginIntegrationSpec
-from ribosome.test.integration.spec import ExternalIntegrationSpec
-from ribosome.test.integration.klk import VimIntegrationKlkHelpers
+from ribosome.test.integration.klk import PluginIntegrationKlkSpec, ExternalIntegrationKlkSpec
 from ribosome.test.integration.klk import later
 
 from myo.test.spec import Spec
@@ -16,7 +14,7 @@ from myo.logging import Logging
 from integration._support.plugin import MyoSpecPlugin
 
 
-class IntegrationCommon(VimIntegrationKlkHelpers):
+class IntegrationCommon:
 
     @property
     def plugin_class(self):
@@ -43,7 +41,7 @@ class IntegrationCommon(VimIntegrationKlkHelpers):
         return List()
 
 
-class MyoIntegrationSpec(IntegrationCommon, ExternalIntegrationSpec):
+class MyoIntegrationSpec(IntegrationCommon, ExternalIntegrationKlkSpec):
 
     def _start_plugin(self):
         self.plugin.start_plugin()
@@ -51,7 +49,7 @@ class MyoIntegrationSpec(IntegrationCommon, ExternalIntegrationSpec):
         self._wait_for(lambda: self.vim.vars.p('started').present)
 
 
-class MyoPluginIntegrationSpec(IntegrationCommon, PluginIntegrationSpec, Spec, Logging):
+class MyoPluginIntegrationSpec(IntegrationCommon, PluginIntegrationKlkSpec, Spec, Logging):
 
     def __init__(self) -> None:
         super().__init__()

@@ -5,7 +5,7 @@ from amino.lazy import lazy
 
 from kallikrein import k, Expectation, kf
 from kallikrein.matchers import contain
-from kallikrein.matchers.maybe import be_empty
+from kallikrein.matchers.maybe import be_nothing
 from kallikrein.matchers.length import have_length
 
 from ribosome.test.integration.klk import later
@@ -51,7 +51,7 @@ class DispatchSpec(_DispatchBase):
         self.vim.cmd_sync('MyoRun {}'.format(name))
         later(kf(self._last).must(contain(name)))
         self.vim.vars.set_p('last_command', {})
-        later(kf(self._last).must(be_empty))
+        later(kf(self._last).must(be_nothing))
         self.vim.cmd_sync('MyoRunLatest')
         return later(kf(self._last).must(contain(name)))
 
