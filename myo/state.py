@@ -1,7 +1,8 @@
-from ribosome import Machine, NvimFacade, RootMachine
+from ribosome import NvimFacade, RootMachine
 from ribosome.nvim import HasNvim
 
 from ribosome.machine.state import SubMachine, SubTransitions
+from ribosome.machine import MachineBase
 
 from myo.logging import Logging
 from myo.env import Env
@@ -10,7 +11,7 @@ from myo.env import Env
 class MyoComponent(Logging, SubMachine, HasNvim):
 
     def __init__(self, vim: NvimFacade, parent=None, title=None) -> None:
-        Machine.__init__(self, parent, title=title)
+        MachineBase.__init__(self, parent, title=title)
         HasNvim.__init__(self, vim)
 
 

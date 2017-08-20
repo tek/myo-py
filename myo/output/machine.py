@@ -1,10 +1,11 @@
-from ribosome.machine import may_handle, Machine, handle, Nop
+from ribosome.machine import may_handle, handle, Nop
 from ribosome.nvim import ScratchBuffer, NvimFacade
 from ribosome.machine.scratch import ScratchMachine, Quit
 from ribosome.machine.base import UnitTask
 from ribosome.record import (field, list_field, either_field, any_field,
                              bool_field, dfield)
 from ribosome.machine.transition import Fatal
+from ribosome.machine.interface import MachineI
 
 from amino.task import Task
 from amino import (Map, _, L, Left, __, List, Either, Just, Try, Right,
@@ -347,7 +348,7 @@ class OutputMachine(ScratchMachine, Logging):
     Transitions = OutputMachineTransitions
 
     def __init__(self, vim: NvimFacade, scratch: ScratchBuffer,
-                 result: ParseResult, parent: Machine, options: Map) -> None:
+                 result: ParseResult, parent: MachineI, options: Map) -> None:
         super().__init__(vim, scratch, parent=parent, title='output')
         self._result = result
         self._options = options
