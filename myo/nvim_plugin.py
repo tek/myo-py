@@ -37,7 +37,7 @@ unite_action = mk_unite_action(UniteNames)
 
 
 @unite_plugin('myo')
-class MyoNvimPlugin(NvimStatePlugin, Logging):
+class MyoNvimPlugin(NvimStatePlugin, Logging, name='myo'):
 
     def __init__(self, vim: neovim.Nvim) -> None:
         super().__init__(vim)
