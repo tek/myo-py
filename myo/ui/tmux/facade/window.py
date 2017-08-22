@@ -9,7 +9,7 @@ from amino.lazy import lazy
 from amino.task import task
 
 from ribosome.machine.transition import Fatal, NothingToDo
-from ribosome.machine.state import Info
+from ribosome.machine import Info
 
 from myo.logging import Logging
 from myo.ui.tmux.session import Session
