@@ -2,7 +2,7 @@ from pathlib import Path
 
 import neovim
 
-from amino import List, L, _, I, Map
+from amino import List, L, _, I, Map, Path
 
 from ribosome import command, NvimStatePlugin, msg_command, json_msg_command
 from ribosome.machine.scratch import Mapping
@@ -37,18 +37,20 @@ unite_action = mk_unite_action(UniteNames)
 
 
 @unite_plugin('myo')
+@neovim.plugin
 class MyoNvimPlugin(NvimStatePlugin, Logging, name='myo'):
 
     def __init__(self, vim: neovim.Nvim) -> None:
         super().__init__(vim)
-        self.myo = None
+        self.myo: Myo = None
 
     @property
     def name(self):
         return 'myo'
 
-    @property
-    def state(self):
+    def state(self) -> Myo:
+        if self.myo is None:
+            self.start_plugin()
         return self.myo
 
     @command()
