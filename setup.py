@@ -13,7 +13,7 @@ setup(
     url='https://github.com/tek/myo',
     packages=find_packages(exclude=['unit', 'unit.*', 'integration', 'integration.*']),
     install_requires=[
-        'ribosome>=10.9.4',
+        'ribosome==10.10.1',
         'libtmux',
         'psutil',
         'networkx',
