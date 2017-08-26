@@ -68,7 +68,7 @@ def _parse_line(data):
     return data if isinstance(data, int) else parse_int(data) | 0
 
 
-class LocationMeta(abc.ABCMeta, RecordMeta):
+class LocationMeta(RecordMeta):
     pass
 
 
