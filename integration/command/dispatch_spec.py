@@ -109,19 +109,19 @@ class HistorySpec(_DispatchBase):
     '''
 
     @lazy
-    def _cmd(self):
+    def cmd_name(self):
         return List.random_string()
 
     def _set_vars(self):
         super()._set_vars()
-        cmd = ShellCommand(name=self._cmd, line='', log_path=Just(Path('/foo/bar')))
+        cmd = ShellCommand(name=self.cmd_name, line='', log_path=Just(Path('/foo/bar')))
         history = encode_json([cmd]).get_or_raise
         self.vim.vars.set('Myo_history', history)
 
     def load_history(self) -> Expectation:
-        self._create_command(self._cmd, '')
+        self._create_command(self.cmd_name, '')
         self.vim.cmd_sync('MyoRunLatest')
-        return later(kf(self._last).must(contain(self._cmd)))
+        return later(kf(self._last).must(contain(self.cmd_name)))
 
 
 class HistoryDistinctSpec(_DispatchBase):
