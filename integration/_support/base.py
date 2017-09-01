@@ -44,7 +44,7 @@ class IntegrationCommon:
 class MyoIntegrationSpec(IntegrationCommon, ExternalIntegrationKlkSpec):
 
     def _start_plugin(self):
-        self.plugin.start_plugin()
+        self.plugin.stage_1()
         self._wait(.05)
         self._wait_for(lambda: self.vim.vars.p('started').present)
 
@@ -57,7 +57,7 @@ class MyoPluginIntegrationSpec(IntegrationCommon, PluginIntegrationKlkSpec, Spec
 
     def _pre_start(self) -> None:
         super()._pre_start()
-        self.vim.cmd_sync('MyoStart')
+        self.vim.cmd_sync('MyoStage1')
         later(kf(self.vim.vars.p, 'started').must(be_right))
 
 __all__ = ('MyoIntegrationSpec', 'MyoPluginIntegrationSpec')

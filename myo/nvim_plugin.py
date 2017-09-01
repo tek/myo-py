@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import neovim
 
 from amino import List, L, _, I, Map, Path
@@ -15,16 +13,12 @@ from ribosome.unite.plugin import unite_plugin
 from myo.plugins.core.main import StageI
 from myo.main import Myo
 from myo.logging import Logging
-from myo.plugins.command.message import (AddVimCommand, Run, AddShellCommand,
-                                         AddShell, ShellRun, RunTest,
-                                         RunVimTest, CommandShow, RunLatest,
-                                         RunLine, RunChained, RebootCommand,
-                                         DeleteHistory, CommandHistoryShow)
-from myo.plugins.tmux.message import (TmuxCreatePane, TmuxCreateSession,
-                                      TmuxCreateLayout, TmuxSpawnSession,
-                                      TmuxInfo, TmuxClosePane, TmuxPack,
-                                      TmuxMinimize, TmuxRestore, TmuxToggle,
-                                      TmuxFocus, TmuxOpenOrToggle, TmuxKill)
+from myo.plugins.command.message import (AddVimCommand, Run, AddShellCommand, AddShell, ShellRun, RunTest, RunVimTest,
+                                         CommandShow, RunLatest, RunLine, RunChained, RebootCommand, DeleteHistory,
+                                         CommandHistoryShow)
+from myo.plugins.tmux.message import (TmuxCreatePane, TmuxCreateSession, TmuxCreateLayout, TmuxSpawnSession, TmuxInfo,
+                                      TmuxClosePane, TmuxPack, TmuxMinimize, TmuxRestore, TmuxToggle, TmuxFocus,
+                                      TmuxOpenOrToggle, TmuxKill)
 from myo.plugins.tmux import TmuxOpen
 from myo.plugins.core.message import Parse, Resized
 from myo.plugins.unite.message import UniteHistory, UniteCommands
@@ -49,8 +43,6 @@ class MyoNvimPlugin(NvimStatePlugin, Logging, name='myo'):
         return 'myo'
 
     def state(self) -> Myo:
-        if self.myo is None:
-            self.start_plugin()
         return self.myo
 
     @command()
@@ -65,7 +57,7 @@ class MyoNvimPlugin(NvimStatePlugin, Logging, name='myo'):
             self.vim.clean()
             self.myo = None
 
-    def start_plugin(self) -> None:
+    def stage_1(self) -> None:
         config_path = self.vim.vars.ppath('config_path').get_or_else(Path('/dev/null'))
         plugins = self.vim.vars.pl('plugins') | self._default_plugins
         self.myo = Myo(self.vim.proxy, Path(config_path), plugins)
@@ -73,17 +65,9 @@ class MyoNvimPlugin(NvimStatePlugin, Logging, name='myo'):
         self.myo.wait_for_running()
         self.myo.send(StageI())
 
-    @command(sync=True)
-    def myo_start(self):
-        self.start_plugin()
-
     @property
     def _default_plugins(self):
         return List('command', 'tmux', 'unite')
-
-    @command()
-    def myo_plug(self, plug_name, cmd_name, *args):
-        self.myo.plug_command(plug_name, cmd_name, args)
 
     @json_msg_command(AddVimCommand)
     def myo_vim_command(self):
