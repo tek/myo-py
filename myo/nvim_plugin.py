@@ -31,12 +31,15 @@ unite_action = mk_unite_action(UniteNames)
 
 
 @unite_plugin('myo')
-@neovim.plugin
 class MyoNvimPlugin(NvimStatePlugin, Logging, name='myo'):
 
     def __init__(self, vim: neovim.Nvim) -> None:
         super().__init__(vim)
-        self.myo: Myo = None
+        config_path = self.vim.vars.ppath('config_path').get_or_else(Path('/dev/null'))
+        plugins = self.vim.vars.pl('plugins') | self._default_plugins
+        self.myo = Myo(self.vim.proxy, Path(config_path), plugins)
+        self.myo.start()
+        self.myo.wait_for_running()
 
     @property
     def name(self):
@@ -45,24 +48,7 @@ class MyoNvimPlugin(NvimStatePlugin, Logging, name='myo'):
     def state(self) -> Myo:
         return self.myo
 
-    @command()
-    def myo_reload(self):
-        self.myo_quit()
-        self.myo_start()
-
-    @command()
-    def myo_quit(self):
-        if self.myo is not None:
-            self.myo.stop()
-            self.vim.clean()
-            self.myo = None
-
     def stage_1(self) -> None:
-        config_path = self.vim.vars.ppath('config_path').get_or_else(Path('/dev/null'))
-        plugins = self.vim.vars.pl('plugins') | self._default_plugins
-        self.myo = Myo(self.vim.proxy, Path(config_path), plugins)
-        self.myo.start()
-        self.myo.wait_for_running()
         self.myo.send(StageI())
 
     @property
