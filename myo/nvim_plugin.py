@@ -51,6 +51,10 @@ class MyoNvimPlugin(NvimStatePlugin, Logging, name='myo'):
     def stage_1(self) -> None:
         self.myo.send(StageI())
 
+    @command()
+    def myo_quit(self):
+        self.myo.stop()
+
     @property
     def _default_plugins(self):
         return List('command', 'tmux', 'unite')
