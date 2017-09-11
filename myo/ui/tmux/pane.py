@@ -8,7 +8,7 @@ from psutil import Process
 
 from libtmux.pane import Pane as LTPane
 
-from amino.task import task
+from amino.io import io
 
 from amino import __, List, Boolean, Maybe, _, Map, Just, Try, Either
 from amino.lazy import lazy
@@ -169,13 +169,13 @@ class PaneAdapter(Adapter, PaneI):
     def _raw_pid(self):
         return Try(lambda: self.native.pid)
 
-    @task
+    @io
     def resize(self, size, horizontal):
         f = __.set_width if horizontal else __.set_height
         return f(size)(self.native)
 
     @property  # type: ignore
-    @task
+    @io
     def kill(self):
         return self.cmd('kill-pane')
 

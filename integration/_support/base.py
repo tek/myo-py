@@ -3,22 +3,21 @@ from pathlib import Path
 from amino import List, Right
 
 from kallikrein.matchers.either import be_right
-from kallikrein import k, kf
+from kallikrein import kf
 
 from ribosome.test.integration.klk import PluginIntegrationKlkSpec, ExternalIntegrationKlkSpec
 from ribosome.test.integration.klk import later
 
 from myo.test.spec import Spec
 from myo.logging import Logging
-
-from integration._support.plugin import MyoSpecPlugin
+from myo.nvim_plugin import MyoNvimPlugin
 
 
 class IntegrationCommon:
 
     @property
     def plugin_class(self):
-        return Right(MyoSpecPlugin)
+        return Right(MyoNvimPlugin)
 
     @property
     def _prefix(self):
@@ -57,7 +56,7 @@ class MyoPluginIntegrationSpec(IntegrationCommon, PluginIntegrationKlkSpec, Spec
 
     def _pre_start(self) -> None:
         super()._pre_start()
-        self.vim.cmd_sync('MyoStage1')
+        self.vim.cmd_once_defined('MyoStage1')
         later(kf(self.vim.vars.p, 'started').must(be_right))
 
 __all__ = ('MyoIntegrationSpec', 'MyoPluginIntegrationSpec')

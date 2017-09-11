@@ -1,6 +1,6 @@
 from typing import Callable, Tuple
 
-from amino import Maybe, __, _, Just, Task, Either, L, Right, List, Map, Boolean
+from amino import Maybe, __, _, Just, IO, Either, L, Right, List, Map, Boolean
 
 from myo.logging import Logging
 from myo.ui.tmux.data import TmuxState
@@ -69,8 +69,8 @@ class TmuxFacade(Logging):
         return (self.native_window(session, window) /
                 L(WindowFacade)(session, window, _))
 
-    def window_task(self, session, window) -> Task[WindowFacade]:
-        return Task.call(self.window, session, window).join_either
+    def window_task(self, session, window) -> IO[WindowFacade]:
+        return IO.call(self.window, session, window).join_either
 
     def loc_window(self, loc: ViewLoc) -> WindowFacade:
         return self.window(loc.session, loc.window)
@@ -94,9 +94,8 @@ class TmuxFacade(Logging):
         f = lambda loc: self.loc_window(loc) & Right(loc.view)
         return self.pane_loc(ident) // f
 
-    def pane_window_task(self, ident: Ident
-                         ) -> Task[Tuple[WindowFacade, ViewLoc]]:
-        return Task.call(self.pane_window, ident).join_either
+    def pane_window_task(self, ident: Ident) -> IO[Tuple[WindowFacade, ViewLoc]]:
+        return IO.call(self.pane_window, ident).join_either
 
     def view_window(self, ident: Ident
                     ) -> Either[str, Tuple[WindowFacade, ViewLoc]]:
@@ -106,7 +105,7 @@ class TmuxFacade(Logging):
     def path_window(self, path: ViewPath) -> Maybe[WindowFacade]:
         return self.window(path.session, path.window)
 
-    def path_window_task(self, path: ViewPath) -> Task[WindowFacade]:
+    def path_window_task(self, path: ViewPath) -> IO[WindowFacade]:
         return self.window_task(path.session, path.window)
 
     @property
@@ -127,22 +126,22 @@ class TmuxFacade(Logging):
 
     @property
     def pack_sessions(self):
-        return (self.state.sessions / self.pack_windows).sequence(Task)
+        return (self.state.sessions / self.pack_windows).sequence(IO)
 
     def pack_windows(self, session: Session):
-        return session.windows.traverse(L(self.pack_window)(session, _), Task)
+        return session.windows.traverse(L(self.pack_window)(session, _), IO)
 
     def pack_window(self, session: Session, window: Window
-                    ) -> Task[Either[str, Window]]:
+                    ) -> IO[Either[str, Window]]:
         return self.window_task(session, window) // __.pack()
 
-    def open_pane(self, path: ViewPath) -> Task[Either[str, ViewPath]]:
+    def open_pane(self, path: ViewPath) -> IO[Either[str, ViewPath]]:
         return self.path_window_task(path) // __.open_pane(path)
 
     def kill_process(self, ident: Ident, signals):
         return (
             self.pane_window_task(ident)
-            .flat_map2(__.kill_process(_, signals))
+            .flat_map2(lambda wf, vl: wf.kill_process(vl, signals))
         )
 
     @property
@@ -150,7 +149,7 @@ class TmuxFacade(Logging):
         return (
             self.state.possibly_open_panes //
             _.id
-        ).traverse(self.close_id, Task)
+        ).traverse(self.close_id, IO)
 
     def close_id(self, id: int):
         return self.server.cmd('kill-pane', '-t', '%{}'.format(id))
@@ -181,15 +180,13 @@ class TmuxFacade(Logging):
             return self._ident_ppm(ident) / w.close_pane_path
         return self.pane_window(ident).map2(run)
 
-    def run_command_ppm(self, pane_ident: Ident, line: str, in_shell: bool,
-                        kill: bool, signals: List[str]):
+    def run_command_ppm(self, pane_ident: Ident, line: str, in_shell: bool, kill: bool, signals: List[str]):
         win = lambda path: self.path_window_task(path)
         def check_running(path):
             pane_kill = path.view.kill
-            return Task.now(Right(path)) if in_shell else (
+            return IO.now(Right(path)) if in_shell else (
                 win(path) //
-                __.ensure_not_running(
-                    path.view, kill=kill or pane_kill, signals=signals) /
+                __.ensure_not_running(path.view, kill=kill or pane_kill, signals=signals) /
                 __.replace(path)
             )
         def pipe(path):
@@ -211,8 +208,7 @@ class TmuxFacade(Logging):
         ppm = (self._ident_vpm
                if is_open else
                self.open_pane_ppm)
-        return ((((ppm(pane_ident) + check_running) / pipe) % run) / pid,
-                is_open)
+        return ((((ppm(pane_ident) + check_running) / pipe) % run) / pid, is_open)
 
     def pane_mod(self, ident: Ident, f: Callable[[Pane], Pane]):
         return self._mod(self._ident_ppm, ident, f)
@@ -222,7 +218,7 @@ class TmuxFacade(Logging):
 
     def _mod(self, ctor: Callable, ident: Ident, f: Callable[[View], View]):
         def g(path):
-            return Task.now(Right(path.map_view(f)))
+            return IO.now(Right(path.map_view(f)))
         return ctor(ident) / g
 
     def pinned_panes(self, ident):

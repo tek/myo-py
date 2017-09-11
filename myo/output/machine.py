@@ -1,13 +1,13 @@
 from ribosome.machine import may_handle, handle, Nop
 from ribosome.nvim import ScratchBuffer, NvimFacade
 from ribosome.machine.scratch import ScratchMachine, Quit
-from ribosome.machine.base import UnitTask
+from ribosome.machine.base import UnitIO
 from ribosome.record import (field, list_field, either_field, any_field,
                              bool_field, dfield)
 from ribosome.machine.transition import Fatal
 from ribosome.machine.interface import MachineI
 
-from amino.task import Task
+from amino.io import IO
 from amino import (Map, _, L, Left, __, List, Either, Just, Try, Right,
                    Boolean, Empty)
 from amino.lazy import lazy
@@ -146,9 +146,9 @@ class OutputMachineTransitions(MyoTransitions):
     def jump(self):
         open_file = self.open_file(self.msg.target.file_path)
         l, c = self.msg.target.coords
-        set_line = Task.delay(lambda: self.vim.window.set_cursor(l, c))
-        post = Task.delay(self.vim.cmd, 'normal! zvzz')
-        return UnitTask(open_file + set_line + post)
+        set_line = IO.delay(lambda: self.vim.window.set_cursor(l, c))
+        post = IO.delay(self.vim.cmd, 'normal! zvzz')
+        return UnitIO(open_file + set_line + post)
 
     @handle(JumpCurrent)
     def jump_current(self):
@@ -188,12 +188,12 @@ class OutputMachineTransitions(MyoTransitions):
         return (
             self.line_for_current_loc / (
                 lambda a:
-                Task.delay(self.window.focus) +
-                Task.delay(self.window.set_cursor, a + 1) +
-                Task.delay(self.window.cmd, 'normal! zz') +
-                Task.delay(cur.focus)
+                IO.delay(self.window.focus) +
+                IO.delay(self.window.set_cursor, a + 1) +
+                IO.delay(self.window.cmd, 'normal! zz') +
+                IO.delay(cur.focus)
             ) /
-            UnitTask
+            UnitIO
         )
 
     def _adapter(self, result):
@@ -253,11 +253,11 @@ class OutputMachineTransitions(MyoTransitions):
                 self._with_sub(self.data,
                                self.state.set(locations=locations,
                                               lines=lines)),
-                Task.delay(self.window.focus) +
-                Task.delay(self.window.cmd, 'resize {}'.format(size)) +
-                Task.delay(self.buffer.set_modifiable, True) +
-                Task.delay(self.buffer.set_content, text) +
-                Task.delay(self.buffer.set_modifiable, False) +
+                IO.delay(self.window.focus) +
+                IO.delay(self.window.cmd, 'resize {}'.format(size)) +
+                IO.delay(self.buffer.set_modifiable, True) +
+                IO.delay(self.buffer.set_content, text) +
+                IO.delay(self.buffer.set_modifiable, False) +
                 self.run_syntax(lines)
             )
         def check(locations, lines):
@@ -283,7 +283,7 @@ class OutputMachineTransitions(MyoTransitions):
         return self.result.langs.find_map(create) / __(self.vim)
 
     def run_syntax(self, lines):
-        return (self.syntax / (lambda a: a(lines))).sequence(Task)
+        return (self.syntax / (lambda a: a(lines))).sequence(IO)
 
     def target_for_line(self, line):
         return self.lines.lift(line) / _.target
@@ -326,22 +326,22 @@ class OutputMachineTransitions(MyoTransitions):
             # TODO
             pass
         if not path.is_file():
-            return Task.now(Left('not a file: {}'.format(path)))
+            return IO.now(Left('not a file: {}'.format(path)))
         else:
             win = (
                 self.vim.windows.find(__.buffer.modifiable.contains(True))
                 .o(split)
-                .task('could not get a window') /
+                .io('could not get a window') /
                 __.focus()
             )
             def load_buffer(buf):
-                return Task.delay(self.vim.window.cmd, 'buffer {}'.format(buf.id))
+                return IO.delay(self.vim.window.cmd, 'buffer {}'.format(buf.id))
             def edit():
-                return Task.delay(self.vim.edit, path) / __.run_async()
+                return IO.delay(self.vim.edit, path) / __.run_async()
             def load_file():
                 buf = self.vim.buffers.find(_.name == str(path))
                 return buf / load_buffer | edit
-            return win + Task.suspend(load_file)
+            return win + IO.suspend(load_file)
 
 
 class OutputMachine(ScratchMachine, Logging):

@@ -4,9 +4,9 @@ from typing import Tuple
 
 from psutil import Process
 
-from amino import L, Task, _, Maybe, __, Either, I, Right, Left, List, Empty, Try
+from amino import L, IO, _, Maybe, __, Either, I, Right, Left, List, Empty, Try
 from amino.lazy import lazy
-from amino.task import task
+from amino.io import io
 
 from ribosome.machine.transition import Fatal, NothingToDo
 from ribosome.machine import Info
@@ -44,13 +44,13 @@ class WindowFacade(Logging):
     def root(self):
         return self.window.root
 
-    def ref_pane_fatal(self, layout: Layout) -> Task[Pane]:
+    def ref_pane_fatal(self, layout: Layout) -> IO[Pane]:
         ''' A pane in the layout to be used to open a pane.
         Uses the first open pane available.
         Failure if no panes are open.
         '''
-        return (Task.call(self.ref_pane, layout) //
-                L(Task.from_maybe)(_, "no ref pane for {}".format(layout)))
+        return (IO.call(self.ref_pane, layout) //
+                L(IO.from_maybe)(_, "no ref pane for {}".format(layout)))
 
     def ref_pane(self, layout: Layout) -> Maybe[Pane]:
         return (
@@ -69,12 +69,12 @@ class WindowFacade(Logging):
                 .to_either(pane_not_found_error.format(pane.name)))
 
     def native_pane_task(self, pane: Pane):
-        return Task.call(self.native_pane, pane)
+        return IO.call(self.native_pane, pane)
 
     def native_pane_task_fatal(self, pane: Pane):
         return self.native_pane_task(pane).join_either
 
-    def open_pane(self, path: ViewPath) -> Task[Either[str, ViewPath]]:
+    def open_pane(self, path: ViewPath) -> IO[Either[str, ViewPath]]:
         v = path.view
         def open(pane):
             def apply(layout):
@@ -86,25 +86,25 @@ class WindowFacade(Logging):
                     Right
                 )
             return (self._pane_opener(path, pane).eff(Either) // apply).value
-        view = (Task.now(v) if path.is_pane else
-                v.panes.head.task('{} has no panes'.format(v)))
+        view = (IO.now(v) if path.is_pane else
+                v.panes.head.io('{} has no panes'.format(v)))
         return view // open
 
     def _pane_opener(self, path: ViewPath, pane: Pane
-                     ) -> Task[Either[str, Layout]]:
+                     ) -> IO[Either[str, Layout]]:
         def find_layout():
             return (path.layouts.reversed
                     .find(self.layout_open)
                     .to_either(
                         Fatal('no open layout when trying to open pane')))
-        return Task.now(
+        return IO.now(
             self.view_open(pane).no.flat_either_call(
                 Left(NothingToDo('{!r} already open'.format(pane))),
                 find_layout,
             )
         )
 
-    def _split_pane(self, layout, pane) -> Task[Pane]:
+    def _split_pane(self, layout, pane) -> IO[Pane]:
         return (
             self.native_ref_pane_task(layout) /
             __.split(layout.horizontal) /
@@ -128,11 +128,11 @@ class WindowFacade(Logging):
     def ensure_not_running(self, pane: Pane, kill=False, signals=List('kill')):
         def handle(pa):
             return (
-                Task.now(Right(True))
+                IO.now(Right(True))
                 if pa.not_running else
                 self._kill_process(pa, signals=signals)
                 if pane.kill or kill else
-                Task.now(Left('command already running'))
+                IO.now(Left('command already running'))
             )
         return self.native_pane_task_fatal(pane) // handle
 
@@ -146,7 +146,7 @@ class WindowFacade(Logging):
             L(self._kill_process)(_, signals)
         ).value
 
-    @task
+    @io
     def _kill_process(self, adapter, signals):
         def _wait_killed(timeout):
             start = time.time()
@@ -206,11 +206,11 @@ class WindowFacade(Logging):
     def open_views(self, layout: Layout):
         return layout.views.filter(self.view_open)
 
-    def open_pane_path(self, path: ViewPath) -> Task[Either[str, ViewPath]]:
+    def open_pane_path(self, path: ViewPath) -> IO[Either[str, ViewPath]]:
         ''' legacy version
         '''
         p = path.view
-        return (Task.now(Left('pane {} already open'.format(p)))
+        return (IO.now(Left('pane {} already open'.format(p)))
                 if self.is_open(p)
                 else self._open_pane_path(path))
 
@@ -220,11 +220,11 @@ class WindowFacade(Logging):
         else:
             return (
                 outer.detach_last.map2(L(self._open_in_layouts_path)(pane, _, _)) |
-                Task.failed('cannot open {} without open layout'.format(pane))
+                IO.failed('cannot open {} without open layout'.format(pane))
             ).map3(lambda p, l, o: (p, layout, o.cat(l)))
 
-    def _open_in_layout(self, pane, layout) -> Task[Tuple[Layout, Pane]]:
-        return self._split_pane(layout, pane) & (Task.now(layout))
+    def _open_in_layout(self, pane, layout) -> IO[Tuple[Layout, Pane]]:
+        return self._split_pane(layout, pane) & (IO.now(layout))
 
     def close_pane_path(self, path: ViewPath):
         new_path = path.map_view(__.set(id=Empty()))
@@ -243,7 +243,7 @@ class WindowFacade(Logging):
     def focus(self, pane: Pane):
         return (
             self.native_pane(pane)
-            .task('pane not found for focus: {}'.format(pane)) /
+            .io('pane not found for focus: {}'.format(pane)) /
             __.focus()
         )
 

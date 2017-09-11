@@ -1,4 +1,4 @@
-from amino import Task, L, Just, _
+from amino import IO, L, Just, _
 
 from ribosome.unite import UniteSource
 
@@ -16,8 +16,8 @@ class UniteNames():
 
 
 def commands_syntax(syntax):
-    m = L(Task.call)(syntax.match, _, _)
-    hi = L(Task.call)(syntax.highlight, _)
+    m = L(IO.call)(syntax.match, _, _)
+    hi = L(IO.call)(syntax.highlight, _)
     name = '^\s*\[\S\+\]'
     return (
         m('name', name) +

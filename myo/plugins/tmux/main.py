@@ -2,10 +2,10 @@ from typing import Callable
 
 from amino import List, _, __, Just, Map, Right, Empty, Either, Boolean, I, Maybe, L
 from amino.lazy import lazy
-from amino.task import Task
+from amino.io import IO
 
 from ribosome.machine import may_handle, handle, Quit, Nop, Message
-from ribosome.machine.base import UnitTask, DataTask
+from ribosome.machine.base import UnitIO, DataIO
 from ribosome.machine.transition import Error, Fatal
 
 from myo.state import MyoComponent, MyoTransitions
@@ -120,7 +120,7 @@ class TmuxTransitions(MyoTransitions):
 
     @may_handle(StartWatcher)
     def start_watcher(self):
-        return UnitTask(Task.delay(self.machine.watcher.start))
+        return UnitIO(IO.delay(self.machine.watcher.start))
 
     @handle(TmuxCreateSession)
     def create_session(self):
@@ -182,11 +182,11 @@ class TmuxTransitions(MyoTransitions):
 
     @handle(TmuxFixFocus)
     def fix_focus(self):
-        return self.tmux.fix_focus(self.msg.pane, VimPane.pane_name) / UnitTask
+        return self.tmux.fix_focus(self.msg.pane, VimPane.pane_name) / UnitIO
 
     @handle(TmuxFocus)
     def focus(self):
-        return self.tmux.focus(self.msg.pane) / UnitTask
+        return self.tmux.focus(self.msg.pane) / UnitIO
 
     @handle(TmuxClosePane)
     def close(self):
@@ -249,11 +249,11 @@ class TmuxTransitions(MyoTransitions):
 
     @may_handle(Quit)
     def quit(self):
-        return QuitWatcher(), UnitTask(self.tmux.close_all)
+        return QuitWatcher(), UnitIO(self.tmux.close_all)
 
     @may_handle(QuitWatcher)
     def quit_watcher(self):
-        return UnitTask(Task.delay(self.machine.watcher.stop))
+        return UnitIO(IO.delay(self.machine.watcher.stop))
 
     @may_handle(TmuxInfo)
     def info(self):
@@ -265,7 +265,7 @@ class TmuxTransitions(MyoTransitions):
 
     @may_handle(TmuxPack)
     def pack(self):
-        return UnitTask(self.tmux.pack_sessions), UpdateVimWindow()
+        return UnitIO(self.tmux.pack_sessions), UpdateVimWindow()
 
     @handle(UpdateVimWindow)
     def update_vim_window(self):
@@ -326,10 +326,10 @@ class TmuxTransitions(MyoTransitions):
         return self.tmux.view_mod(self.msg.pane, f), TmuxPack().pub.at(1)
 
     def _state_task(self,
-                    f: Callable[[TmuxState], Task[Either[str, TmuxState]]],
+                    f: Callable[[TmuxState], IO[Either[str, TmuxState]]],
                     options=Map()):
         cb = lambda d: f(self._state(d)) / __.map(L(self._with_sub)(d, _))
-        return DataTask(_ // cb)
+        return DataIO(_ // cb)
 
     def _run_vpm(self, vpm):
         return self._state_task(vpm.run, self.msg.options)
@@ -378,7 +378,7 @@ class TmuxTransitions(MyoTransitions):
         in_shell = Boolean('shell' in opt)
         def watch(path):
             msg = WatchCommand(job, path.view)
-            return Task.call(self.machine.watcher.send, msg)
+            return IO.call(self.machine.watcher.send, msg)
         runner, is_open = self.tmux.run_command_ppm(pane_ident, line, in_shell,
                                                     kill, signals)
         post = is_open.no.m(TmuxPostOpen(pane_ident, opt)).to_list

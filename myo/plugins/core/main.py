@@ -1,9 +1,10 @@
 import amino
-from amino import __, List, Left, Task, Map, _, L
+from amino import __, List, Left, IO, Map, _, L
 
-from ribosome.machine import may_handle, Error, RunTask, handle
-from ribosome.machine.base import io
+from ribosome.machine import may_handle, Error, handle
+from ribosome.machine.base import unit_nio
 from ribosome.machine.transition import Fatal
+from ribosome.machine.messages import RunIO
 
 from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.core.dispatch import VimDispatcher
@@ -23,9 +24,8 @@ class CoreTransitions(MyoTransitions):
 
     @may_handle(Initialized)
     def initialized(self):
-        started = io(__.vars.set_p('started', True))
-        return (self.data.set(initialized=True) + VimDispatcher(self.vim),
-                started)
+        started = unit_nio(__.vars.set_p('started', True))
+        return (self.data.set(initialized=True) + VimDispatcher(self.vim), started)
 
     @may_handle(Error)
     def error(self):
@@ -42,11 +42,11 @@ class CoreTransitions(MyoTransitions):
         def handle(parser):
             def display(result):
                 return (
-                    Task.now(Left(Fatal(error_no_output_events)))
+                    IO.now(Left(Fatal(error_no_output_events)))
                     if result.events.empty else
                     parser.display(result, opt)
                 )
-            return RunTask(parser.parse(self.msg.output, self.msg.path) // display)
+            return RunIO(parser.parse(self.msg.output, self.msg.path) // display)
         return self._error_handler(job) / handle
 
     def _error_handler(self, job):

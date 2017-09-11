@@ -1,7 +1,7 @@
 from functools import singledispatch  # type: ignore
 from operator import ne, sub
 
-from amino import Either, Task, L, _, Right, __, List, Boolean, Empty
+from amino import Either, IO, L, _, Right, __, List, Boolean, Empty
 
 from myo.logging import Logging
 from myo.ui.tmux.window import Window
@@ -17,7 +17,7 @@ class WindowPacker(Logging):
         self.window = window
 
     @property
-    def run(self) -> Task[Either[str, Window]]:
+    def run(self) -> IO[Either[str, Window]]:
         w, h = self.window.window_size
         return (
             self._pack_layout(self.window.root, w, h) /
@@ -29,7 +29,7 @@ class WindowPacker(Logging):
         return self.window.loc(pane)
 
     def _pack_layout(self, l, w, h):
-        nop = Task.now(Empty())
+        nop = IO.now(Empty())
         horizontal = l.horizontal
         total = w if horizontal else h
         @singledispatch
@@ -55,7 +55,7 @@ class WindowPacker(Logging):
             m = self._measure_layout(views, total - count + 1)
             return (
                 self._apply_positions(views, horizontal) +
-                views.zip(m).map2(L(recurse)(_, _, count > 1)).sequence(Task)
+                views.zip(m).map2(L(recurse)(_, _, count > 1)).sequence(IO)
             )
         else:
             return nop
@@ -129,9 +129,9 @@ class WindowPacker(Logging):
                             return setpos(init, tail)
                     return current.detach_last.map2(swap)
                 return correct.detach_head.map2(rec)
-            return Task.call(setpos, current, adapters)
+            return IO.call(setpos, current, adapters)
         else:
-            return Task.now(Empty())
+            return IO.now(Empty())
 
     def _ref_adapters(self, views):
         return views // self._ref_adapter

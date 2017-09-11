@@ -179,7 +179,7 @@ class DispatchSpec(TmuxCmdSpec):
             lambda: self._output.exists(lambda a: 'tail' in a)).must(eq(True)))
         k(self._cmd_pid(1)).must(greater(0))
         self.vim.cmd('MyoTmuxKill make')
-        return later(kf(lambda: self._cmd_pid(1)) == 0)
+        return later(kf(self._cmd_pid, 1) == 0)
 
     def kill_nonexisting(self) -> Expectation:
         self.vim.cmd('MyoTmuxKill make')
@@ -212,8 +212,7 @@ class DispatchSpec(TmuxCmdSpec):
         line = List.random_string()
         self._py_shell()
         self._run_command('py')
-        self.json_cmd_sync('MyoRunInShell py',
-                           line='print(\'{}\')'.format(line))
+        self.json_cmd_sync('MyoRunInShell py', line='print(\'{}\')'.format(line))
         self._pane_output_contains(1, line)
         self.json_cmd_sync('MyoRebootCommand py')
         return self._pane_output_contains_not(3, line)

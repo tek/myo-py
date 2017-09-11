@@ -5,10 +5,10 @@ from psutil import Process
 from ribosome.record import list_field, bool_field, field
 from ribosome.machine import may_handle, handle, Transitions, message
 from ribosome import StateMachine
-from ribosome.machine.base import UnitTask
+from ribosome.machine.base import UnitIO
 
 from amino import Empty, Try, __, List, L, _
-from amino.task import Task
+from amino.io import IO
 
 from myo.record import Record
 from myo.plugins.tmux.message import WatchCommand
@@ -71,8 +71,8 @@ class WatcherTransitions(Transitions):
         done = self.data.commands.flat_map(self._check_proc)
         data = self.data.remove(done)
         term_msg = lambda wc: Terminated(wc.command, wc.pane)
-        term = (done / term_msg / L(Task.call)(self.machine.bubble, _) /
-                UnitTask)
+        term = (done / term_msg / L(IO.call)(self.machine.bubble, _) /
+                UnitIO)
         return term.cons(data) + restart
 
     def _check_proc(self, wc):

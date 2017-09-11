@@ -5,7 +5,7 @@ from myo.logging import Logging
 from myo.ui.tmux.session import SessionAdapter, NativeSession
 from myo.ui.tmux.pane import PaneData
 from amino import _, List, __, Map, Maybe
-from amino.task import task
+from amino.io import io
 from amino.lazy import lazy
 
 libtmux.formats.PANE_FORMATS += [
@@ -57,7 +57,7 @@ class Server(Logging):
     def kill(self):
         return self.native.kill_server()
 
-    @task
+    @io
     def cmd(self, *a, **kw):
         return self.native.cmd(*a, **kw)
 

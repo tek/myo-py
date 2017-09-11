@@ -1,6 +1,6 @@
 from typing import Callable, Any
 
-from amino.task import Task
+from amino.io import IO
 
 from lenses import Lens, lens
 from amino import Either, List, _, L, Left, __, Right, I, Just, Boolean
@@ -70,7 +70,7 @@ class ViewPath(Record):
     def loc(self):
         return ViewLoc.create(self.session, self.window, self.view)
 
-PPTrans = Callable[[ViewPath], Task[Either[Any, ViewPath]]]
+PPTrans = Callable[[ViewPath], IO[Either[Any, ViewPath]]]
 
 
 class ViewPathLens(Record):
@@ -91,7 +91,7 @@ class ViewPathLens(Record):
                    ' Either[..., ViewPath]: {}')
             raise Exception(msg.format(result))
 
-    def run(self, state: TmuxState, f: PPTrans) -> Task[Either[Any, Window]]:
+    def run(self, state: TmuxState, f: PPTrans) -> IO[Either[Any, Window]]:
         bound = self.lens.bind(state)
         session, (window, views) = bound.get()
         path = ViewPath.try_create(session, window, List.wrap(views))
@@ -99,11 +99,11 @@ class ViewPathLens(Record):
         def result(r):
             self._check_result_type(r)
             return r / _.view_list / set
-        return Task.from_either(path) // f / result
+        return IO.from_either(path) // f / result
 
 
-def _initial_ppm_f(pp, window) -> Task[Either[Any, Window]]:
-    return Task.now(Right(window))
+def _initial_ppm_f(pp, window) -> IO[Either[Any, Window]]:
+    return IO.now(Right(window))
 
 
 class ViewPathMod(Logging, Message):
@@ -135,8 +135,8 @@ class ViewPathMod(Logging, Message):
         chain = lambda vp, win: self._f(vp, win) // g(win, h(vp))
         return type(self)(pred=self.pred, _f=chain)  # type: ignore
 
-    def map(self, f: PPTrans) -> Task[Either[Any, Window]]:
-        keep_error = L(Left)() >> Task.now
+    def map(self, f: PPTrans) -> IO[Either[Any, Window]]:
+        keep_error = L(Left)(_) >> IO.now
         return self._chain(f, lambda w, d: __.cata(keep_error, d))
 
     __truediv__ = map
@@ -152,7 +152,7 @@ class ViewPathMod(Logging, Message):
 
     __mod__ = foreach
 
-    def run(self, state: TmuxState) -> Task:
+    def run(self, state: TmuxState) -> IO:
         return self._lens(state) // L(self._f)(_, state)
 
     def _lens(self, state):
@@ -167,7 +167,7 @@ class ViewPathMod(Logging, Message):
             return ((Just(lens()) & s.attr_lens(_.windows, main_lens))
                     .map2(lens().tuple_))
         st_lens = state.attr_lens(_.sessions, s_lens)
-        return Task.from_maybe(st_lens, err) / ViewPathLens.create
+        return IO.from_maybe(st_lens, err) / ViewPathLens.create
 
 
 class PanePathMod(ViewPathMod):
@@ -185,7 +185,7 @@ class LayoutPathMod(ViewPathMod):
 
 
 def ppm_id(path: ViewPathMod):
-    return Task.now(Right(path))
+    return IO.now(Right(path))
 
 
 class ViewLoc(Record):

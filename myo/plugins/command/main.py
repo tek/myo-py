@@ -4,12 +4,12 @@ from uuid import UUID
 from ribosome.machine import may_handle, handle, Nop, Message
 from ribosome.machine.transition import Fatal
 from ribosome.util.callback import parse_callback_spec
-from ribosome.machine.base import UnitTask
+from ribosome.machine.base import UnitIO
 from ribosome.record import decode_json, encode_json
 
 from myo.state import MyoComponent, MyoTransitions
 
-from amino import L, _, List, Try, __, Maybe, Map, I, Task, Just, Boolean, Left, Either, env
+from amino import L, _, List, Try, __, Maybe, Map, I, IO, Just, Boolean, Left, Either, env
 from myo.command import Command, VimCommand, ShellCommand, Shell, CommandJob, TransientCommandJob
 from myo.util import amend_options, Ident
 from myo.plugins.core.message import Parse, ParseOutput, StageI
@@ -78,8 +78,8 @@ class CommandTransitions(MyoTransitions):
 
     @may_handle(StoreHistory)
     def store_history(self):
-        return UnitTask(
-            Task.delay(encode_json, self.data.commands.history).join_either /
+        return UnitIO(
+            IO.delay(encode_json, self.data.commands.history).join_either /
             L(self).vim.vars.set(self._history_var, _)
         )
 

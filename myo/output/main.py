@@ -2,7 +2,7 @@ import abc
 from typing import Callable
 
 from amino import List, Path, Either, __, L, _, Just, Maybe, Map, Empty
-from amino.task import Task
+from amino.io import IO
 from amino.lazy import lazy
 
 from ribosome import NvimFacade
@@ -18,12 +18,12 @@ from myo.output.machine import OutputMachine, SetResult
 class OutputHandler(Logging, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def parse(self, output: List[str], errfile: Path) -> Task[ParseResult]:
+    def parse(self, output: List[str], errfile: Path) -> IO[ParseResult]:
         ...
 
     @abc.abstractmethod
     def display(self, result: ParseResult, jump: Maybe[Callable]
-                ) -> Task[List[Message]]:
+                ) -> IO[List[Message]]:
         ...
 
 
@@ -37,7 +37,7 @@ class CustomOutputHandler(OutputHandler):
         self.handler = handler
 
     def parse(self, output: List[str], errfile: Path):
-        return Task.call(self.handler, output)
+        return IO.call(self.handler, output)
 
     def display(self, result: ParseResult, options: Map[str, str]):
         ctor = L(OutputMachine)(self.vim, _, result, _, options)
@@ -45,7 +45,7 @@ class CustomOutputHandler(OutputHandler):
         msg = SetResult(result, options)
         opt = Map(use_tab=False, size=Just(size), wrap=True, init=msg)
         run = RunScratchMachine(ctor, options=opt)
-        return Task.just(IfUnhandled(msg, run).pub)
+        return IO.just(IfUnhandled(msg, run).pub)
 
 
 class VimCompiler(OutputHandler, VimCallback):
@@ -55,12 +55,12 @@ class VimCompiler(OutputHandler, VimCallback):
 
     def parse(self, output: List[str], errfile: Path):
         r = ParseResult(head=List('errorformat'))
-        return (Task.call(self.vim.cmd_sync, 'cgetfile {}'.format(errfile))
+        return (IO.call(self.vim.cmd_sync, 'cgetfile {}'.format(errfile))
                 .replace(r))
 
     def display(self, result, jump):
-        copen = Task.call(self.vim.cmd_sync, 'copen')
-        cfirst = Task.call(self.vim.cmd_sync, 'cfirst')
+        copen = IO.call(self.vim.cmd_sync, 'copen')
+        cfirst = IO.call(self.vim.cmd_sync, 'cfirst')
         return (copen + cfirst).replace(Just(Nop()))
 
 
@@ -80,6 +80,6 @@ class Parsing(CustomOutputHandler):
 
     def parse(self, output: List[str], errfile: Path):
         events = self.parsers // __.events(output)
-        return Task.now(ParseResult(events=events, langs=self.langs))
+        return IO.now(ParseResult(events=events, langs=self.langs))
 
 __all__ = ('CustomOutputHandler', 'VimCompiler', 'Parsing')

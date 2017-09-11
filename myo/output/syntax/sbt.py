@@ -1,7 +1,7 @@
 from myo.output.syntax.base import OutputSyntax
 from myo.output.parser.sbt import CodeEntry
 
-from amino import Task, Map, _
+from amino import IO, Map, _
 
 
 class Syntax(OutputSyntax):
@@ -13,7 +13,7 @@ class Syntax(OutputSyntax):
         })
 
     def __call__(self, lines):
-        return ((lines.with_index.flat_map2(self._line)).sequence(Task) +
+        return ((lines.with_index.flat_map2(self._line)).sequence(IO) +
                 self._file)
 
     def _line(self, index, line):
