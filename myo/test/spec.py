@@ -140,6 +140,6 @@ class TmuxSpecBase(Spec):
     def _pane_output_contains_not(self, id: int, data: str) -> Expectation:
         self._wait(1)
         output = self._pane_output(id)
-        return k(output).must(contain(not_(contain(data))))
+        return k(output).must(contain(~contain(data)))
 
 __all__ = ('Spec', 'TmuxSpecBase')
