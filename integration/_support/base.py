@@ -28,12 +28,7 @@ class IntegrationCommon:
         self._set_vars()
 
     def _set_vars(self):
-        self.vim.vars.set_p('config_path', str(self._config_path))
         self.vim.vars.set_p('plugins', self._plugins)
-
-    @property
-    def _config_path(self):
-        return Path('/dev/null')
 
     @property
     def _plugins(self):
