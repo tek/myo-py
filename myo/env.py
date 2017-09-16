@@ -3,9 +3,11 @@ from pathlib import Path
 
 from lenses import lens
 
-from amino import Map, _, __
+from amino import Map, _, __, Either
 
 from ribosome.data import field, Data
+from ribosome.record import maybe_field
+from ribosome.nvim import NvimFacade, AsyncVimProxy
 
 from myo.command import Commands, Command
 from myo.dispatch import Dispatchers, Dispatcher
@@ -13,10 +15,14 @@ from myo.util import Ident
 
 
 class Env(Data):
-    config_path = field(Path)
+    vim_facade = maybe_field((NvimFacade, AsyncVimProxy))
     initialized = field(bool, initial=False)
     commands = field(Commands, initial=Commands())
     dispatchers = field(Dispatchers, initial=Dispatchers())
+
+    @property
+    def vim(self) -> NvimFacade:
+        return self.vim_facade | (lambda: NvimFacade(None, 'no vim was set in `Env`'))
 
     def cat(self, item: Union[Command, Dispatcher]):
         name = (
@@ -53,10 +59,5 @@ class Env(Data):
 
     def transient_command(self, cmd: Command):
         return self.mod('commands', __.transient_command(cmd))
-
-    def __repr__(self):
-        return 'Env()'
-
-    __str__ = __repr__
 
 __all__ = ('Env',)

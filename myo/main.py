@@ -1,8 +1,4 @@
-from pathlib import Path
-
-from toolz.itertoolz import cons
-
-from amino import List
+from amino import List, Just, Lists
 
 from ribosome import NvimFacade
 
@@ -12,20 +8,12 @@ from myo.state import MyoState
 
 class Myo(MyoState):
 
-    def __init__(
-            self,
-            vim: NvimFacade,
-            config_path: Path=Path('/dev/null'),
-            plugins: List[str]=List(),
-    ) -> None:
-        self._config_path = config_path
+    def __init__(self, vim: NvimFacade, plugins: List[str]=List()) -> None:
         core = 'myo.plugins.core'
-        super().__init__(vim, List.wrap(cons(core, plugins)))
+        super().__init__(vim, Lists.wrap(plugins).cons(core))
 
     @property
-    def init(self):
-        return Env(  # type: ignore
-            config_path=self._config_path,
-        )
+    def init(self) -> Env:
+        return Env(vim_facade=Just(self.vim))
 
 __all__ = ('Myo',)
