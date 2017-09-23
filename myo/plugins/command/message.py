@@ -1,4 +1,4 @@
-from ribosome.machine import message, json_message
+from ribosome.machine.message_base import message, json_message
 
 Run = json_message('Run', 'command')
 RunLine = message('RunLine', 'target', varargs='args')

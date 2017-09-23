@@ -3,8 +3,9 @@ import asyncio
 from psutil import Process
 
 from ribosome.record import list_field, bool_field, field
-from ribosome.machine import may_handle, handle, Transitions, message
-from ribosome import StateMachine
+from ribosome.machine.transition import may_handle, handle, Transitions
+from ribosome.machine.message_base import message
+from ribosome.machine.state import StateMachine
 from ribosome.machine.base import UnitIO
 
 from amino import Empty, Try, __, List, L, _

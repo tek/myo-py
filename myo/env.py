@@ -1,20 +1,19 @@
 from typing import Union, Callable
-from pathlib import Path
 
 from lenses import lens
 
-from amino import Map, _, __, Either
+from amino import Map, _, __
 
-from ribosome.data import field, Data
-from ribosome.record import maybe_field
+from ribosome.record import maybe_field, field
 from ribosome.nvim import NvimFacade, AsyncVimProxy
+from ribosome.machine.state import AutoData
 
 from myo.command import Commands, Command
 from myo.dispatch import Dispatchers, Dispatcher
 from myo.util import Ident
 
 
-class Env(Data):
+class Env(AutoData):
     vim_facade = maybe_field((NvimFacade, AsyncVimProxy))
     initialized = field(bool, initial=False)
     commands = field(Commands, initial=Commands())

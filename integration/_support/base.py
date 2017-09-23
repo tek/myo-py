@@ -1,11 +1,9 @@
-from pathlib import Path
-
 from amino import List, Right
 
 from kallikrein.matchers.either import be_right
 from kallikrein import kf
 
-from ribosome.test.integration.klk import PluginIntegrationKlkSpec, ExternalIntegrationKlkSpec
+from ribosome.test.integration.klk import AutoPluginIntegrationKlkSpec, ExternalIntegrationKlkSpec
 from ribosome.test.integration.klk import later
 
 from myo.test.spec import Spec
@@ -43,15 +41,21 @@ class MyoIntegrationSpec(IntegrationCommon, ExternalIntegrationKlkSpec):
         self._wait_for(lambda: self.vim.vars.p('started').present)
 
 
-class MyoPluginIntegrationSpec(IntegrationCommon, PluginIntegrationKlkSpec, Spec, Logging):
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.log_format = '{message}'
+class MyoPluginIntegrationSpec(IntegrationCommon, AutoPluginIntegrationKlkSpec, Spec, Logging):
 
     def _pre_start(self) -> None:
         super()._pre_start()
         self.vim.cmd_once_defined('MyoStage1')
         later(kf(self.vim.vars.p, 'started').must(be_right))
 
-__all__ = ('MyoIntegrationSpec', 'MyoPluginIntegrationSpec')
+
+class DefaultSpec(MyoPluginIntegrationSpec):
+
+    def config_name(self) -> str:
+        return 'config'
+
+    def module(self) -> str:
+        return 'myo.nvim_plugin'
+
+
+__all__ = ('MyoIntegrationSpec', 'MyoPluginIntegrationSpec', 'DefaultSpec')

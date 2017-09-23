@@ -7,7 +7,7 @@ from amino import Either, List, _, L, Left, __, Right, I, Just, Boolean
 from amino.lens.tree import path_lens_unbound
 
 from ribosome.record import field, list_field, map_field
-from ribosome.machine import Message
+from ribosome.machine.message_base import Message
 
 from myo.ui.tmux.window import Window
 from myo.logging import Logging

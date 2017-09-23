@@ -1,9 +1,9 @@
 from amino import Empty
 
-from ribosome.machine import may_handle
+from ribosome.machine.transition import may_handle
+from ribosome.machine.messages import Stage1
 
 from myo.state import MyoTransitions, MyoComponent
-from myo.plugins.core.message import StageI
 from myo.plugins.command.message import CommandExecuted
 from myo.command import CommandJob
 
@@ -13,7 +13,7 @@ from integration._support.plugins.dummy.dispatcher import (DummyDispatcher,
 
 class DummyTransitions(MyoTransitions):
 
-    @may_handle(StageI)
+    @may_handle(Stage1)
     def stage_i(self):
         return self.data + DummyDispatcher()
 

@@ -4,14 +4,12 @@ from amino import List, L, _, I, Map
 
 from ribosome import msg_command, json_msg_command, AutoPlugin
 from ribosome.machine.scratch import Mapping
-from ribosome.request import msg_function
+from ribosome.request.function import msg_function
 from ribosome.machine.state import UpdateRecord
 from ribosome.unite import mk_unite_candidates, mk_unite_action
 from ribosome.unite.plugin import unite_plugin
-from ribosome.settings import PluginSettings, Config, RequestHandlers, RequestHandler
+from ribosome.settings import PluginSettings, Config, RequestHandler
 
-from myo.plugins.core.main import StageI
-from myo.main import Myo
 from myo.logging import Logging
 from myo.plugins.command.message import (AddVimCommand, Run, AddShellCommand, AddShell, ShellRun, RunTest, RunVimTest,
                                          CommandShow, RunLatest, RunLine, RunChained, RebootCommand, DeleteHistory,
@@ -31,44 +29,22 @@ unite_candidates = mk_unite_candidates(UniteNames)
 unite_action = mk_unite_action(UniteNames)
 
 
-auto_config = Config(
+config = Config(
     name='myo',
     prefix='myo',
     state_type=Env,
-    plugins=Map(),
+    components=Map(),
     settings=PluginSettings(),
-    request_handlers=RequestHandlers.cons(
+    request_handlers=List(
         # RequestHandler.msg_cmd(Msg)('msg', prefix=Plain, sync=True)
     ),
+    core_components=List('myo.plugins.core'),
+    default_components=List('myo.plugins.command', 'myo.plugins.tmux', 'myo.plugins.unite'),
 )
 
 
 @unite_plugin('myo')
-class MyoNvimPlugin(AutoPlugin, Logging, pname='myo', config=auto_config):
-
-    def __init__(self, vim: neovim.Nvim) -> None:
-        super().__init__(vim, config=auto_config)
-        plugins = self._core_plugins + (self.vim.vars.pl('plugins') | self._default_plugins)
-        self.myo = Myo(self.vim.proxy, plugins)
-        self.myo.start()
-        self.myo.wait_for_running()
-
-    def state(self) -> Myo:
-        return self.myo
-
-    def stage_1(self) -> None:
-        self.myo.send(StageI())
-
-    def quit(self) -> None:
-        self.myo.stop()
-
-    @property
-    def _core_plugins(self) -> List[str]:
-        return List('core')
-
-    @property
-    def _default_plugins(self) -> List[str]:
-        return List('command', 'tmux', 'unite')
+class MyoNvimPlugin(AutoPlugin, Logging):
 
     @json_msg_command(AddVimCommand)
     def myo_vim_command(self):
@@ -212,8 +188,8 @@ class MyoNvimPlugin(AutoPlugin, Logging, pname='myo', config=auto_config):
 
     @neovim.autocmd('VimResized', sync=False)
     def vim_resized(self):
-        if self.myo is not None:
-            self.myo.send(Resized())
+        if self.root is not None:
+            self.root.send(Resized())
 
     @msg_function(Mapping)
     def myo_mapping(self):

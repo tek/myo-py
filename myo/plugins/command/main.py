@@ -1,18 +1,20 @@
 import re
 from uuid import UUID
 
-from ribosome.machine import may_handle, handle, Nop, Message
-from ribosome.machine.transition import Fatal
+from ribosome.machine.messages import Nop
+from ribosome.machine.message_base import Message
+from ribosome.machine.transition import may_handle, handle, Fatal
 from ribosome.util.callback import parse_callback_spec
 from ribosome.machine.base import UnitIO
 from ribosome.record import decode_json, encode_json
+from ribosome.machine.messages import Stage1
 
 from myo.state import MyoComponent, MyoTransitions
 
 from amino import L, _, List, Try, __, Maybe, Map, I, IO, Just, Boolean, Left, Either, env
 from myo.command import Command, VimCommand, ShellCommand, Shell, CommandJob, TransientCommandJob
 from myo.util import amend_options, Ident
-from myo.plugins.core.message import Parse, ParseOutput, StageI
+from myo.plugins.core.message import Parse, ParseOutput
 from myo.plugins.command.message import (
     Run, ShellRun, Dispatch, AddCommand, AddShellCommand, AddShell, AddVimCommand, SetShellTarget, CommandExecuted,
     RunTest, RunVimTest, CommandAdded, CommandShow, RunLatest, LoadHistory, StoreHistory, RunLine, RunChained,
@@ -43,7 +45,7 @@ class CommandTransitions(MyoTransitions):
             self.data.cat(cmd), CommandAdded(cmd, options=self.msg.options)
         )
 
-    @may_handle(StageI)
+    @may_handle(Stage1)
     def stage_i(self):
         line = self.vim.vars(self._last_test_line_var) | ''
         shell = self.vim.vars(self._last_test_shell_var)

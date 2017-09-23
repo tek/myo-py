@@ -1,8 +1,7 @@
-from ribosome import NvimFacade, RootMachine
-from ribosome.nvim import HasNvim
+from ribosome.nvim import HasNvim, NvimFacade
 
-from ribosome.machine.state import SubMachine, SubTransitions
-from ribosome.machine import MachineBase
+from ribosome.machine.state import SubMachine, SubTransitions, RootMachine
+from ribosome.machine.base import MachineBase
 
 from myo.logging import Logging
 from myo.env import Env

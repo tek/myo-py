@@ -1,4 +1,4 @@
-from ribosome.machine import may_handle
+from ribosome.machine.transition import may_handle
 from ribosome.unite import UniteKind
 from ribosome.unite.machine import UniteMachine, UniteTransitions
 

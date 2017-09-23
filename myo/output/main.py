@@ -7,7 +7,8 @@ from amino.lazy import lazy
 
 from ribosome import NvimFacade
 from ribosome.machine.state import RunScratchMachine, IfUnhandled
-from ribosome.machine import Nop, Message
+from ribosome.machine.messages import Nop
+from ribosome.machine.message_base import Message
 from ribosome.util.callback import VimCallback
 
 from myo.logging import Logging

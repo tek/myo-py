@@ -4,9 +4,9 @@ from amino import List, _, __, Just, Map, Right, Empty, Either, Boolean, I, Mayb
 from amino.lazy import lazy
 from amino.io import IO
 
-from ribosome.machine import may_handle, handle, Quit, Nop, Message
 from ribosome.machine.base import UnitIO, DataIO
-from ribosome.machine.transition import Error, Fatal
+from ribosome.machine.transition import may_handle, handle, Error, Fatal
+from ribosome.machine.messages import Stage1, Quit, Nop, Message
 
 from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.tmux.message import (TmuxOpen, TmuxRunCommand, TmuxCreatePane,
@@ -20,7 +20,6 @@ from myo.plugins.tmux.message import (TmuxOpen, TmuxRunCommand, TmuxCreatePane,
                                       TmuxOpenOrToggle, TmuxKill,
                                       UpdateVimWindow, TmuxRunTransient,
                                       TmuxPostCommand, TmuxRebootCommand)
-from myo.plugins.core.main import StageI
 from myo.ui.tmux.pane import Pane, VimPane, PaneData
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
 from myo.ui.tmux.session import Session, VimSession
@@ -60,7 +59,7 @@ class TmuxTransitions(MyoTransitions):
             Empty()
         )
 
-    @may_handle(StageI)
+    @may_handle(Stage1)
     def stage_1(self):
         ''' Initialize the state. If it doesn't exist, Env will create
         it using the constructor function supplied in *Plugin.state*

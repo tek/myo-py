@@ -1,10 +1,10 @@
-from ribosome.machine import may_handle, handle, Nop
+from ribosome.machine.transition import may_handle, handle, Fatal
+from ribosome.machine.messages import Nop
 from ribosome.nvim import ScratchBuffer, NvimFacade
 from ribosome.machine.scratch import ScratchMachine, Quit
 from ribosome.machine.base import UnitIO
 from ribosome.record import (field, list_field, either_field, any_field,
                              bool_field, dfield)
-from ribosome.machine.transition import Fatal
 from ribosome.machine.interface import MachineI
 
 from amino.io import IO

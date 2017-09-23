@@ -1,14 +1,14 @@
 import amino
 from amino import __, List, Left, IO, Map, _, L
 
-from ribosome.machine import may_handle, Error, handle
+from ribosome.machine.transition import may_handle, Error, handle
 from ribosome.machine.base import unit_nio
 from ribosome.machine.transition import Fatal
-from ribosome.machine.messages import RunIO
+from ribosome.machine.messages import RunIO, Stage1
 
 from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.core.dispatch import VimDispatcher
-from myo.plugins.core.message import StageI, Initialized, ParseOutput
+from myo.plugins.core.message import Initialized, ParseOutput
 from myo.output import VimCompiler, CustomOutputHandler, Parsing
 from myo.output.main import OutputHandler
 from myo.command import CommandJob
@@ -18,7 +18,7 @@ error_no_output_events = 'no events in parse result'
 
 class CoreTransitions(MyoTransitions):
 
-    @may_handle(StageI)
+    @may_handle(Stage1)
     def stage_1(self):
         return Initialized().pub.at(1)
 

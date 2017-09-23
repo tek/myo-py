@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
 from amino import __, Left, _, Map
-from ribosome.machine import Message
+from ribosome.machine.message_base import Message
 from ribosome.record import list_field, Record
 
 from myo.command import Command

@@ -1,5 +1,4 @@
-from integration._support.base import (MyoPluginIntegrationSpec,
-                                       MyoIntegrationSpec)
+from integration._support.base import (MyoPluginIntegrationSpec, MyoIntegrationSpec, DefaultSpec)
 from integration._support.command import CmdPluginSpecConf
 
 from kallikrein import kf, Expectation
@@ -122,11 +121,10 @@ class ExternalTmuxIntegrationSpec(TmuxIntegrationSpecBase,
         self.root.send_sync(TmuxOpen(name, options=Map(options)))
 
 
-class TmuxIntegrationSpec(TmuxIntegrationSpecBase, MyoPluginIntegrationSpec):
+class TmuxIntegrationSpec(TmuxIntegrationSpecBase, DefaultSpec):
 
     def _create_layout(self, name, parent='root', **kw):
-        self.json_cmd_sync('MyoTmuxCreateLayout {}'.format(name),
-                           parent=parent, **kw)
+        self.json_cmd_sync('MyoTmuxCreateLayout {}'.format(name), parent=parent, **kw)
         self._wait(.1)
 
     def _create_pane(self, name, **kw):
