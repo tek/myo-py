@@ -11,22 +11,22 @@ from ribosome.unite.plugin import unite_plugin
 from ribosome.settings import PluginSettings, Config, RequestHandler
 
 from myo.logging import Logging
-from myo.plugins.command.message import (AddVimCommand, Run, AddShellCommand, AddShell, ShellRun, RunTest, RunVimTest,
+from myo.components.command.message import (AddVimCommand, Run, AddShellCommand, AddShell, ShellRun, RunTest, RunVimTest,
                                          CommandShow, RunLatest, RunLine, RunChained, RebootCommand, DeleteHistory,
                                          CommandHistoryShow)
-from myo.plugins.tmux.message import (TmuxCreatePane, TmuxCreateSession, TmuxCreateLayout, TmuxSpawnSession, TmuxInfo,
+from myo.components.tmux.message import (TmuxCreatePane, TmuxCreateSession, TmuxCreateLayout, TmuxSpawnSession, TmuxInfo,
                                       TmuxClosePane, TmuxPack, TmuxMinimize, TmuxRestore, TmuxToggle, TmuxFocus,
                                       TmuxOpenOrToggle, TmuxKill)
-from myo.plugins.tmux.message import TmuxOpen
-from myo.plugins.core.message import Parse, Resized
-from myo.plugins.unite.message import UniteHistory, UniteCommands
-from myo.plugins.unite.main import UniteNames, Unite
-from myo.plugins.unite.format import unite_format
+from myo.components.tmux.message import TmuxOpen
+from myo.components.core.message import Parse, Resized
+from myo.components.unite.message import UniteHistory, UniteCommands
+from myo.components.unite.main import UniteNames, Unite
+from myo.components.unite.format import unite_format
 from myo.output.machine import EventPrev, EventNext
 from myo.env import Env
-from myo.plugins.core.main import Core
-from myo.plugins.command.main import CommandComponent
-from myo.plugins.tmux.main import Tmux
+from myo.components.core.main import Core
+from myo.components.command.main import CommandComponent
+from myo.components.tmux.main import Tmux
 
 unite_candidates = mk_unite_candidates(UniteNames)
 unite_action = mk_unite_action(UniteNames)
@@ -183,9 +183,9 @@ class MyoNvimPlugin(AutoPlugin, Logging):
 
     @neovim.function('MyoTmuxEval', sync=True)
     def myo_tmux_eval(self, args):
-        def mod(data, plugins):
+        def mod(data, components):
             d = data.sub_states.get('tmux') | data
-            p = plugins.get('tmux') | plugins
+            p = components.get('tmux') | components
             return d, p
         return self._eval(args, L(self.myo.eval_expr)(_, mod))
 

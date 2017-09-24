@@ -1,6 +1,6 @@
 from myo.dispatch import Dispatcher
 from myo.command import VimCommand
-from myo.plugins.core.message import RunVimCommand
+from myo.components.core.message import RunVimCommand
 
 from ribosome.nvim import HasNvim
 

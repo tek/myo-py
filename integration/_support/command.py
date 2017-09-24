@@ -7,7 +7,7 @@ class CmdSpecConf:
 
     @property
     def _plugins(self):
-        return super()._plugins.cat('myo.plugins.command')
+        return super()._plugins.cat('command')
 
     @property
     def _last(self):

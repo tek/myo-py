@@ -3,7 +3,7 @@ from amino.test.path import fixture_path, base_dir
 from kallikrein import k, Expectation
 from kallikrein.matchers.either import be_right
 
-from myo.plugins.command.util import assemble_vim_test_line
+from myo.components.command.util import assemble_vim_test_line
 
 from integration._support.base import MyoIntegrationSpec
 from integration._support.vimtest import vimtest

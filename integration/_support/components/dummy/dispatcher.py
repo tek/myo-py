@@ -1,4 +1,4 @@
-from ribosome.machine import json_message
+from ribosome.machine.messages import json_message
 
 from myo.dispatch import Dispatcher
 

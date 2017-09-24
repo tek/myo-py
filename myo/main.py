@@ -8,9 +8,9 @@ from myo.state import MyoState
 
 class Myo(MyoState):
 
-    def __init__(self, vim: NvimFacade, plugins: List[str]=List()) -> None:
-        core = 'myo.plugins.core'
-        super().__init__(vim, Lists.wrap(plugins).cons(core))
+    def __init__(self, vim: NvimFacade, components: List[str]=List()) -> None:
+        core = 'myo.components.core'
+        super().__init__(vim, Lists.wrap(components).cons(core))
 
     @property
     def init(self) -> Env:

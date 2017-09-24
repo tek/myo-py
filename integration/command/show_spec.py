@@ -14,7 +14,7 @@ class ShowSpec(CmdSpec):
 
     @property
     def _plugins(self) -> List[str]:
-        return super()._plugins.cat('integration._support.plugins.dummy')
+        return super()._plugins.cat('integration._support.components.dummy')
 
     def _set_vars(self) -> None:
         super()._set_vars()

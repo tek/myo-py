@@ -13,13 +13,13 @@ from ribosome.machine.state import Component
 from amino import L, _, List, Try, __, Maybe, Map, I, IO, Just, Boolean, Left, Either
 from myo.command import Command, VimCommand, ShellCommand, Shell, CommandJob, TransientCommandJob
 from myo.util import amend_options, Ident
-from myo.plugins.core.message import Parse, ParseOutput
-from myo.plugins.command.message import (
+from myo.components.core.message import Parse, ParseOutput
+from myo.components.command.message import (
     Run, ShellRun, Dispatch, AddCommand, AddShellCommand, AddShell, AddVimCommand, SetShellTarget, CommandExecuted,
     RunTest, RunVimTest, CommandAdded, CommandShow, RunLatest, LoadHistory, StoreHistory, RunLine, RunChained,
     RebootCommand, DeleteHistory, CommandHistoryShow
 )
-from myo.plugins.command.util import assemble_vim_test_line
+from myo.components.command.util import assemble_vim_test_line
 
 
 class Reboot:

@@ -6,7 +6,7 @@ from kallikrein.matchers import contain
 from kallikrein.matchers.empty import be_nonempty
 
 from myo.ui.tmux.facade.window import pane_not_found_error
-from myo.plugins.tmux.main import invalid_pane_name
+from myo.components.tmux.main import invalid_pane_name
 
 from integration._support.tmux import DefaultLayoutSpec, TmuxIntegrationSpec, ExternalTmuxIntegrationSpec
 

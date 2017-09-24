@@ -9,8 +9,8 @@ from ribosome.machine.state import Component, SubMachine2
 from ribosome.nvim import NvimFacade
 from ribosome.machine.interface import MachineI
 
-from myo.plugins.unite.message import UniteHistory, UniteCommands
-from myo.plugins.unite.data import UniteNames, HistorySource, CommandsSource
+from myo.components.unite.message import UniteHistory, UniteCommands
+from myo.components.unite.data import UniteNames, HistorySource, CommandsSource
 
 history_source = HistorySource()
 commands_source = CommandsSource()

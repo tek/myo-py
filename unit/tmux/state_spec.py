@@ -6,7 +6,7 @@ from kallikrein.matchers import contain
 from kallikrein import k, Expectation
 from amino.lazy import lazy
 
-from myo.plugins.tmux.main import TmuxState
+from myo.components.tmux.main import TmuxState
 from myo.ui.tmux.session import Session
 from myo.ui.tmux.window import Window
 from myo.ui.tmux.layout import Layout, LayoutDirections

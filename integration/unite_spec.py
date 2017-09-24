@@ -12,8 +12,8 @@ from ribosome.record import encode_json
 from ribosome.test.integration.klk import later
 
 from myo.command import ShellCommand, CommandJob, TransientCommandJob
-from myo.plugins.unite.format import unite_format, unite_format_str_command
-from myo.plugins.command.main import CommandComponent
+from myo.components.unite.format import unite_format, unite_format_str_command
+from myo.components.command.main import CommandComponent
 
 from integration._support.command import CmdSpec
 
@@ -40,7 +40,7 @@ class _UniteSpecBase(CmdSpec):
 
     @property
     def _plugins(self) -> List[str]:
-        return super()._plugins + List('myo.plugins.unite', 'integration._support.plugins.dummy')
+        return super()._plugins + List('unite', 'integration._support.components.dummy')
 
     def _format(self, name: str, line: str) -> str:
         return indent(unite_format_str_command.format(name=name, line=line))

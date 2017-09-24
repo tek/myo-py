@@ -7,8 +7,8 @@ from ribosome.machine.transition import Fatal
 from ribosome.machine.messages import RunIO, Stage1
 from ribosome.machine.state import Component
 
-from myo.plugins.core.dispatch import VimDispatcher
-from myo.plugins.core.message import Initialized, ParseOutput
+from myo.components.core.dispatch import VimDispatcher
+from myo.components.core.message import Initialized, ParseOutput
 from myo.output import VimCompiler, CustomOutputHandler, Parsing
 from myo.output.main import OutputHandler
 from myo.command import CommandJob

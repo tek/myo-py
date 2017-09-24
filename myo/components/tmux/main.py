@@ -1,6 +1,6 @@
 from typing import Callable
 
-from amino import List, _, __, Just, Map, Right, Empty, Either, Boolean, I, Maybe, L
+from amino import List, _, __, Just, Map, Right, Empty, Either, Boolean, I, Maybe, L, Nil
 from amino.lazy import lazy
 from amino.io import IO
 
@@ -10,7 +10,7 @@ from ribosome.machine.messages import Stage1, Quit, Nop, Message
 from ribosome.machine.state import Component
 from ribosome.nvim.components import Flags
 
-from myo.plugins.tmux.message import (TmuxOpen, TmuxRunCommand, TmuxCreatePane,
+from myo.components.tmux.message import (TmuxOpen, TmuxRunCommand, TmuxCreatePane,
                                       TmuxCreateLayout, TmuxCreateSession,
                                       TmuxSpawnSession, TmuxFindVim, TmuxInfo,
                                       TmuxLoadDefaults, TmuxClosePane,
@@ -27,13 +27,13 @@ from myo.ui.tmux.session import Session, VimSession
 from myo.ui.tmux.server import Server, NativeServer
 from myo.util import Ident
 from myo.ui.tmux.window import VimWindow
-from myo.plugins.core.message import AddDispatcher, Resized, Initialized
-from myo.plugins.tmux.dispatch import TmuxDispatcher
+from myo.components.core.message import AddDispatcher, Resized, Initialized
+from myo.components.tmux.dispatch import TmuxDispatcher
 from myo.ui.tmux.view_path import LayoutPathMod, PanePathMod, ViewPathMod
 from myo.ui.tmux.data import TmuxState
-from myo.plugins.command.message import SetShellTarget, CommandExecuted
+from myo.components.command.message import SetShellTarget, CommandExecuted
 from myo.command import Command, Shell, default_signals, CommandJob
-from myo.plugins.tmux.watcher import Watcher, Terminated
+from myo.components.tmux.watcher import Watcher, Terminated
 from myo.ui.tmux.facade.main import TmuxFacade
 from myo.ui.tmux.util import format_state
 
@@ -90,14 +90,11 @@ class Tmux(Component):
 
     @may_handle(Stage1)
     def stage_1(self):
-        ''' Initialize the state. If it doesn't exist, Env will create
-        it using the constructor function supplied in *Plugin.state*
+        ''' Initialize the state. If it doesn't exist, Env will create it using *Tmux.new_state*
         '''
         default = self.pflags.tmux_use_defaults.maybe(TmuxLoadDefaults())
-        msgs = List(AddDispatcher(), self.with_sub(self.state), TmuxFindVim(),
-                    UpdateVimWindow())
-        watcher = (List() if self.vim.vars.p('tmux_no_watcher').true else
-                   List(StartWatcher()))
+        msgs = List(AddDispatcher(), self.with_sub(self.state), TmuxFindVim(), UpdateVimWindow())
+        watcher = (Nil if self.vim.vars.p('tmux_no_watcher').true else List(StartWatcher()))
         return msgs + default.to_list + watcher
 
     @may_handle(Initialized)

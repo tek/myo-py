@@ -10,8 +10,8 @@ from ribosome.test.integration.klk import later
 from amino import _, __, Map, Maybe, List
 
 from myo.test.spec import TmuxSpecBase
-from myo.plugins.tmux.message import TmuxCreateLayout, TmuxCreatePane
-from myo.plugins.tmux import TmuxOpen
+from myo.components.tmux.message import TmuxCreateLayout, TmuxCreatePane
+from myo.components.tmux import TmuxOpen
 from myo.ui.tmux.window import WindowAdapter
 from myo.state import MyoComponent
 from myo.ui.tmux.data import TmuxState
@@ -45,7 +45,7 @@ class TmuxIntegrationSpecBase(TmuxSpecBase):
 
     @property
     def _plugins(self) -> List[str]:
-        return super()._plugins.cons('myo.plugins.tmux')
+        return super()._plugins.cons('myo.components.tmux')
 
     @property
     def _window_name(self) -> str:

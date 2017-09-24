@@ -2,16 +2,15 @@ from amino import Empty
 
 from ribosome.machine.transition import may_handle
 from ribosome.machine.messages import Stage1
+from ribosome.machine.state import Component
 
-from myo.state import MyoTransitions, MyoComponent
-from myo.plugins.command.message import CommandExecuted
+from myo.components.command.message import CommandExecuted
 from myo.command import CommandJob
 
-from integration._support.plugins.dummy.dispatcher import (DummyDispatcher,
-                                                           DummyRun)
+from integration._support.components.dummy.dispatcher import DummyDispatcher, DummyRun
 
 
-class DummyTransitions(MyoTransitions):
+class Dummy(Component):
 
     @may_handle(Stage1)
     def stage_i(self):
@@ -23,11 +22,4 @@ class DummyTransitions(MyoTransitions):
         job = cmd if isinstance(cmd, CommandJob) else CommandJob(command=cmd)
         return CommandExecuted(job, Empty()).pub
 
-
-class Plugin(MyoComponent):
-    Transitions = DummyTransitions
-
-    def new_state(self):
-        pass
-
-__all__ = ('Plugin',)
+__all__ = ('Dummy',)

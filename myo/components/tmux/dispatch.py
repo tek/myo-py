@@ -4,8 +4,8 @@ from ribosome.machine.messages import Error
 
 from myo.dispatch import Dispatcher
 from myo.command import ShellCommand, CommandJob
-from myo.plugins.tmux.message import TmuxRunCommand, TmuxRebootCommand
-from myo.plugins.command.main import Reboot
+from myo.components.tmux.message import TmuxRunCommand, TmuxRebootCommand
+from myo.components.command.main import Reboot
 
 
 @singledispatch

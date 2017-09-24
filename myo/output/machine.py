@@ -6,6 +6,7 @@ from ribosome.machine.base import UnitIO
 from ribosome.record import (field, list_field, either_field, any_field,
                              bool_field, dfield)
 from ribosome.machine.interface import MachineI
+from ribosome.machine.state import Component
 
 from amino.io import IO
 from amino import (Map, _, L, Left, __, List, Either, Just, Try, Right,
@@ -13,7 +14,6 @@ from amino import (Map, _, L, Left, __, List, Either, Just, Try, Right,
 from amino.lazy import lazy
 
 from myo.output.data import ParseResult, Location, OutputLine
-from myo.state import MyoTransitions
 from myo.logging import Logging
 from myo.record import Record
 from myo.output.reifier.base import Reifier, LiteralReifier
@@ -118,7 +118,7 @@ def _jump_default(langs, lang_jumps):
     return langs.find_map(lang_jumps.get) | (lambda: _jump_first)
 
 
-class OutputMachineTransitions(MyoTransitions):
+class OutputMachineTransitions(Component):
 
     @may_handle(SetResult)
     def set_result(self):

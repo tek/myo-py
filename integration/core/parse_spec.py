@@ -14,9 +14,9 @@ from ribosome.machine.scratch import Mapping
 from ribosome.test.integration.klk import later, later_f
 
 from myo.command import ShellCommand
-from myo.plugins.core.message import ParseOutput
+from myo.components.core.message import ParseOutput
 from myo.output.machine import (error_filtered_result_empty, EventNext, EventPrev, OutputMachine, OMState)
-from myo.plugins.core.main import error_no_output_events
+from myo.components.core.main import error_no_output_events
 from myo.output.data import ParseResult
 
 from integration._support.base import MyoIntegrationSpec

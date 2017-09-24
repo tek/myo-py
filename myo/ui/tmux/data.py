@@ -12,7 +12,7 @@ from myo.ui.tmux.window import VimWindow, Window
 from myo.ui.tmux.layout import VimLayout, Layout
 from myo.ui.tmux.pane import VimPane
 from myo.util import Ident
-from myo.plugins.tmux.watcher import Watcher
+from myo.components.tmux.watcher import Watcher
 
 _is_vim_session = lambda a: isinstance(a, VimSession)
 _is_vim_window = lambda a: isinstance(a, VimWindow)

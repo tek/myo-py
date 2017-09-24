@@ -12,7 +12,7 @@ from amino import Empty, Try, __, List, L, _
 from amino.io import IO
 
 from myo.record import Record
-from myo.plugins.tmux.message import WatchCommand
+from myo.components.tmux.message import WatchCommand
 from myo.command import CommandJob
 from myo.ui.tmux.pane import Pane
 

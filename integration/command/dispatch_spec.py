@@ -12,7 +12,7 @@ from ribosome.test.integration.klk import later
 from ribosome.record import encode_json, decode_json
 
 from myo.command import ShellCommand, Commands
-from myo.plugins.command.message import AddShellCommand, RunChained
+from myo.components.command.message import AddShellCommand, RunChained
 
 from integration._support.command import CmdSpec, CmdSpecConf
 from integration._support.base import MyoIntegrationSpec
@@ -22,7 +22,7 @@ class _DispatchBase(CmdSpec):
 
     @property
     def _plugins(self) -> List[str]:
-        return super()._plugins.cat('integration._support.plugins.dummy')
+        return super()._plugins.cat('integration._support.components.dummy')
 
 
 def _chain(cmds: List[str]) -> str:
@@ -76,11 +76,11 @@ class ChainSpec(CmdSpecConf, MyoIntegrationSpec):
 
     @property
     def _plugins(self) -> List[str]:
-        return super()._plugins.cat('integration._support.plugins.dummy')
+        return super()._plugins.cat('integration._support.components.dummy')
 
     def run_chained(self) -> Expectation:
         self.vim.vars.set_p('chainer', 'py:integration.command.dispatch_spec._chain')
-        from myo.plugins.command.main import CommandTransitions
+        from myo.components.command.main import CommandTransitions
         name1 = 'test1'
         name2 = 'test2'
         line = 'print \'{}\''
