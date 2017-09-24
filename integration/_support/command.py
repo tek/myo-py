@@ -1,4 +1,4 @@
-from integration._support.base import MyoPluginIntegrationSpec
+from integration._support.base import DefaultSpec
 
 from amino import __
 
@@ -25,7 +25,7 @@ class CmdPluginSpecConf(CmdSpecConf):
         self._wait(.1)
 
 
-class CmdSpec(CmdPluginSpecConf, MyoPluginIntegrationSpec):
+class CmdSpec(CmdPluginSpecConf, DefaultSpec):
     pass
 
 __all__ = ('CmdSpec', 'CmdSpecConf', 'CmdPluginSpecConf')

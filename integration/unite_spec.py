@@ -13,7 +13,7 @@ from ribosome.test.integration.klk import later
 
 from myo.command import ShellCommand, CommandJob, TransientCommandJob
 from myo.plugins.unite.format import unite_format, unite_format_str_command
-from myo.plugins.command.main import CommandTransitions
+from myo.plugins.command.main import CommandComponent
 
 from integration._support.command import CmdSpec
 
@@ -31,12 +31,12 @@ class _UniteSpecBase(CmdSpec):
         return 'com2'
 
     @lazy
-    def _cmd(self) -> str:
+    def _command(self) -> str:
         return 'ls'
 
     def _create_commands(self) -> None:
-        self._create_command(self._name1, self._cmd)
-        self._create_command(self._name2, self._cmd)
+        self._create_command(self._name1, self._command)
+        self._create_command(self._name2, self._command)
 
     @property
     def _plugins(self) -> List[str]:
@@ -51,21 +51,20 @@ class UniteLoadHistorySpec(_UniteSpecBase):
     '''
 
     @property
-    def _cmd(self) -> str:
+    def _command(self) -> str:
         return 'test1'
 
     @lazy
     def _history(self) -> List[CommandJob]:
         cmd = ShellCommand(name='other', line='ls')
         return List(
-            CommandJob(command=ShellCommand(name=self._cmd, line='tee')),
+            CommandJob(command=ShellCommand(name=self._command, line='tee')),
             TransientCommandJob(command=cmd, override_line='tail')
         )
 
     def _set_vars(self) -> None:
         super()._set_vars()
-        self.vim.vars.set('Myo_history',
-                          encode_json(self._history).get_or_raise)
+        self.vim.vars.set('Myo_history', encode_json(self._history).get_or_raise)
 
     @property
     def _last(self) -> Callable[[], str]:
@@ -73,7 +72,7 @@ class UniteLoadHistorySpec(_UniteSpecBase):
 
     @unite
     def history(self) -> Expectation:
-        self._create_command(self._cmd, 'ls')
+        self._create_command(self._command, 'ls')
         self.vim.cmd_sync('MyoUniteHistory')
         target = self._history / unite_format / (lambda a: a['word']) / indent
         return self._buffer_content(target)
@@ -87,8 +86,8 @@ class UniteHistoryRunSpec(_UniteSpecBase):
 
     @property
     def target(self) -> List[str]:
-        return List(self._format(self._name2, self._cmd),
-                    self._format(self._name1, self._cmd))
+        return List(self._format(self._name2, self._command),
+                    self._format(self._name1, self._command))
 
     @unite
     def run(self) -> Expectation:
@@ -149,15 +148,15 @@ class UniteCommandsSpec(_UniteSpecBase):
     '''
 
     def _pre_start(self) -> None:
-        self.vim.vars.set_p(CommandTransitions._test_cmd_var, False)
+        self.vim.vars.set_p(CommandComponent._test_cmd_var, False)
         super()._pre_start()
 
     @unite
     def commands(self) -> Expectation:
         self._create_commands()
         self.vim.cmd_sync('MyoUniteCommands')
-        target = List(self._format(name=self._name1, line=self._cmd),
-                      self._format(name=self._name2, line=self._cmd))
+        target = List(self._format(name=self._name1, line=self._command),
+                      self._format(name=self._name2, line=self._command))
         self._buffer_content(target)
         self.vim.window.set_cursor(2)
         self.vim.feedkeys('\r')

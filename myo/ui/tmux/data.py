@@ -12,6 +12,7 @@ from myo.ui.tmux.window import VimWindow, Window
 from myo.ui.tmux.layout import VimLayout, Layout
 from myo.ui.tmux.pane import VimPane
 from myo.util import Ident
+from myo.plugins.tmux.watcher import Watcher
 
 _is_vim_session = lambda a: isinstance(a, VimSession)
 _is_vim_window = lambda a: isinstance(a, VimWindow)
@@ -22,8 +23,8 @@ _is_vim_pane = lambda a: isinstance(a, VimPane)
 class TmuxState(Record):
     initialized = bool_field()
     sessions = list_field()
-    instance_id = field(str, initial='',
-                        factory=lambda a: a if a else List.random_string(5))
+    instance_id = field(str, initial='', factory=lambda a: a if a else List.random_string(5))
+    watcher = field(Watcher)
 
     @property
     def _str_extra(self):

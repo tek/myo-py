@@ -8,10 +8,9 @@ from ribosome.util.callback import parse_callback_spec
 from ribosome.machine.base import UnitIO
 from ribosome.record import decode_json, encode_json
 from ribosome.machine.messages import Stage1
+from ribosome.machine.state import Component
 
-from myo.state import MyoComponent, MyoTransitions
-
-from amino import L, _, List, Try, __, Maybe, Map, I, IO, Just, Boolean, Left, Either, env
+from amino import L, _, List, Try, __, Maybe, Map, I, IO, Just, Boolean, Left, Either
 from myo.command import Command, VimCommand, ShellCommand, Shell, CommandJob, TransientCommandJob
 from myo.util import amend_options, Ident
 from myo.plugins.core.message import Parse, ParseOutput
@@ -33,7 +32,7 @@ class Reboot:
         return self.job.name
 
 
-class CommandTransitions(MyoTransitions):
+class CommandComponent(Component):
     _test_cmd_name = '<test>'
     _test_cmd_var = 'create_test_command'
 
@@ -327,12 +326,4 @@ class CommandTransitions(MyoTransitions):
             (lambda a: (a, line, langs, opt2))
         )
 
-
-class Plugin(MyoComponent):
-    Transitions = CommandTransitions
-
-    def new_state(self):
-        pass
-
-__all__ = ('Plugin', 'AddVimCommand', 'AddCommand', 'Run', 'AddShell',
-           'AddShellCommand', 'SetShellTarget')
+__all__ = ('CommandComponent',)

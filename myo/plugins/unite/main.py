@@ -1,69 +1,46 @@
+from typing import Any
+
+from amino import Map, List
+
 from ribosome.machine.transition import may_handle
 from ribosome.unite import UniteKind
 from ribosome.unite.machine import UniteMachine, UniteTransitions
-
-from amino import Map, List
-from amino.lazy import lazy
+from ribosome.machine.state import Component, SubMachine2
+from ribosome.nvim import NvimFacade
+from ribosome.machine.interface import MachineI
 
 from myo.plugins.unite.message import UniteHistory, UniteCommands
-from myo.state import MyoTransitions, MyoComponent
 from myo.plugins.unite.data import UniteNames, HistorySource, CommandsSource
 
+history_source = HistorySource()
+commands_source = CommandsSource()
+sources = List(history_source, commands_source)
+run_action = Map(name='run', handler=UniteNames.run, desc='run command')
+delete_action = Map(name='delete', handler=UniteNames.delete, desc='delete command')
+command_kind = UniteKind(UniteNames.command, List(run_action))
+history_command_kind = UniteKind(UniteNames.history_command, List(run_action, delete_action))
+kinds = List(command_kind, history_command_kind)
 
-class MyoUniteTransitions(UniteTransitions, MyoTransitions):
 
-    def unite_cmd(self, cmd):
+class MyoUniteTransitions(UniteTransitions, Component):
+
+    def unite_cmd(self, cmd: str) -> None:
         args = ' '.join(self.msg.unite_args)
         self.vim.cmd('Unite {} {}'.format(cmd, args))
 
     @may_handle(UniteCommands)
-    def commands(self):
+    def commands(self) -> None:
         self.unite_cmd(UniteNames.commands)
 
     @may_handle(UniteHistory)
-    def history(self):
+    def history(self) -> None:
         self.unite_cmd(UniteNames.history)
 
 
-class Plugin(UniteMachine, MyoComponent):
-    Transitions = MyoUniteTransitions
+class Unite(UniteMachine, SubMachine2):
 
-    def __init__(self, *a, **kw):
+    def __init__(self, vim: NvimFacade, title: str, parent: MachineI) -> None:
         UniteMachine.__init__(self)
-        MyoComponent.__init__(self, *a, **kw)
+        SubMachine2.__init__(self, vim, MyoUniteTransitions, title, parent)
 
-    @lazy
-    def history_source(self):
-        return HistorySource()
-
-    @lazy
-    def commands_source(self):
-        return CommandsSource()
-
-    @property
-    def sources(self):
-        return List(self.history_source, self.commands_source)
-
-    @lazy
-    def run_action(self):
-        return Map(name='run', handler=UniteNames.run, desc='run command')
-
-    @lazy
-    def delete_action(self):
-        return Map(name='delete', handler=UniteNames.delete,
-                   desc='delete command')
-
-    @lazy
-    def command_kind(self):
-        return UniteKind(UniteNames.command, List(self.run_action))
-
-    @lazy
-    def history_command_kind(self):
-        return UniteKind(UniteNames.history_command, List(self.run_action,
-                                                          self.delete_action))
-
-    @property
-    def kinds(self):
-        return List(self.command_kind, self.history_command_kind)
-
-__all__ = ('Plugin',)
+__all__ = ('Unite',)

@@ -5,8 +5,8 @@ from ribosome.machine.transition import may_handle, Error, handle
 from ribosome.machine.base import unit_nio
 from ribosome.machine.transition import Fatal
 from ribosome.machine.messages import RunIO, Stage1
+from ribosome.machine.state import Component
 
-from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.core.dispatch import VimDispatcher
 from myo.plugins.core.message import Initialized, ParseOutput
 from myo.output import VimCompiler, CustomOutputHandler, Parsing
@@ -16,7 +16,7 @@ from myo.command import CommandJob
 error_no_output_events = 'no events in parse result'
 
 
-class CoreTransitions(MyoTransitions):
+class Core(Component):
 
     @may_handle(Stage1)
     def stage_1(self):
@@ -72,11 +72,4 @@ class CoreTransitions(MyoTransitions):
         return (data if isinstance(data, CommandJob) else
                 CommandJob(command=data))
 
-
-class Plugin(MyoComponent):
-    Transitions = CoreTransitions
-
-    def new_state(self):
-        pass
-
-__all__ = ('Plugin',)
+__all__ = ('Core',)

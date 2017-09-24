@@ -7,8 +7,9 @@ from amino.io import IO
 from ribosome.machine.base import UnitIO, DataIO
 from ribosome.machine.transition import may_handle, handle, Error, Fatal
 from ribosome.machine.messages import Stage1, Quit, Nop, Message
+from ribosome.machine.state import Component
+from ribosome.nvim.components import Flags
 
-from myo.state import MyoComponent, MyoTransitions
 from myo.plugins.tmux.message import (TmuxOpen, TmuxRunCommand, TmuxCreatePane,
                                       TmuxCreateLayout, TmuxCreateSession,
                                       TmuxSpawnSession, TmuxFindVim, TmuxInfo,
@@ -40,15 +41,43 @@ from myo.ui.tmux.util import format_state
 invalid_pane_name = 'invalid pane name: {}'
 
 
-class TmuxTransitions(MyoTransitions):
+class Tmux(Component):
+
+    @property
+    def flags(self) -> Flags:
+        return Flags(self.vim.vars, False)
+
+    @property
+    def pflags(self) -> Flags:
+        return Flags(self.vim.vars, True)
 
     @property
     def tmux(self):
-        return TmuxFacade(self.state, self.machine.socket, self.options)
+        return TmuxFacade(self.state, self.socket, self.options)
+
+    @property
+    def socket(self):
+        return self.vim.vars.p('tmux_socket') | None
+
+    @property
+    def native_server(self):
+        return NativeServer(socket_name=self.socket)
 
     @property
     def server(self):
-        return self.machine.server
+        return Server(self.native_server)
+
+    @property
+    def new_state(self):
+        return lambda: TmuxState(watcher=self.create_watcher())
+
+    def create_watcher(self):
+        interval = self.vim.vars.p('tmux_watcher_interval') | 1.0
+        return Watcher(self, interval=interval)
+
+    @property
+    def watcher(self) -> Watcher:
+        return self.state.watcher
 
     def record_lens(self, tpe, name):
         return (
@@ -119,7 +148,7 @@ class TmuxTransitions(MyoTransitions):
 
     @may_handle(StartWatcher)
     def start_watcher(self):
-        return UnitIO(IO.delay(self.machine.watcher.start))
+        return UnitIO(IO.delay(self.watcher.start))
 
     @handle(TmuxCreateSession)
     def create_session(self):
@@ -252,7 +281,7 @@ class TmuxTransitions(MyoTransitions):
 
     @may_handle(QuitWatcher)
     def quit_watcher(self):
-        return UnitIO(IO.delay(self.machine.watcher.stop))
+        return UnitIO(IO.delay(self.watcher.stop))
 
     @may_handle(TmuxInfo)
     def info(self):
@@ -377,7 +406,7 @@ class TmuxTransitions(MyoTransitions):
         in_shell = Boolean('shell' in opt)
         def watch(path):
             msg = WatchCommand(job, path.view)
-            return IO.call(self.machine.watcher.send, msg)
+            return IO.call(self.watcher.send, msg)
         runner, is_open = self.tmux.run_command_ppm(pane_ident, line, in_shell,
                                                     kill, signals)
         post = is_open.no.m(TmuxPostOpen(pane_ident, opt)).to_list
@@ -394,27 +423,4 @@ class TmuxTransitions(MyoTransitions):
         return self.data.command(cmd_ident) / holder
 
 
-class Plugin(MyoComponent):
-    Transitions = TmuxTransitions
-
-    @lazy
-    def socket(self):
-        return self.vim.vars.p('tmux_socket') | None
-
-    @property
-    def native_server(self):
-        return NativeServer(socket_name=self.socket)
-
-    @property
-    def server(self):
-        return Server(self.native_server)
-
-    def new_state(self):
-        return TmuxState()
-
-    @lazy
-    def watcher(self):
-        interval = self.vim.vars.p('tmux_watcher_interval') | 1.0
-        return Watcher(self, interval=interval)
-
-__all__ = ('Plugin',)
+__all__ = ('Tmux',)

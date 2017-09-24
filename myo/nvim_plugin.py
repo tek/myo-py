@@ -17,13 +17,16 @@ from myo.plugins.command.message import (AddVimCommand, Run, AddShellCommand, Ad
 from myo.plugins.tmux.message import (TmuxCreatePane, TmuxCreateSession, TmuxCreateLayout, TmuxSpawnSession, TmuxInfo,
                                       TmuxClosePane, TmuxPack, TmuxMinimize, TmuxRestore, TmuxToggle, TmuxFocus,
                                       TmuxOpenOrToggle, TmuxKill)
-from myo.plugins.tmux import TmuxOpen
+from myo.plugins.tmux.message import TmuxOpen
 from myo.plugins.core.message import Parse, Resized
 from myo.plugins.unite.message import UniteHistory, UniteCommands
-from myo.plugins.unite.main import UniteNames
+from myo.plugins.unite.main import UniteNames, Unite
 from myo.plugins.unite.format import unite_format
 from myo.output.machine import EventPrev, EventNext
 from myo.env import Env
+from myo.plugins.core.main import Core
+from myo.plugins.command.main import CommandComponent
+from myo.plugins.tmux.main import Tmux
 
 unite_candidates = mk_unite_candidates(UniteNames)
 unite_action = mk_unite_action(UniteNames)
@@ -33,13 +36,13 @@ config = Config(
     name='myo',
     prefix='myo',
     state_type=Env,
-    components=Map(),
+    components=Map(core=Core, command=CommandComponent, tmux=Tmux, unite=Unite),
     settings=PluginSettings(),
     request_handlers=List(
         # RequestHandler.msg_cmd(Msg)('msg', prefix=Plain, sync=True)
     ),
-    core_components=List('myo.plugins.core'),
-    default_components=List('myo.plugins.command', 'myo.plugins.tmux', 'myo.plugins.unite'),
+    core_components=List('core'),
+    default_components=List('command', 'tmux', 'unite'),
 )
 
 
