@@ -44,14 +44,6 @@ invalid_pane_name = 'invalid pane name: {}'
 class Tmux(Component):
 
     @property
-    def flags(self) -> Flags:
-        return Flags(self.vim.vars, False)
-
-    @property
-    def pflags(self) -> Flags:
-        return Flags(self.vim.vars, True)
-
-    @property
     def tmux(self):
         return TmuxFacade(self.state, self.socket, self.options)
 
@@ -92,7 +84,7 @@ class Tmux(Component):
     def stage_1(self):
         ''' Initialize the state. If it doesn't exist, Env will create it using *Tmux.new_state*
         '''
-        default = self.pflags.tmux_use_defaults.maybe(TmuxLoadDefaults())
+        default = self.vim.pflags.tmux_use_defaults.maybe(TmuxLoadDefaults())
         msgs = List(AddDispatcher(), self.with_sub(self.state), TmuxFindVim(), UpdateVimWindow())
         watcher = (Nil if self.vim.vars.p('tmux_no_watcher').true else List(StartWatcher()))
         return msgs + default.to_list + watcher
