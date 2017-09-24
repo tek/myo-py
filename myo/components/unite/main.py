@@ -7,7 +7,7 @@ from ribosome.unite import UniteKind
 from ribosome.unite.machine import UniteMachine, UniteTransitions
 from ribosome.machine.state import Component, ComponentMachine
 from ribosome.nvim import NvimFacade
-from ribosome.machine.interface import MachineI
+from ribosome.machine.machine import Machine
 
 from myo.components.unite.message import UniteHistory, UniteCommands
 from myo.components.unite.data import UniteNames, HistorySource, CommandsSource
@@ -39,7 +39,7 @@ class MyoUniteTransitions(UniteTransitions, Component):
 
 class Unite(UniteMachine, ComponentMachine):
 
-    def __init__(self, vim: NvimFacade, title: str, parent: MachineI) -> None:
+    def __init__(self, vim: NvimFacade, title: str, parent: Machine) -> None:
         UniteMachine.__init__(self)
         ComponentMachine.__init__(self, vim, MyoUniteTransitions, title, parent)
 

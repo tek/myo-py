@@ -5,7 +5,7 @@ from ribosome.machine.scratch import ScratchMachine, Quit
 from ribosome.machine.base import UnitIO
 from ribosome.record import (field, list_field, either_field, any_field,
                              bool_field, dfield)
-from ribosome.machine.interface import MachineI
+from ribosome.machine.machine import Machine
 from ribosome.machine.state import Component
 
 from amino.io import IO
@@ -347,8 +347,8 @@ class OutputMachineTransitions(Component):
 class OutputMachine(ScratchMachine, Logging):
     Transitions = OutputMachineTransitions
 
-    def __init__(self, vim: NvimFacade, scratch: ScratchBuffer,
-                 result: ParseResult, parent: MachineI, options: Map) -> None:
+    def __init__(self, vim: NvimFacade, scratch: ScratchBuffer, result: ParseResult, parent: Machine, options: Map
+                 ) -> None:
         super().__init__(vim, scratch, parent=parent, title='output')
         self._result = result
         self._options = options

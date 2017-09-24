@@ -6,14 +6,13 @@ from kallikrein.matchers import contain
 from kallikrein.matchers.length import have_length
 
 from ribosome.test.integration.klk import later
+from ribosome.machine.state import Component
 
 from amino import _, __, Map, Maybe, List
 
 from myo.test.spec import TmuxSpecBase
-from myo.components.tmux.message import TmuxCreateLayout, TmuxCreatePane
-from myo.components.tmux import TmuxOpen
+from myo.components.tmux.message import TmuxCreateLayout, TmuxCreatePane, TmuxOpen
 from myo.ui.tmux.window import WindowAdapter
-from myo.state import MyoComponent
 from myo.ui.tmux.data import TmuxState
 
 
@@ -45,7 +44,7 @@ class TmuxIntegrationSpecBase(TmuxSpecBase):
 
     @property
     def _plugins(self) -> List[str]:
-        return super()._plugins.cons('myo.components.tmux')
+        return super()._plugins.cons('tmux')
 
     @property
     def _window_name(self) -> str:
@@ -90,11 +89,11 @@ class ExternalTmuxIntegrationSpec(TmuxIntegrationSpecBase,
                                   MyoIntegrationSpec):
 
     @property
-    def _tmux(self) -> Maybe[MyoComponent]:
+    def _tmux(self) -> Maybe[Component]:
         return self.root.sub.find(_.title == 'tmux')
 
     @property
-    def tmux(self) -> MyoComponent:
+    def tmux(self) -> Component:
         return self._tmux.get_or_fail('no tmux plugin')
 
     @property
