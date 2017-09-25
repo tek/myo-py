@@ -4,8 +4,9 @@ from amino import __, List, Left, IO, Map, _, L
 from ribosome.machine.transition import may_handle, Error, handle
 from ribosome.machine.base import unit_nio
 from ribosome.machine.transition import Fatal
-from ribosome.machine.messages import RunIO, Stage1
+from ribosome.machine.messages import RunIO, Stage1, Stage2, Stage3, Stage4
 from ribosome.machine.state import Component
+from ribosome.machine import trans
 
 from myo.components.core.dispatch import VimDispatcher
 from myo.components.core.message import Initialized, ParseOutput
@@ -21,6 +22,18 @@ class Core(Component):
     @may_handle(Stage1)
     def stage_1(self):
         return Initialized().pub.at(1)
+
+    @trans.unit(Stage2)
+    def stage_2(self):
+        pass
+
+    @trans.unit(Stage3)
+    def stage_3(self):
+        pass
+
+    @trans.unit(Stage4)
+    def stage_4(self):
+        pass
 
     @may_handle(Initialized)
     def initialized(self):
