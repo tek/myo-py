@@ -5,11 +5,11 @@ from kallikrein.matchers.either import be_right
 
 from myo.components.command.util import assemble_vim_test_line
 
-from integration._support.base import MyoIntegrationSpec
+from integration._support.base import DefaultSpec
 from integration._support.vimtest import vimtest
 
 
-class VimTestSpec(MyoIntegrationSpec):
+class VimTestSpec(DefaultSpec):
     '''run vim-test's cmdline assembler according to the file type $vim_test_line
     '''
 

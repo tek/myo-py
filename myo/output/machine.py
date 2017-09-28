@@ -349,7 +349,7 @@ class OutputMachine(ScratchMachine, Logging):
 
     def __init__(self, vim: NvimFacade, scratch: ScratchBuffer, result: ParseResult, parent: Machine, options: Map
                  ) -> None:
-        super().__init__(vim, scratch, parent=parent, title='output')
+        super().__init__(vim, scratch, parent=parent, name='output')
         self._result = result
         self._options = options
 
