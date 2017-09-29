@@ -179,7 +179,7 @@ class MyoNvimPlugin(AutoPlugin, Logging):
 
     @neovim.function('MyoEval', sync=True)
     def myo_eval(self, args):
-        return self._eval(args, self.myo.eval_expr)
+        return self._eval(args, self.root.eval_expr)
 
     @neovim.function('MyoTmuxEval', sync=True)
     def myo_tmux_eval(self, args):
@@ -187,7 +187,7 @@ class MyoNvimPlugin(AutoPlugin, Logging):
             d = data.sub_states.get('tmux') | data
             p = components.get('tmux') | components
             return d, p
-        return self._eval(args, L(self.myo.eval_expr)(_, mod))
+        return self._eval(args, L(self.root.eval_expr)(_, mod))
 
     @neovim.autocmd('VimResized', sync=False)
     def vim_resized(self):
@@ -208,11 +208,11 @@ class MyoNvimPlugin(AutoPlugin, Logging):
 
     @unite_candidates('history')
     def myo_unite_history_candidates(self, args):
-        return self.myo.data.commands.history / unite_format
+        return self.root.data.commands.history / unite_format
 
     @unite_candidates('commands')
     def myo_unite_commands_candidates(self, args):
-        return self.myo.data.commands.commands / unite_format
+        return self.root.data.commands.commands / unite_format
 
     @unite_action('run', 'name')
     def myo_unite_run(self, ident):

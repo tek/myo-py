@@ -11,7 +11,7 @@ class CmdSpecConf:
 
     @property
     def _last(self):
-        return (lambda: self.vim.vars.pd('last_command') // __.get('name'))
+        return (lambda: self.vim.vars.pd('last_command') // __.get('name').to_either('no name'))
 
 
 class CmdPluginSpecConf(CmdSpecConf):

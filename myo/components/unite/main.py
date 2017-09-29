@@ -3,7 +3,7 @@ from typing import Any
 from amino import Map, List
 
 from ribosome.machine.transition import may_handle
-from ribosome.unite import UniteKind
+from ribosome.unite import UniteKind, UniteSource
 from ribosome.unite.machine import UniteMachine, UniteTransitions
 from ribosome.machine.state import Component, ComponentMachine
 from ribosome.nvim import NvimFacade
@@ -42,5 +42,14 @@ class Unite(UniteMachine, ComponentMachine):
     def __init__(self, vim: NvimFacade, title: str, parent: Machine) -> None:
         UniteMachine.__init__(self)
         ComponentMachine.__init__(self, vim, MyoUniteTransitions, title, parent)
+
+    @property
+    def sources(self) -> List[UniteSource]:
+        return sources
+
+    @property
+    def kinds(self) -> List[UniteKind]:
+        return kinds
+
 
 __all__ = ('Unite',)

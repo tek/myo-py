@@ -207,10 +207,8 @@ class TransientCommandJob(CommandJob):
     override_line = field(str)
     override_shell = ident_field()
 
-    def __new__(cls, prefix='transient', command=None,
-                name=None, **kw):
-        name = name or '{}_{}_{}'.format(prefix, command.name,
-                                         List.random_string(5))
+    def __new__(cls, prefix='transient', command=None, name=None, **kw):
+        name = name or '{}_{}_{}'.format(prefix, command.name, List.random_string(5))
         return super().__new__(cls, name=name, command=command, **kw)
 
     @property
@@ -295,5 +293,4 @@ class Commands(Record):
     def latest_command(self):
         return self.history.head.to_either(self.no_latest_command_error)
 
-__all__ = ('Commands', 'Command', 'VimCommand', 'ShellCommand', 'Shell',
-           'CommandJob', 'TransientCommandJob')
+__all__ = ('Commands', 'Command', 'VimCommand', 'ShellCommand', 'Shell', 'CommandJob', 'TransientCommandJob')
