@@ -1,6 +1,11 @@
-from integration._support.base import DefaultSpec
+from amino import __, Path, List
+from amino.test import temp_dir
 
-from amino import __
+from ribosome.record import encode_json, decode_json
+
+from myo.command import Command
+
+from integration._support.base import DefaultSpec
 
 
 class CmdSpecConf:
@@ -12,6 +17,25 @@ class CmdSpecConf:
     @property
     def _last(self):
         return (lambda: self.vim.vars.pd('last_command') // __.get('name').to_either('no name'))
+
+    @property
+    def state_dir(self) -> Path:
+        return temp_dir('history', 'load', 'state')
+
+    @property
+    def history_file(self) -> Path:
+        return self.state_dir / 'history.json'
+
+    def write_history(self, data: List[Command]) -> None:
+        history = encode_json(data).get_or_raise
+        self.history_file.write_text(history)
+
+    def history(self) -> List[Command]:
+        return decode_json(self.history_file.read_text()).get_or_raise
+
+    def _set_vars(self):
+        super()._set_vars()
+        self.vim.vars.set_p('state_dir', str(self.state_dir))
 
 
 class CmdPluginSpecConf(CmdSpecConf):

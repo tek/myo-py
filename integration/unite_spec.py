@@ -63,7 +63,7 @@ class UniteLoadHistorySpec(_UniteSpecBase):
 
     def _set_vars(self) -> None:
         super()._set_vars()
-        self.vim.vars.set('Myo_history', encode_json(self._history).get_or_raise)
+        self.write_history(self._history)
 
     @unite
     def history(self) -> Expectation:

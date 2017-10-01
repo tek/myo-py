@@ -9,7 +9,6 @@ from kallikrein.matchers.maybe import be_nothing
 from kallikrein.matchers.length import have_length
 
 from ribosome.test.integration.klk import later
-from ribosome.record import encode_json, decode_json
 
 from myo.command import ShellCommand, Commands
 from myo.components.command.message import AddShellCommand, RunChained
@@ -105,7 +104,7 @@ class ChainSpec(CmdSpecConf, MyoIntegrationSpec):
 
 class HistorySpec(_DispatchBase):
     '''history
-    variable `Myo_history` is read at startup to populate the history $load_history
+    the history state file is read at startup to populate the history $load_history
     '''
 
     @lazy
@@ -115,8 +114,7 @@ class HistorySpec(_DispatchBase):
     def _set_vars(self):
         super()._set_vars()
         cmd = ShellCommand(name=self.cmd_name, line='', log_path=Just(Path('/foo/bar')))
-        history = encode_json([cmd]).get_or_raise
-        self.vim.vars.set('Myo_history', history)
+        self.write_history(List(cmd))
 
     def load_history(self) -> Expectation:
         self._create_command(self.cmd_name, '')
@@ -139,7 +137,6 @@ class HistoryDistinctSpec(_DispatchBase):
         self._run_command(name)
         test()
         test()
-        hist = lambda: self.vim.vars('Myo_history') // decode_json | List()
-        return later(kf(hist).must(have_length(2)))
+        return later(kf(self.history).must(have_length(2)))
 
 __all__ = ('DispatchSpec', 'HistorySpec', 'HistoryDistinctSpec', 'ChainSpec')

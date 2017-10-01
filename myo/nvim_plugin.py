@@ -1,22 +1,21 @@
-import neovim
-
 from amino import List, L, _, I, Map
 
-from ribosome import msg_command, json_msg_command, AutoPlugin
+from ribosome import msg_command, json_msg_command, AutoPlugin, function
 from ribosome.machine.scratch import Mapping
 from ribosome.request.function import msg_function
 from ribosome.machine.state import UpdateRecord
 from ribosome.unite import mk_unite_candidates, mk_unite_action
 from ribosome.unite.plugin import unite_plugin
-from ribosome.settings import PluginSettings, Config, RequestHandler
+from ribosome.settings import Config
+from ribosome.request.autocmd import autocmd
 
 from myo.logging import Logging
-from myo.components.command.message import (AddVimCommand, Run, AddShellCommand, AddShell, ShellRun, RunTest, RunVimTest,
-                                         CommandShow, RunLatest, RunLine, RunChained, RebootCommand, DeleteHistory,
-                                         CommandHistoryShow)
-from myo.components.tmux.message import (TmuxCreatePane, TmuxCreateSession, TmuxCreateLayout, TmuxSpawnSession, TmuxInfo,
-                                      TmuxClosePane, TmuxPack, TmuxMinimize, TmuxRestore, TmuxToggle, TmuxFocus,
-                                      TmuxOpenOrToggle, TmuxKill)
+from myo.components.command.message import (AddVimCommand, Run, AddShellCommand, AddShell, ShellRun, RunTest,
+                                            RunVimTest, CommandShow, RunLatest, RunLine, RunChained, RebootCommand,
+                                            DeleteHistory, CommandHistoryShow)
+from myo.components.tmux.message import (TmuxCreatePane, TmuxCreateSession, TmuxCreateLayout, TmuxSpawnSession,
+                                         TmuxInfo, TmuxClosePane, TmuxPack, TmuxMinimize, TmuxRestore, TmuxToggle,
+                                         TmuxFocus, TmuxOpenOrToggle, TmuxKill)
 from myo.components.tmux.message import TmuxOpen
 from myo.components.core.message import Parse, Resized
 from myo.components.unite.message import UniteHistory, UniteCommands
@@ -27,17 +26,17 @@ from myo.env import Env
 from myo.components.core.main import Core
 from myo.components.command.main import CommandComponent
 from myo.components.tmux.main import Tmux
+from myo.settings import ProteomeSettings
 
 unite_candidates = mk_unite_candidates(UniteNames)
 unite_action = mk_unite_action(UniteNames)
 
-
-config = Config(
+config: Config = Config(
     name='myo',
     prefix='myo',
     state_type=Env,
     components=Map(core=Core, command=CommandComponent, tmux=Tmux, unite=Unite),
-    settings=PluginSettings(),
+    settings=ProteomeSettings(),
     request_handlers=List(
         # RequestHandler.msg_cmd(Msg)('msg', prefix=Plain, sync=True)
     ),
@@ -177,11 +176,11 @@ class MyoNvimPlugin(AutoPlugin, Logging):
         result = List.wrap(args).head.to_either('expression needed') // go
         return result.cata(self.log.error, I)
 
-    @neovim.function('MyoEval', sync=True)
+    @function()
     def myo_eval(self, args):
         return self._eval(args, self.root.eval_expr)
 
-    @neovim.function('MyoTmuxEval', sync=True)
+    @function()
     def myo_tmux_eval(self, args):
         def mod(data, components):
             d = data.sub_states.get('tmux') | data
@@ -189,7 +188,7 @@ class MyoNvimPlugin(AutoPlugin, Logging):
             return d, p
         return self._eval(args, L(self.root.eval_expr)(_, mod))
 
-    @neovim.autocmd('VimResized', sync=False)
+    @autocmd()
     def vim_resized(self):
         if self.root is not None:
             self.root.send(Resized())

@@ -144,12 +144,13 @@ class PythonVimTestLoadHistorySpec(PythonVimTestBase):
     def _set_vars(self) -> None:
         super()._set_vars()
         cmd = ShellCommand(line='', name='<test>')
-        job = TransientCommandJob(override_line=self._line,
-                                  command=cmd,
-                                  name='test_line_<test>_VIroI',
-                                  override_langs=List('python'))
-        history = encode_json([job]).get_or_raise
-        self.vim.vars.set('Myo_history', history)
+        job = TransientCommandJob(
+            override_line=self._line,
+            command=cmd,
+            name='test_line_<test>_VIroI',
+            override_langs=List('python')
+        )
+        self.write_history(List(job))
 
     @vimtest
     def history(self) -> Expectation:

@@ -5,12 +5,15 @@ from ribosome.machine.messages import Nop
 from ribosome.machine.message_base import Message
 from ribosome.machine.transition import may_handle, handle, Fatal
 from ribosome.util.callback import parse_callback_spec
-from ribosome.machine.base import UnitIO
-from ribosome.record import decode_json, encode_json
 from ribosome.machine.messages import Stage1
 from ribosome.machine.state import Component
+from ribosome.machine import trans
+from ribosome.machine.state_f import load_json_state, store_json_state
+from ribosome.nvim.io import NvimIOState
 
-from amino import L, _, List, Try, __, Maybe, Map, I, IO, Just, Boolean, Left, Either
+from lenses import lens
+
+from amino import L, _, List, Try, __, Maybe, Map, I, Just, Boolean, Left, Either
 from myo.command import Command, VimCommand, ShellCommand, Shell, CommandJob, TransientCommandJob
 from myo.util import amend_options, Ident
 from myo.components.core.message import Parse, ParseOutput
@@ -20,6 +23,8 @@ from myo.components.command.message import (
     RebootCommand, DeleteHistory, CommandHistoryShow
 )
 from myo.components.command.util import assemble_vim_test_line
+from myo.logging import Logging
+from myo.env import Env
 
 
 class Reboot:
@@ -32,9 +37,22 @@ class Reboot:
         return self.job.name
 
 
+class CommandFunctions(Logging):
+
+    def load_history(self) -> NvimIOState[Env, None]:
+        return load_json_state('history', lens().commands.history)
+
+    def store_history(self) -> NvimIOState[Env, None]:
+        return store_json_state('history', _.commands.history)
+
+
 class CommandComponent(Component):
     _test_cmd_name = '<test>'
     _test_cmd_var = 'create_test_command'
+
+    @property
+    def funcs(self) -> CommandFunctions:
+        return CommandFunctions()
 
     def _add(self, tpe: type, **strict):
         return self._from_opt(tpe, **strict) / self._add_command
@@ -57,10 +75,6 @@ class CommandComponent(Component):
         )
 
     @property
-    def _history_var(self):
-        return 'Myo_history'
-
-    @property
     def _last_test_line_var(self):
         return 'Myo_last_test_line'
 
@@ -68,21 +82,13 @@ class CommandComponent(Component):
     def _last_test_shell_var(self):
         return 'Myo_last_test_shell'
 
-    @handle(LoadHistory)
+    @trans.unit(LoadHistory, trans.st)
     def load_history(self):
-        return (
-            self.vim.vars.s(self._history_var) //
-            L(decode_json)(_).to_either('failed to load history').lmap(Fatal) /
-            self.data.commands.setter.history /
-            self.data.setter.commands
-        )
+        return self.funcs.load_history()
 
-    @may_handle(StoreHistory)
+    @trans.unit(StoreHistory, trans.st)
     def store_history(self):
-        return UnitIO(
-            IO.delay(encode_json, self.data.commands.history).join_either /
-            L(self).vim.vars.set(self._history_var, _)
-        )
+        return self.funcs.store_history()
 
     @may_handle(DeleteHistory)
     def delete_history(self) -> Message:
