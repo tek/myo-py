@@ -6,7 +6,6 @@ from amino.lazy import lazy
 from amino import List, __, Just, Maybe, _, Lists
 
 from ribosome.test.unite import unite
-from ribosome.record import encode_json
 from ribosome.test.integration.klk import later
 
 from myo.command import ShellCommand, CommandJob, TransientCommandJob
@@ -144,7 +143,7 @@ cc_name = UniteNames.commands_candidates
 
 
 class UniteCommandsSpec(_UniteSpecBase):
-    f'''return all commands from `{cc_name}` $candidates
+    '''return all commands from the unite callback $candidates
     show all commands in the unite window $commands
     '''
 

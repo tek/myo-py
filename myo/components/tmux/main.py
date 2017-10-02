@@ -61,14 +61,14 @@ class Tmux(Component):
 
     @property
     def new_state(self):
-        return lambda: TmuxState(watcher=self.create_watcher())
+        return lambda: TmuxState(watcher=Just(self.create_watcher()))
 
     def create_watcher(self):
         interval = self.vim.vars.p('tmux_watcher_interval') | 1.0
         return Watcher(self, interval=interval)
 
     @property
-    def watcher(self) -> Watcher:
+    def watcher(self) -> Maybe[Watcher]:
         return self.state.watcher
 
     def record_lens(self, tpe, name):
@@ -135,9 +135,9 @@ class Tmux(Component):
                                                   position=-1))
         return main, make
 
-    @may_handle(StartWatcher)
+    @handle(StartWatcher)
     def start_watcher(self):
-        return UnitIO(IO.delay(self.watcher.start))
+        return self.watcher / (lambda a: UnitIO(IO.delay(a.start)))
 
     @handle(TmuxCreateSession)
     def create_session(self):
@@ -268,9 +268,9 @@ class Tmux(Component):
     def quit(self):
         return QuitWatcher(), UnitIO(self.tmux.close_all)
 
-    @may_handle(QuitWatcher)
+    @handle(QuitWatcher)
     def quit_watcher(self):
-        return UnitIO(IO.delay(self.watcher.stop))
+        return self.watcher / (lambda a: UnitIO(IO.delay(a.stop)))
 
     @may_handle(TmuxInfo)
     def info(self):
@@ -395,7 +395,7 @@ class Tmux(Component):
         in_shell = Boolean('shell' in opt)
         def watch(path):
             msg = WatchCommand(job, path.view)
-            return IO.call(self.watcher.send, msg)
+            return self.watcher / (lambda a: IO.delay(a.send, msg)) | IO.pure(None)
         runner, is_open = self.tmux.run_command_ppm(pane_ident, line, in_shell,
                                                     kill, signals)
         post = is_open.no.m(TmuxPostOpen(pane_ident, opt)).to_list

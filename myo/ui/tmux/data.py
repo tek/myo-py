@@ -4,7 +4,7 @@ from amino import List, __, _
 
 from lenses import lens
 
-from ribosome.record import field, list_field, bool_field
+from ribosome.record import field, list_field, bool_field, maybe_field
 
 from myo.record import Record
 from myo.ui.tmux.session import Session, VimSession
@@ -24,7 +24,7 @@ class TmuxState(Record):
     initialized = bool_field()
     sessions = list_field()
     instance_id = field(str, initial='', factory=lambda a: a if a else List.random_string(5))
-    watcher = field(Watcher)
+    watcher = maybe_field(Watcher)
 
     @property
     def _str_extra(self):
