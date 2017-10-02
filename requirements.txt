@@ -1,5 +1,5 @@
-ribosome
-git+git://github.com/ingolemo/python-lenses.git
-libtmux
-psutil
-networkx
+ribosome==12.0.0
+libtmux==0.7.4
+psutil==5.3.1
+networkx==2.0
+kallikrein
