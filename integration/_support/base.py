@@ -57,5 +57,9 @@ class DefaultSpec(MyoPluginIntegrationSpec):
     def module(self) -> str:
         return 'myo.nvim_plugin'
 
+    @property
+    def plugin_prefix(self) -> str:
+        return 'myo'
+
 
 __all__ = ('MyoIntegrationSpec', 'MyoPluginIntegrationSpec', 'DefaultSpec')
