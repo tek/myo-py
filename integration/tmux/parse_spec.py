@@ -9,8 +9,6 @@ from kallikrein.matchers.length import have_length
 from kallikrein.matchers.comparison import ge
 from amino.test.path import fixture_path
 
-from ribosome.record import encode_json
-
 from myo.output.data import OutputEntry, OutputEvent, ParseResult
 from myo.command import ShellCommand, TransientCommandJob
 

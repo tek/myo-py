@@ -8,7 +8,7 @@ from ribosome.test.integration.klk import later
 
 from myo.test.spec import Spec
 from myo.logging import Logging
-from myo.nvim_plugin import MyoNvimPlugin
+from myo import MyoNvimPlugin
 
 
 class IntegrationCommon:
@@ -55,11 +55,11 @@ class DefaultSpec(MyoPluginIntegrationSpec):
         return 'config'
 
     def module(self) -> str:
-        return 'myo.nvim_plugin'
+        return 'myo'
 
     @property
     def plugin_prefix(self) -> str:
-        return 'myo'
+        return 'Myo'
 
 
 __all__ = ('MyoIntegrationSpec', 'MyoPluginIntegrationSpec', 'DefaultSpec')
