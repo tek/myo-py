@@ -221,4 +221,4 @@ class MyoNvimPlugin(AutoPlugin, Logging):
     def myo_unite_delete(self, ident):
         return DeleteHistory(ident)
 
-__all__ = ('MyoNvimPlugin',)
+__all__ = ('MyoNvimPlugin', 'config')
