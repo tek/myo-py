@@ -42,7 +42,7 @@ class Pane(View):
     shell_pid = optional_field(int)
     window_id = either_field(int)
     session_id = either_field(int)
-    log_path = optional_field(Path)
+    log_path = optional_field(Path, factory=Path)
     pin = bool_field()
     focus = bool_field()
     kill = bool_field()
