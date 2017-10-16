@@ -18,8 +18,7 @@ from myo.ui.tmux.facade.window import WindowFacade
 
 class TmuxFacade(Logging):
 
-    def __init__(self, state: TmuxState, socket=None, options: Map=Map()
-                 ) -> None:
+    def __init__(self, state: TmuxState, socket=None, options: Map=Map()) -> None:
         self.state = state
         self.socket = socket
         self.options = options
@@ -89,23 +88,21 @@ class TmuxFacade(Logging):
     def add_layout_to_layout(self, parent: Maybe[str], layout: Layout):
         return self.add_to_layout(parent, _.layouts, layout)
 
-    def pane_window(self, ident: Ident
-                    ) -> Either[str, Tuple[WindowFacade, ViewLoc]]:
+    def pane_window(self, ident: Ident) -> Either[str, Tuple[WindowFacade, ViewLoc]]:
         f = lambda loc: self.loc_window(loc) & Right(loc.view)
         return self.pane_loc(ident) // f
 
     def pane_window_task(self, ident: Ident) -> IO[Tuple[WindowFacade, ViewLoc]]:
         return IO.call(self.pane_window, ident).join_either
 
-    def view_window(self, ident: Ident
-                    ) -> Either[str, Tuple[WindowFacade, ViewLoc]]:
+    def view_window(self, ident: Ident) -> Either[str, Tuple[WindowFacade, ViewLoc]]:
         f = lambda loc: self.loc_window(loc) & Right(loc.view)
         return self.view_loc(ident) // f
 
     def path_window(self, path: ViewPath) -> Maybe[WindowFacade]:
         return self.window(path.session, path.window)
 
-    def path_window_task(self, path: ViewPath) -> IO[WindowFacade]:
+    def path_window_io(self, path: ViewPath) -> IO[WindowFacade]:
         return self.window_task(path.session, path.window)
 
     @property
@@ -136,7 +133,7 @@ class TmuxFacade(Logging):
         return self.window_task(session, window) // __.pack()
 
     def open_pane(self, path: ViewPath) -> IO[Either[str, ViewPath]]:
-        return self.path_window_task(path) // __.open_pane(path)
+        return self.path_window_io(path) // __.open_pane(path)
 
     def kill_process(self, ident: Ident, signals):
         return (
@@ -181,7 +178,7 @@ class TmuxFacade(Logging):
         return self.pane_window(ident).map2(run)
 
     def run_command_ppm(self, pane_ident: Ident, line: str, in_shell: bool, kill: bool, signals: List[str]):
-        win = lambda path: self.path_window_task(path)
+        win = self.path_window_io
         def check_running(path):
             pane_kill = path.view.kill
             return IO.now(Right(path)) if in_shell else (
@@ -208,7 +205,7 @@ class TmuxFacade(Logging):
         ppm = (self._ident_vpm
                if is_open else
                self.open_pane_ppm)
-        return ((((ppm(pane_ident) + check_running) / pipe) % run) / pid, is_open)
+        return ((((ppm(pane_ident) + check_running) / pipe) % run), is_open)
 
     def pane_mod(self, ident: Ident, f: Callable[[Pane], Pane]):
         return self._mod(self._ident_ppm, ident, f)

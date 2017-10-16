@@ -156,8 +156,7 @@ class TmuxCmdConf(CmdPluginSpecConf):
 
     def _py_shell(self):
         self._create_pane('py', parent='main')
-        self.json_cmd_sync('MyoShell py', line='python', target='py',
-                           langs=['python'])
+        self.json_cmd_sync('MyoShell py', line='python', target='py', langs=['python'])
 
     def _cmd_pid(self, id):
         return self._panes.find(__.id_i.contains(id)) // _.command_pid | 0

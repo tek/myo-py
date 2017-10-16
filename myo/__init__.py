@@ -26,7 +26,7 @@ from myo.env import Env
 from myo.components.core.main import Core
 from myo.components.command.main import CommandComponent
 from myo.components.tmux.main import Tmux
-from myo.settings import ProteomeSettings
+from myo.settings import MyoSettings
 
 unite_candidates = mk_unite_candidates(UniteNames)
 unite_action = mk_unite_action(UniteNames)
@@ -36,7 +36,7 @@ config: Config = Config(
     prefix='myo',
     state_type=Env,
     components=Map(core=Core, command=CommandComponent, tmux=Tmux, unite=Unite),
-    settings=ProteomeSettings(),
+    settings=MyoSettings(),
     request_handlers=List(
         # RequestHandler.msg_cmd(Msg)('msg', prefix=Plain, sync=True)
     ),

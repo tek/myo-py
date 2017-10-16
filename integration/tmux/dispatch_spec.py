@@ -175,8 +175,7 @@ class DispatchSpec(TmuxCmdSpec):
 
     def manual_kill(self) -> Expectation:
         self.vim.cmd_sync('MyoRunLine make tail')
-        later(kf(
-            lambda: self._output.exists(lambda a: 'tail' in a)).must(eq(True)))
+        later(kf(lambda: self._output.exists(lambda a: 'tail' in a)).must(eq(True)))
         k(self._cmd_pid(1)).must(greater(0))
         self.vim.cmd('MyoTmuxKill make')
         return later(kf(self._cmd_pid, 1) == 0)

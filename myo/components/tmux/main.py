@@ -1,26 +1,29 @@
-from typing import Callable
+from typing import Callable, Type, Generator
 
-from amino import List, _, __, Just, Map, Right, Empty, Either, Boolean, I, Maybe, L, Nil
+from amino import List, _, __, Just, Map, Right, Empty, Either, Boolean, I, Maybe, L, Nil, Lists
 from amino.lazy import lazy
 from amino.io import IO
+from amino.state import StateT, MaybeState
+from amino.do import tdo
+from amino.func import ReplaceVal
 
 from ribosome.machine.base import UnitIO, DataIO
 from ribosome.machine.transition import may_handle, handle, Error, Fatal
 from ribosome.machine.messages import Stage1, Quit, Nop, Message
-from ribosome.machine.state import Component
-from ribosome.nvim.components import Flags
+from ribosome.machine.state import Component, RunMachine
+from ribosome.machine import trans
 
 from myo.components.tmux.message import (TmuxOpen, TmuxRunCommand, TmuxCreatePane,
-                                      TmuxCreateLayout, TmuxCreateSession,
-                                      TmuxSpawnSession, TmuxFindVim, TmuxInfo,
-                                      TmuxLoadDefaults, TmuxClosePane,
-                                      TmuxRunLineInShell, StartWatcher,
-                                      WatchCommand, QuitWatcher, TmuxPack,
-                                      TmuxPostOpen, TmuxFixFocus, TmuxMinimize,
-                                      TmuxRestore, TmuxToggle, TmuxFocus,
-                                      TmuxOpenOrToggle, TmuxKill,
-                                      UpdateVimWindow, TmuxRunTransient,
-                                      TmuxPostCommand, TmuxRebootCommand)
+                                         TmuxCreateLayout, TmuxCreateSession,
+                                         TmuxSpawnSession, TmuxFindVim, TmuxInfo,
+                                         TmuxLoadDefaults, TmuxClosePane,
+                                         TmuxRunLineInShell, StartWatcher,
+                                         WatchCommand, TmuxPack,
+                                         TmuxPostOpen, TmuxFixFocus, TmuxMinimize,
+                                         TmuxRestore, TmuxToggle, TmuxFocus,
+                                         TmuxOpenOrToggle, TmuxKill,
+                                         UpdateVimWindow, TmuxRunTransient,
+                                         TmuxPostCommand, TmuxRebootCommand)
 from myo.ui.tmux.pane import Pane, VimPane, PaneData
 from myo.ui.tmux.layout import LayoutDirections, Layout, VimLayout
 from myo.ui.tmux.session import Session, VimSession
@@ -33,12 +36,32 @@ from myo.ui.tmux.view_path import LayoutPathMod, PanePathMod, ViewPathMod
 from myo.ui.tmux.data import TmuxState
 from myo.components.command.message import SetShellTarget, CommandExecuted
 from myo.command import Command, Shell, default_signals, CommandJob
-from myo.components.tmux.watcher import Watcher, Terminated
+from myo.components.tmux.watcher import Watcher, Terminated, Started
 from myo.ui.tmux.facade.main import TmuxFacade
 from myo.ui.tmux.util import format_state
+from myo import Env
 
 
 invalid_pane_name = 'invalid pane name: {}'
+tmux_name = 'tmux'
+
+
+def new_state(self) -> TmuxState:
+    return TmuxState()
+
+
+def get(St: Type[StateT]) -> TmuxState:
+    return St.inspect(__.sub_state(tmux_name, new_state))
+
+
+@tdo(StateT)
+def mod(St: Type[StateT], f: Callable[[TmuxState], TmuxState]) -> Generator:
+    state = yield get(St)
+    yield St.modify(__.with_sub_state(tmux_name, f(state)))
+
+
+def set(St: Type[StateT], new_state: TmuxState) -> StateT:
+    return mod(St, ReplaceVal(new_state))
 
 
 class Tmux(Component):
@@ -60,16 +83,8 @@ class Tmux(Component):
         return Server(self.native_server)
 
     @property
-    def new_state(self):
-        return lambda: TmuxState(watcher=Just(self.create_watcher()))
-
-    def create_watcher(self):
-        interval = self.vim.vars.p('tmux_watcher_interval') | 1.0
-        return Watcher(self, interval=interval)
-
-    @property
-    def watcher(self) -> Maybe[Watcher]:
-        return self.state.watcher
+    def new_state(self) -> TmuxState:
+        return lambda: TmuxState()
 
     def record_lens(self, tpe, name):
         return (
@@ -135,9 +150,9 @@ class Tmux(Component):
                                                   position=-1))
         return main, make
 
-    @handle(StartWatcher)
+    @may_handle(StartWatcher)
     def start_watcher(self):
-        return self.watcher / (lambda a: UnitIO(IO.delay(a.start)))
+        return RunMachine(Watcher(self.vim, self.machine)).pub
 
     @handle(TmuxCreateSession)
     def create_session(self):
@@ -266,11 +281,7 @@ class Tmux(Component):
 
     @may_handle(Quit)
     def quit(self):
-        return QuitWatcher(), UnitIO(self.tmux.close_all)
-
-    @handle(QuitWatcher)
-    def quit_watcher(self):
-        return self.watcher / (lambda a: UnitIO(IO.delay(a.stop)))
+        return UnitIO(self.tmux.close_all)
 
     @may_handle(TmuxInfo)
     def info(self):
@@ -331,20 +342,27 @@ class Tmux(Component):
 
     @may_handle(TmuxKill)
     def kill(self):
-        signals = self.msg.options.get('signals') | default_signals
+        signals = self.msg.options.get('signals') / Lists.wrap | default_signals
         return self.tmux.kill_process(self.msg.pane, signals) / __.lmap(Fatal)
 
     @may_handle(TmuxPostCommand)
     def post_command(self):
-        log_path = self._pane(self.msg.pane_ident) // _.log_path
-        return CommandExecuted(self.msg.job, log_path).pub
+        pane = self._pane(self.msg.pane_ident)
+        log_path = pane // _.log_path
+        wc = pane / (lambda p: WatchCommand(self.msg.job, p).pub.at(0.8))
+        return List(CommandExecuted(self.msg.job, log_path).pub).cat_m(wc)
+
+    @trans.unit(Started, trans.st)
+    @tdo(MaybeState[Env, None])
+    def cmd_started(self) -> Generator:
+        state = yield get(MaybeState)
+        l = yield MaybeState.lift(state.pane_lens_ident(self.msg.command.ident))
+        yield set(MaybeState, l.modify(__.set(pid=Just(self.msg.pid))))
 
     def _minimize(self, f):
         return self.tmux.view_mod(self.msg.pane, f), TmuxPack().pub.at(1)
 
-    def _state_task(self,
-                    f: Callable[[TmuxState], IO[Either[str, TmuxState]]],
-                    options=Map()):
+    def _state_task(self, f: Callable[[TmuxState], IO[Either[str, TmuxState]]], options=Map()):
         cb = lambda d: f(self._state(d)) / __.map(L(self._with_sub)(d, _))
         return DataIO(_ // cb)
 
@@ -390,22 +408,16 @@ class Tmux(Component):
         command = job.command
         kill = opt.get('kill') | command.kill
         signals = opt.get('signals') / List.wrap | command.signals
-        pane_ident = (opt.get('target').o(command.target) |
-                      self._default_pane_name)
+        pane_ident = opt.get('target').o(command.target) | self._default_pane_name
         in_shell = Boolean('shell' in opt)
-        def watch(path):
-            msg = WatchCommand(job, path.view)
-            return self.watcher / (lambda a: IO.delay(a.send, msg)) | IO.pure(None)
-        runner, is_open = self.tmux.run_command_ppm(pane_ident, line, in_shell,
-                                                    kill, signals)
+        runner, is_open = self.tmux.run_command_ppm(pane_ident, line, in_shell, kill, signals)
         post = is_open.no.m(TmuxPostOpen(pane_ident, opt)).to_list
-        return post.cons(runner % watch).cat(TmuxPostCommand(job, pane_ident))
+        return post.cons(runner).cat(TmuxPostCommand(job, pane_ident))
 
     def _run_in_shell(self, job: CommandJob, shell: Shell, options: Map):
         ident = shell.target | self._default_pane_name
         opt = options + ('target', ident) + ('shell', shell)
-        return (self._run_command(job, opt) /
-                __.cons(TmuxRunCommand(CommandJob(command=shell), Map())))
+        return self._run_command(job, opt) / __.cons(TmuxRunCommand(CommandJob(command=shell), Map()))
 
     def _main_command(self, cmd_ident: Ident):
         holder = lambda cmd: cmd.shell // self.data.shell | cmd

@@ -130,12 +130,12 @@ class ViewPathMod(Logging, Message):
             .map(f(lens()).add_lens)
         )
 
-    def _chain(self, f: PPTrans, g: Callable):
+    def _chain(self, f: PPTrans, g: Callable) -> 'ViewPathMod':
         h = lambda vp: L(vp.run)(_, f)
         chain = lambda vp, win: self._f(vp, win) // g(win, h(vp))
         return type(self)(pred=self.pred, _f=chain)  # type: ignore
 
-    def map(self, f: PPTrans) -> IO[Either[Any, Window]]:
+    def map(self, f: PPTrans) -> 'ViewPathMod':
         keep_error = L(Left)(_) >> IO.now
         return self._chain(f, lambda w, d: __.cata(keep_error, d))
 
