@@ -1,4 +1,4 @@
-from ribosome.settings import PluginSettings, state_dir_help_default, float_setting, str_setting
+from ribosome.config.settings import state_dir_help_default, float_setting, str_setting, Settings
 
 state_dir_help = f'''{state_dir_help_default}
 Stored data consists of:
@@ -14,7 +14,7 @@ tmux_socket_help = '''The tmux server can be chosen by its socket path. This is 
 '''
 
 
-class MyoSettings(PluginSettings):
+class MyoSettings(Settings):
 
     def __init__(self) -> None:
         super().__init__('myo', state_dir_help)

@@ -1,5 +1,3 @@
-from flexmock import flexmock
-
 from amino import List, Path, Just, Map, __
 from amino.lazy import lazy
 

@@ -1,10 +1,10 @@
 import abc
-from functools import singledispatch  # type: ignore
+from functools import singledispatch
 
 from amino import Path, __, Just, List, L, Maybe, _, Map, Left, Right, Empty, Either
+from amino.dat import Dat
 
-from ribosome.record import (list_field, field, optional_field, bool_field,
-                             dfield, map_field, maybe_field)
+from ribosome.record import list_field, field, optional_field, bool_field, dfield, map_field
 from ribosome.util.callback import parse_callback_spec
 
 from myo.record import Record, Named
@@ -293,4 +293,29 @@ class Commands(Record):
     def latest_command(self):
         return self.history.head.to_either(self.no_latest_command_error)
 
-__all__ = ('Commands', 'Command', 'VimCommand', 'ShellCommand', 'Shell', 'CommandJob', 'TransientCommandJob')
+
+class TestLineParams(Dat['TestLineParams']):
+
+    def __init__(
+            self,
+            line: str,
+            shell: Either[str, str],
+            target: Either[str, str],
+            langs: List[str],
+            options: Map[str, str],
+    ) -> None:
+        self.line = line
+        self.shell = shell
+        self.target = target
+        self.langs = langs
+        self.options = options
+
+
+class TestCommand(Dat['TestCommand']):
+
+    def __init__(self, command: Command, params: TestLineParams) -> None:
+        self.command = command
+        self.params = params
+
+__all__ = ('Commands', 'Command', 'VimCommand', 'ShellCommand', 'Shell', 'CommandJob', 'TransientCommandJob',
+           'TestLineParams', 'TestCommand')

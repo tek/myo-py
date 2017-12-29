@@ -1,13 +1,9 @@
-from typing import Any
-
 from amino import Map, List
 
-from ribosome.machine.transition import may_handle
 from ribosome.unite import UniteKind, UniteSource
-from ribosome.unite.machine import UniteMachine, UniteTransitions
-from ribosome.machine.state import Component, ComponentMachine
-from ribosome.nvim import NvimFacade
-from ribosome.machine.machine import Machine
+from ribosome.unite.machine import UniteMachine
+from ribosome.trans.api import trans
+from ribosome.dispatch.component import Component
 
 from myo.components.unite.message import UniteHistory, UniteCommands
 from myo.components.unite.data import UniteNames, HistorySource, CommandsSource
@@ -22,26 +18,22 @@ history_command_kind = UniteKind(UniteNames.history_command, List(run_action, de
 kinds = List(command_kind, history_command_kind)
 
 
-class MyoUniteTransitions(UniteTransitions, Component):
+class MyoUniteTransitions(Component):
 
     def unite_cmd(self, cmd: str) -> None:
         args = ' '.join(self.msg.unite_args)
         self.vim.cmd('Unite {} {}'.format(cmd, args))
 
-    @may_handle(UniteCommands)
-    def commands(self) -> None:
+    @trans.msg.unit(UniteCommands)
+    def commands(self, msg: UniteCommands) -> None:
         self.unite_cmd(UniteNames.commands)
 
-    @may_handle(UniteHistory)
-    def history(self) -> None:
+    @trans.msg.unit(UniteHistory)
+    def history(self, msg: UniteHistory) -> None:
         self.unite_cmd(UniteNames.history)
 
 
-class Unite(UniteMachine, ComponentMachine):
-
-    def __init__(self, vim: NvimFacade, title: str, parent: Machine) -> None:
-        UniteMachine.__init__(self)
-        ComponentMachine.__init__(self, vim, MyoUniteTransitions, title, parent)
+class Unite(UniteMachine):
 
     @property
     def sources(self) -> List[UniteSource]:

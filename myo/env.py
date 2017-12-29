@@ -3,35 +3,35 @@ from typing import Union, Callable
 from lenses import lens
 
 from amino import Map, _, __
+from amino.dat import Dat
 
-from ribosome.record import maybe_field, field
-from ribosome.nvim import NvimFacade, AsyncVimProxy
-from ribosome.machine.state import AutoData
-
-from myo.command import Commands, Command
-from myo.dispatch import Dispatchers, Dispatcher
+# from myo.command import Commands, Command, TestLineParams
+# from myo.dispatch import Dispatchers, Dispatcher
 from myo.util import Ident
 
 
-class Env(AutoData):
-    vim_facade = maybe_field((NvimFacade, AsyncVimProxy))
-    initialized = field(bool, initial=False)
-    commands = field(Commands, initial=Commands())
-    dispatchers = field(Dispatchers, initial=Dispatchers())
+class Env(Dat['Env']):
+    # initialized = field(bool, initial=False)
+    # commands = field(Commands, initial=Commands())
+    # dispatchers = field(Dispatchers, initial=Dispatchers())
+    # test_params = maybe_field(TestLineParams)
 
-    @property
-    def vim(self) -> NvimFacade:
-        return self.vim_facade | (lambda: NvimFacade(None, 'no vim was set in `Env`'))
+    @staticmethod
+    def cons() -> 'Env':
+        return Env()
 
-    def cat(self, item: Union[Command, Dispatcher]):
-        name = (
-            'commands' if isinstance(item, Command) else
-            'dispatchers' if isinstance(item, Dispatcher) else
-            None
-        )
-        return self.mod(name, _ + item)
+    def __init__(self) -> None:
+        pass
 
-    __add__ = cat
+    # def cat(self, item: Union[Command, Dispatcher]):
+    #     name = (
+    #         'commands' if isinstance(item, Command) else
+    #         'dispatchers' if isinstance(item, Dispatcher) else
+    #         None
+    #     )
+    #     return self.mod(name, _ + item)
+
+    # __add__ = cat
 
     def command(self, name: str):
         return self.commands[name]
@@ -42,8 +42,8 @@ class Env(AutoData):
     def shell(self, name: str):
         return self.commands.shell(name)
 
-    def dispatch_message(self, cmd: Command, options: Map):
-        return self.dispatchers.message(cmd, options)
+    # def dispatch_message(self, cmd: Command, options: Map):
+    #     return self.dispatchers.message(cmd, options)
 
     def _lens(self, getter: Callable, ident: Ident):
         return (
@@ -56,7 +56,7 @@ class Env(AutoData):
     def command_lens(self, ident: Ident):
         return self._lens(_.commands, ident)
 
-    def transient_command(self, cmd: Command):
-        return self.mod('commands', __.transient_command(cmd))
+    # def transient_command(self, cmd: Command):
+    #     return self.mod('commands', __.transient_command(cmd))
 
 __all__ = ('Env',)

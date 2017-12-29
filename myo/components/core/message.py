@@ -1,10 +1,10 @@
-from ribosome.machine.message_base import message, json_message
+from ribosome.trans.message_base import pmessage, json_pmessage
 
-RunVimCommand = message('RunVimCommand', 'command')
-AddDispatcher = message('AddDispatcher')
-Initialized = message('Initialized')
-Parse = json_message('Parse')
-ParseOutput = json_message('ParseOutput', 'job', 'output', 'path')
-Resized = message('Resized')
+RunVimCommand = pmessage('RunVimCommand', 'command')
+AddDispatcher = pmessage('AddDispatcher')
+Initialized = pmessage('Initialized')
+Parse = json_pmessage('Parse')
+ParseOutput = json_pmessage('ParseOutput', 'job', 'output', 'path')
+Resized = pmessage('Resized')
 
 __all__ = ('RunVimCommand', 'AddDispatcher', 'Initialized', 'ParseOutput', 'Parse', 'Resized')

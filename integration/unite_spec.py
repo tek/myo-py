@@ -10,7 +10,7 @@ from ribosome.test.integration.klk import later
 
 from myo.command import ShellCommand, CommandJob, TransientCommandJob
 from myo.components.unite.format import unite_format, unite_format_str_command
-from myo.components.command.main import CommandComponent
+from myo.components.command.main import Cmd
 from myo.components.unite.data import UniteNames
 
 from integration._support.command import CmdSpec
@@ -148,7 +148,7 @@ class UniteCommandsSpec(_UniteSpecBase):
     '''
 
     def _pre_start(self) -> None:
-        self.vim.vars.set_p(CommandComponent._test_cmd_var, False)
+        self.vim.vars.set_p(Cmd._test_cmd_var, False)
         super()._pre_start()
 
     @property

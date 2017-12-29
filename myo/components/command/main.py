@@ -1,5 +1,6 @@
 import re
 from uuid import UUID
+from typing import Tuple, Generator
 
 from ribosome.machine.messages import Nop
 from ribosome.machine.message_base import Message
@@ -13,15 +14,18 @@ from ribosome.nvim.io import NvimIOState
 
 from lenses import lens
 
-from amino import L, _, List, Try, __, Maybe, Map, I, Just, Boolean, Left, Either
-from myo.command import Command, VimCommand, ShellCommand, Shell, CommandJob, TransientCommandJob
-from myo.util import amend_options, Ident
+from amino import L, _, List, Try, __, Maybe, Map, I, Just, Boolean, Left, Either, Right
+from amino.do import tdo
+from amino.state import State
+from myo.command import (Command, VimCommand, ShellCommand, Shell, CommandJob, TransientCommandJob, TestCommand,
+                         TestLineParams)
+from myo.util import Ident
 from myo.components.core.message import Parse, ParseOutput
-from myo.components.command.message import (
-    Run, ShellRun, Dispatch, AddCommand, AddShellCommand, AddShell, AddVimCommand, SetShellTarget, CommandExecuted,
-    RunTest, RunVimTest, CommandAdded, CommandShow, RunLatest, LoadHistory, StoreHistory, RunLine, RunChained,
-    RebootCommand, DeleteHistory, CommandHistoryShow
-)
+from myo.components.command.message import (Run, ShellRun, Dispatch, AddCommand, AddShellCommand, AddShell,
+                                            AddVimCommand, SetShellTarget, CommandExecuted, RunTest, RunVimTest,
+                                            CommandAdded, CommandShow, RunLatest, LoadHistory, StoreHistory, RunLine,
+                                            RunChained, RebootCommand, DeleteHistory, CommandHistoryShow,
+                                            StoreTestParams)
 from myo.components.command.util import assemble_vim_test_line
 from myo.logging import Logging
 from myo.env import Env
@@ -46,7 +50,7 @@ class CommandFunctions(Logging):
         return store_json_state('history', _.commands.history)
 
 
-class CommandComponent(Component):
+class Cmd(Component):
     _test_cmd_name = '<test>'
     _test_cmd_var = 'create_test_command'
 
@@ -164,6 +168,7 @@ class CommandComponent(Component):
                 (
                     self._vim_test_line //
                     L(self._test_line_job)(Map(), _) /
+                    _[0] /
                     List.wrap //
                     _.head
                 ).to_either('failed to create test line')
@@ -270,11 +275,18 @@ class CommandComponent(Component):
         ).to_either('failed to setup test line').lmap(Fatal)
 
     @handle(RunVimTest)
-    def run_vim_test(self):
-        return (
-            self._vim_test_line //
-            L(self._test_line_dispatch)(self.msg.options, _)
-        ).lmap(Fatal)
+    @tdo(Either[Message, List[Message]])
+    def run_vim_test(self) -> Generator:
+        line = yield self._vim_test_line
+        dispatch, test_cmd = yield self._test_line_dispatch(self.msg.options, line).lmap(Fatal)
+        yield Right(List(dispatch, StoreTestParams(test_cmd.params)))
+
+    @trans.unit(StoreTestParams, trans.st)
+    @tdo(State[Env, None])
+    def store_test_params(self) -> Generator:
+        self.log.test(self.msg)
+        yield State.modify(__.set(test_params=Just(self.msg.params)))
+        yield store_json_state('test_params', _.test_params)
 
     @may_handle(CommandShow)
     def show(self):
@@ -305,31 +317,26 @@ class CommandComponent(Component):
     def _vim_test_line(self):
         return assemble_vim_test_line(self.vim)
 
-    def _test_line_dispatch(self, options, line):
-        return self._test_line_job(options, line).map2(Dispatch)
+    def _test_line_dispatch(self, options: Map[str, str], line: str) -> Either[str, Tuple[Dispatch, TestCommand]]:
+        return self._test_line_job(options, line).map2(lambda job, cmd: (Dispatch(job, cmd.params.options), cmd))
 
-    def _test_line_job(self, options, line):
-        def dispatch(cmd, line, langs, opt):
-            shell = opt.get('shell')
-            job = TransientCommandJob(prefix='test_line', command=cmd,
-                                      override_line=line, override_langs=langs,
-                                      override_shell=shell)
-            return job, opt
-        return self._test_line_params(options, line).map4(dispatch)
+    def _test_line_job(self, options: Map[str, str], line: str) -> Either[str, Tuple[CommandJob, TestCommand]]:
+        def dispatch(cmd: TestCommand) -> Tuple[TransientCommandJob, Map[str, str], TestCommand]:
+            params = cmd.params
+            job = TransientCommandJob(prefix='test_line', command=cmd.command, override_line=params.line,
+                                      override_langs=params.langs, override_shell=params.shell)
+            return job, cmd
+        return self._test_line_params(options, line).map(dispatch)
 
-    def _test_line_params(self, options, line):
+    def _test_line_params(self, options, line) -> Either[str, TestCommand]:
         glangs = self.vim.buffer.vars.pl('test_langs')
         langs = options.get('langs').or_else(glangs) | List()
-        shell = self.vim.buffer.pvar_or_global('test_shell')
-        target = self.vim.buffer.pvar_or_global('test_target')
-        opt = amend_options(options, 'shell', shell)
-        opt2 = amend_options(opt, 'target', target) + ('langs', langs)
-        self.vim.vars.set(self._last_test_line_var, line)
-        shell / L(self.vim.vars.set)('Myo_last_test_shell', _)
+        shell = self.vim.buffer.pvar_or_global('test_shell').o(options.get('shell'))
+        target = self.vim.buffer.pvar_or_global('test_target').o(options.get('target'))
         return (
             self.data.command(self._test_cmd_name)
             .to_either('no test command') /
-            (lambda a: (a, line, langs, opt2))
+            (lambda a: TestCommand(a, TestLineParams(line, shell, target, langs, options)))
         )
 
-__all__ = ('CommandComponent',)
+__all__ = ('Cmd',)
