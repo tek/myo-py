@@ -25,6 +25,7 @@ from myo.env import Env
 # from myo.components.command.main import Cmd
 # from myo.components.tmux.main import Tmux
 from myo.settings import MyoSettings
+from myo.config.component import MyoComponent
 
 unite_candidates = mk_unite_candidates(UniteNames)
 unite_action = mk_unite_action(UniteNames)
@@ -33,6 +34,7 @@ config: Config = Config.cons(
     name='myo',
     prefix='myo',
     state_ctor=Env.cons,
+    component_config_type=MyoComponent,
     # components=Map(core=Core, command=Cmd, tmux=Tmux, unite=Unite),
     settings=MyoSettings(),
     request_handlers=List(
