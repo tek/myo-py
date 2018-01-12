@@ -15,7 +15,7 @@ from myo.data.command import Command
 @do(NS[PluginState[MyoSettings, Env, MyoComponent], None])
 def run_command(ident: Ident) -> Do:
     cmd = yield NS.inspect_f(__.main.data.command_by_ident(ident))
-    yield NS.lift(cmd.lines.traverse(NvimIO.cmd_sync, NvimIO))
+    yield NS.lift(cmd.lines.traverse(lambda a: NvimIO.cmd_sync(a, verbose=~cmd.interpreter.silent), NvimIO))
     yield NS.pure(None)
 
 

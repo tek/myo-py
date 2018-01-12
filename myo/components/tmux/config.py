@@ -1,21 +1,10 @@
-from amino import List, Dat
+from amino import List
 
 from ribosome.dispatch.component import Component
 
 from myo.components.tmux.trans.run import run_command, tmux_can_run
 from myo.config.component import MyoComponent
-
-
-class TmuxData(Dat['TmuxData']):
-
-    @staticmethod
-    def cons(
-    ) -> 'TmuxData':
-        return TmuxData(
-        )
-
-    def __init__(self) -> None:
-        pass
+from myo.tmux.data.tmux import TmuxData
 
 
 tmux = Component.cons(

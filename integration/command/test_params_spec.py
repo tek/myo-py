@@ -16,7 +16,6 @@ class TestParamsSpec(CmdSpec):
     def test(self) -> Expectation:
         self.send(StoreTestParams(TestLineParams('line', Right('shell'), Right('target'), List('lang'), Map(opt1='val1'))))
         self._wait(1)
-        print((self.state_dir / 'test_params.json').read_text())
         return k(1) == 1
 
 __all__ = ('TestParamsSpec',)

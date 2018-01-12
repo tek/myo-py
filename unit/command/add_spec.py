@@ -30,7 +30,6 @@ class AddSpec(SpecBase):
         name = 'cmd_tail'
         params = dump_json(dict(lines=List('let g:key = 7', 'let g:value = 13'))).get_or_raise()
         r = helper.loop('command:add_vim_command', args=(name, params)).unsafe(helper.vim)
-        print(r.data)
         return k(1) == 1
 
 

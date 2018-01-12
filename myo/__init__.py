@@ -17,7 +17,7 @@ from ribosome.config.config import Config
 # from myo.components.tmux.message import TmuxOpen
 # from myo.components.core.message import Parse, Resized
 # from myo.components.unite.message import UniteHistory, UniteCommands
-from myo.components.unite.main import UniteNames, Unite
+# from myo.components.unite.main import UniteNames, Unite
 # from myo.components.unite.format import unite_format
 # from myo.output.machine import EventPrev, EventNext
 from myo.env import Env
@@ -27,8 +27,8 @@ from myo.env import Env
 from myo.settings import MyoSettings
 from myo.config.component import MyoComponent
 
-unite_candidates = mk_unite_candidates(UniteNames)
-unite_action = mk_unite_action(UniteNames)
+# unite_candidates = mk_unite_candidates(UniteNames)
+# unite_action = mk_unite_action(UniteNames)
 
 config: Config = Config.cons(
     name='myo',
