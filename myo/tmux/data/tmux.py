@@ -1,4 +1,4 @@
-from amino import Dat, List, Nil, Either, _
+from amino import Dat, List, Nil, Either, _, Just
 from amino.lenses.lens import lens
 
 from myo.tmux.data.session import Session
@@ -38,11 +38,17 @@ class TmuxData(Dat['TmuxData']):
         self.layouts = layouts
         self.panes = panes
 
+    def add_pane(self, pane: Pane) -> 'TmuxData':
+        return self.append1.panes(pane)
+
     def pane_by_name(self, name: str) -> Either[str, Pane]:
         return self.panes.find(_.name == name).to_either(f'no pane named `{name}`')
 
     def update_pane(self, pane: Pane) -> 'TmuxData':
         return lens.panes.Each().Filter(_.name == pane.name).set(pane)(self)
+
+    def set_pane_id(self, pane: Pane, id: str) -> 'TmuxData':
+        return self.update_pane(pane.copy(id=Just(id)))
 
     def session_for_space(self, space: Space) -> Either[str, Session]:
         return self.sessions.find(_.space == space.ident).to_either(f'no session for {space}')

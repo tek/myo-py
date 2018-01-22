@@ -5,7 +5,7 @@ from libtmux import formats, exc
 
 from amino import List, Map, Either, Try, Lists, _
 
-from myo.tmux.pane import NativePane
+from myo.tmux.native.pane import NativePane
 
 
 class NativeWindow(libtmux.Window):

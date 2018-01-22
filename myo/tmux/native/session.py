@@ -4,7 +4,7 @@ from libtmux.common import EnvironmentMixin
 
 from amino import Map, _, Either, List, Lists, L, Try
 
-from myo.tmux.window import NativeWindow
+from myo.tmux.native.window import NativeWindow
 
 
 class NativeSession(libtmux.Session):

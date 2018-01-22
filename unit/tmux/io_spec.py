@@ -17,8 +17,8 @@ from myo.tmux.data.pane import Pane
 from myo.tmux.data.tmux import TmuxData
 from myo.tmux.view_path import ViewPath
 
-win_width = 100
-win_height = 40
+win_width = 300
+win_height = 120
 
 def terminal_args() -> list:
     geom = '{}x{}'.format(win_width + 1, win_height + 1)

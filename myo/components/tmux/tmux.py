@@ -3,17 +3,18 @@ import abc
 import libtmux
 import libtmux.formats
 
-from amino import List, Lists, Map, Boolean, do, Either, Do, Right, _, __, Try
-from amino.lazy import lazy
+from amino import List, Lists, Map, Boolean, do, Either, Do, _, __, Try
 from amino.boolean import false, true
+from amino.string.hues import blue, red
 
 from myo.tmux.data.session import Session
 from myo.tmux.data.window import Window
 from myo.tmux.data.pane import Pane
 
-from myo.tmux.session import NativeSession
-from myo.tmux.pane import PaneData, NativePane
-from myo.tmux.window import NativeWindow
+from myo.tmux.native.session import NativeSession
+from myo.tmux.native.pane import PaneData, NativePane
+from myo.tmux.native.window import NativeWindow
+from myo.logging import Logging
 
 libtmux.formats.PANE_FORMATS += [
     'pane_left',
@@ -26,8 +27,11 @@ class NativeServer(libtmux.Server):
     def list_sessions(self):
         return [NativeSession(server=self, **s) for s in self._sessions]
 
+    def list_windows(self):
+        return [NativeWindow(server=self, **s) for s in self._windows]
 
-class Tmux:
+
+class Tmux(Logging):
 
     @staticmethod
     def cons(socket: str=None) -> 'Tmux':
@@ -71,6 +75,13 @@ class NativeTmux(Tmux):
     def __init__(self, server: libtmux.Server) -> None:
         self.server = server
 
+    def cmd(self, *args: str, **kw: str) -> None:
+        ret = self.server.cmd(*args, **kw)
+        if ret.stderr:
+            self.log.error(f'tmux cmd failed:')
+            self.log.error(blue(' '.join(args)))
+            Lists.wrap(ret.stderr) / red % self.log.error
+
     @property
     def sessions(self) -> List[NativeSession]:
         return Lists.wrap(self.server.list_sessions())
@@ -78,18 +89,25 @@ class NativeTmux(Tmux):
     def session(self, session_id: str) -> Either[str, NativeSession]:
         return self.sessions.find(_.id == session_id).to_either(f'no such session: {session_id}')
 
-    @lazy
+    @property
     def pane_data(self):
         return List.wrap(self.server._list_panes()) / Map / PaneData
 
     def windows(self, session_id: str) -> Either[str, List[NativeWindow]]:
         return self.session(session_id) / __.list_windows()
 
-    def window(self, session_id: str, window_id: str) -> Either[str, NativeWindow]:
+    @property
+    def global_windows(self) -> Either[str, List[NativeWindow]]:
+        return self.sessions.traverse(__.list_windows(), Either)
+
+    def window(self, id: str) -> Either[str, NativeWindow]:
+        return self.global_windows.find(_.id == id).to_either(f'no window with id `{id}`')
+
+    def session_window(self, session_id: str, window_id: str) -> Either[str, NativeWindow]:
         return self.session(session_id) // __.window(window_id)
 
     def window_exists(self, session_id: str, window_id: str) -> Boolean:
-        return self.window(session_id, window_id).replace(true) | false
+        return self.session_window(session_id, window_id).replace(true) | false
 
     @do(Either[str, NativeWindow])
     def create_window(self, session: Session, window: Window) -> Do:
@@ -102,15 +120,22 @@ class NativeTmux(Tmux):
         session_id = yield session.id.to_either('session has no id')
         window_id = yield window.id.to_either('window has no id')
         pane_id = yield pane.id.to_either('pane has no id')
-        win = yield self.window(session_id, window_id)
+        win = yield self.session_window(session_id, window_id)
         yield win.pane(pane_id)
 
     @do(Either[str, Either[str, NativePane]])
     def create_pane(self, session: Session, window: Window, pane: Pane) -> Do:
         session_id = yield session.id.to_either('session has no id')
         window_id = yield window.id.to_either('window has no id')
-        w = yield self.window(session_id, window_id)
-        yield Try(w.create_pane)
+        w = yield self.session_window(session_id, window_id)
+        yield w.create_pane()
+
+    @property
+    def panes(self) -> List[NativePane]:
+        return Lists.wrap(NativePane(**pane) for pane in self.server._list_panes())
+
+    def pane_open(self, id: str) -> Boolean:
+        return self.pane_data.exists(__.id.contains(id))
 
 
 class PureTmux(Tmux):

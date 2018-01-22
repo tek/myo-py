@@ -141,20 +141,8 @@ class TmuxIO(Generic[A], F[A], ADT['TmuxIO'], implicits=True, imp_mod='myo.compo
         return TmuxIO.from_either(e.to_either(error))
 
     @staticmethod
-    def cmd_sync(cmdline: str, verbose=False) -> 'TmuxIO[str]':
-        return TmuxIO.wrap_either(__.cmd_sync(cmdline, verbose=verbose))
-
-    @staticmethod
-    def cmd(cmdline: str, verbose=False) -> 'TmuxIO[str]':
-        return TmuxIO.wrap_either(__.cmd(cmdline, verbose=verbose))
-
-    @staticmethod
-    def call(name: str, *args: Any, **kw: Any) -> 'TmuxIO[A]':
-        return TmuxIO.wrap_either(__.call(name, *args, **kw))
-
-    @staticmethod
-    def call_once_defined(name: str, *args: Any, **kw: Any) -> 'TmuxIO[A]':
-        return TmuxIO.wrap_either(__.call_once_defined(name, *args, **kw))
+    def cmd(cmdline: str) -> 'TmuxIO[str]':
+        return TmuxIO.wrap_either(__.cmd(cmdline))
 
     @staticmethod
     def exception(exc: Exception) -> 'TmuxIO[A]':
@@ -171,10 +159,6 @@ class TmuxIO(Generic[A], F[A], ADT['TmuxIO'], implicits=True, imp_mod='myo.compo
     @staticmethod
     def from_io(io: IO[A]) -> 'TmuxIO[A]':
         return TmuxIO.delay(lambda a: io.attempt.get_or_raise())
-
-    @staticmethod
-    def fork(f: Callable[[Tmux], None]) -> 'TmuxIO[None]':
-        return TmuxIO.delay(lambda v: Thread(target=f, args=(v,)).start())
 
     @staticmethod
     def delay(f: Callable[..., A], *a: Any, **kw: Any) -> 'TmuxIO[A]':
@@ -403,6 +387,10 @@ class TmuxIOState(Generic[S, A], StateT[TmuxIO, S, A], tpe=TmuxIO):
     @staticmethod
     def from_either(e: Either[str, A]) -> 'TmuxIOState[S, A]':
         return TmuxIOState.lift(TmuxIO.from_either(e))
+
+    @staticmethod
+    def from_maybe(m: Maybe[A], error: CallByName) -> 'TmuxIOState[S, A]':
+        return TmuxIOState.from_either(m.to_either(error))
 
     @staticmethod
     def failed(e: str) -> 'TmuxIOState[S, A]':
