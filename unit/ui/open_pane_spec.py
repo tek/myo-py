@@ -11,10 +11,11 @@ from amino.boolean import true, false
 
 from ribosome.nvim.io import NS
 from ribosome.test.spec import MockNvimFacade
+from ribosome import ribo_log
 
 from myo.ui.data.ui import UiData
 from myo.ui.data.tree import ViewTree, LayoutNode, PaneNode, pane_by_ident, layout_panes
-from myo.ui.data.view import Layout, Pane
+from myo.ui.data.view import Layout, Pane, ViewGeometry
 from myo.ui.data.window import Window, find_principal
 from myo.ui.data.space import Space
 from myo.ui.data.view_path import pane_path
@@ -222,7 +223,7 @@ def pack_pane(pane: Pane, reference: Pane, vertical: Boolean) -> Do:
     yield TS.unit
 
 
-class PackPane(PatMat, alg=ViewTree):
+class position_view(PatMat, alg=ViewTree):
 
     def __init__(self, vertical: Boolean, reference: Pane) -> None:
         self.vertical = vertical
@@ -239,7 +240,29 @@ class PackPane(PatMat, alg=ViewTree):
         yield TS.unit
 
 
-class Pack(PatMat, alg=ViewTree):
+class resize_view(PatMat, alg=ViewTree):
+
+    def __init__(self, vertical: Boolean, reference: Pane) -> None:
+        self.vertical = vertical
+        self.reference = reference
+
+    @do(TS[TmuxData, None])
+    def layout_node(self, node: MeasuredLayoutNode) -> Do:
+        yield TS.unit
+
+    @do(TS[TmuxData, None])
+    def pane_node(self, node: MeasuredPaneNode) -> Do:
+        mp = node.data
+        size = mp.measures.size
+        tpane = yield pane_for_pane(mp.pane)
+        id = yield pane_id_fatal(tpane)
+        direction = '-x' if self.vertical else '-y'
+        ribo_log.debug(f'resize {mp.pane} to {size} ({self.vertical})')
+        yield TS.delay(__.cmd('resize-pane', '-t', id, direction, size))
+
+
+# TODO sort views by `position` attr before positioning
+class pack_tree(PatMat, alg=ViewTree):
 
     def __init__(self, session: Session, window: TWindow, principal: Pane) -> None:
         self.session = session
@@ -250,8 +273,9 @@ class Pack(PatMat, alg=ViewTree):
     def layout_node(self, node: MeasuredLayoutNode, vertical: Boolean, reference: Pane) -> Do:
         layout_reference = yield reference_pane(node)
         new_reference = layout_reference | reference
-        yield node.sub.traverse(PackPane(vertical, reference), TS)
+        yield node.sub.traverse(position_view(vertical, reference), TS)
         yield node.sub.traverse(L(self)(_, node.data.layout.vertical, new_reference), TS)
+        yield node.sub.traverse(resize_view(vertical, reference), TS)
         yield TS.unit
 
     @do(TS[TmuxData, None])
@@ -310,14 +334,14 @@ class PackWindow(PatMat, alg=WindowState):
     @do(TS[TmuxData, None])
     def pristine_window(self, win: PristineWindow) -> Do:
         yield TS.unit
-        # yield Pack(session, window, ui_princ)(ui_window.layout, false, Left('initial'))
+        # yield pack_tree(session, window, ui_princ)(ui_window.layout, false, Left('initial'))
 
     @do(TS[TmuxData, None])
     def tracked_window(self, win: TrackedWindow) -> Do:
         ref = yield TS.from_either(pane_by_ident(win.pane.pane)(win.ui_window.layout))
         width, height = int(win.native_window.width), int(win.native_window.height)
         measure_tree = measure_window(win.ui_window, width, height)
-        yield Pack(self.session, self.window, self.principal)(measure_tree, false, ref)
+        yield pack_tree(self.session, self.window, self.principal)(measure_tree, false, ref)
 
 
 @do(TS[TmuxData, None])
@@ -461,7 +485,7 @@ class OpenPaneSpec(SpecBase):
         layout = ViewTree.layout(
             Layout.cons('root'),
             List(
-                ViewTree.pane(Pane.cons('one')),
+                ViewTree.pane(Pane.cons('one', geometry=ViewGeometry.cons(min_size=40))),
                 ViewTree.layout(
                     Layout.cons('main', vertical=false),
                     List(
@@ -488,8 +512,8 @@ class OpenPaneSpec(SpecBase):
         def go() -> Do:
             yield open_pane('one')
             yield open_pane('two')
-            # yield open_pane('three')
-            # yield open_pane('four')
+            yield open_pane('three')
+            yield open_pane('four')
             # yield open_pane('five')
         go().nvim.run(data).unsafe(self.vim)
         self._wait(1)
