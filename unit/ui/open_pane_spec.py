@@ -3,13 +3,12 @@ from typing import Tuple, Callable, TypeVar
 from kallikrein import k, Expectation
 
 from amino.test.spec import SpecBase
-from amino import List, do, Do, __, Dat, Just, _, Either, Right, Boolean, Left, L, Nothing, ADT
+from amino import List, do, Do, __, Dat, Just, _, Either, Right, Boolean, Left, L, ADT
 from amino.state import State, EitherState
 from amino.lenses.lens import lens
 from amino.dispatch import PatMat
 from amino.boolean import true, false
 
-from ribosome.nvim.io import NS
 from ribosome.test.spec import MockNvimFacade
 from ribosome import ribo_log
 

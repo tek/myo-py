@@ -1,13 +1,12 @@
 import abc
 import inspect
 from traceback import FrameSummary
-from typing import TypeVar, Callable, Any, Generic, Generator, Union, Tuple
-from threading import Thread
+from typing import TypeVar, Callable, Any, Generic, Union, Tuple
 
 from amino.tc.base import ImplicitInstances, F, TypeClass, tc_prop
 from amino.lazy import lazy
 from amino.tc.monad import Monad
-from amino import Either, __, IO, Maybe, Left, Eval, List, Right, Lists, options, Nil, Try, Path
+from amino import Either, __, IO, Maybe, Left, Eval, List, Right, Lists, options, Nil, Try, Path, Just, Do, L
 from amino.state import tcs, StateT, State, EitherState
 from amino.func import CallByName, tailrec
 from amino.do import do
@@ -17,7 +16,7 @@ from amino.dat import ADT
 from ribosome.nvim.io import ToNvimIOState, NS
 from ribosome.nvim import NvimIO, NvimFacade
 
-from myo.components.tmux.tmux import Tmux
+from myo.components.tmux.tmux import Tmux, TmuxCmd, TmuxCmdResult, TmuxCmdSuccess
 
 A = TypeVar('A')
 B = TypeVar('B')
@@ -184,6 +183,14 @@ class TmuxIO(Generic[A], F[A], ADT['TmuxIO'], implicits=True, imp_mod='myo.compo
     def unit() -> 'TmuxIO[A]':
         return TmuxIO.pure(None)
 
+    @staticmethod
+    def write(cmd: str, *args: str) -> 'TmuxIO[A]':
+        return TmuxWrite(TmuxCmd(cmd, Lists.wrap(args)))
+
+    @staticmethod
+    def read(cmd: str, *args: str) -> 'TmuxIO[A]':
+        return TmuxRead(TmuxCmd(cmd, Lists.wrap(args)))
+
     @abc.abstractmethod
     def _flat_map(self, f: Callable[[A], 'TmuxIO[B]'], ts: Eval[str], fs: Eval[str]) -> 'TmuxIO[B]':
         ...
@@ -192,7 +199,7 @@ class TmuxIO(Generic[A], F[A], ADT['TmuxIO'], implicits=True, imp_mod='myo.compo
     def step(self, tmux: Tmux) -> 'TmuxIO[A]':
         ...
 
-    def __init__(self, frame=None) -> None:
+    def __init__(self, frame: FrameSummary=None) -> None:
         self.frame = frame or inspect.currentframe()
 
     def flat_map(self, f: Callable[[A], 'TmuxIO[B]']) -> 'TmuxIO[B]':
@@ -200,17 +207,22 @@ class TmuxIO(Generic[A], F[A], ADT['TmuxIO'], implicits=True, imp_mod='myo.compo
 
     def run(self, tmux: Tmux) -> A:
         @tailrec
-        def run(t: 'TmuxIO[A]') -> Union[Tuple[bool, A], Tuple[bool, Tuple[Union[A, 'TmuxIO[A]']]]]:
-            if isinstance(t, Pure):
-                return True, (t.value,)
-            elif isinstance(t, (Suspend, BindSuspend)):
-                return True, (t.step(tmux),)
+        def run(t: 'TmuxIO[A]', writes: List[TmuxCmd]=Nil) -> Tuple[bool, Union[A, 'TmuxIO[A]']]:
+            if isinstance(t, (Suspend, BindSuspend)):
+                return True, (t.step(tmux), writes)
+            elif isinstance(t, ScheduleWrite):
+                return True, (t.next(None), writes.cat(t.cmd))
+            elif isinstance(t, ExecuteRead):
+                a = execute_read(writes, t.cmd)
+                return True, (a.flat_map(t.next), Nil)
+            elif isinstance(t, Pure):
+                return False, TSuccess(t.value)
             elif isinstance(t, TmuxIOError):
                 return False, TError(t.error)
             elif isinstance(t, TmuxIOFatal):
                 return False, TFatal(t.exception)
             else:
-                return False, TSuccess(t)
+                raise Exception(f'got invalid TmuxIO computation step result {t}')
         return run(self)
 
     def result(self, tmux: Tmux) -> TResult[A]:
@@ -236,7 +248,7 @@ class TmuxIO(Generic[A], F[A], ADT['TmuxIO'], implicits=True, imp_mod='myo.compo
 
     # FIXME use TResult
     @do('TmuxIO[A]')
-    def ensure(self, f: Callable[[Either[Exception, A]], 'TmuxIO[None]']) -> Generator:
+    def ensure(self, f: Callable[[Either[Exception, A]], 'TmuxIO[None]']) -> Do:
         result = yield TmuxIO.delay(self.attempt)
         yield f(result)
         yield TmuxIO.from_either(result)
@@ -261,9 +273,29 @@ class TmuxIO(Generic[A], F[A], ADT['TmuxIO'], implicits=True, imp_mod='myo.compo
         return callsite_source(self.frame)[0][0]
 
 
+@do(TmuxIO[List[TmuxCmdResult]])
+def execute_cmds(writes: List[TmuxCmd], read: Maybe[TmuxCmd]) -> Do:
+    cmds = writes.cat_m(read)
+    yield TmuxIO.delay(__.control_mode(cmds))
+
+
+def read_result(result: TmuxCmdResult) -> Either[str, List[str]]:
+    return Right(result.output) if isinstance(result, TmuxCmdSuccess) else Left(result.message)
+
+
+@do(TmuxIO[Either[TmuxCmdResult, TmuxCmdResult]])
+def execute_read(writes: List[TmuxCmd], read: TmuxCmd) -> Do:
+    results = yield execute_cmds(writes, Just(read))
+    yield TmuxIO.from_either(results.last.map(read_result) | L(Left)(f'no output for {read}'))
+
+
 class Suspend(Generic[A], TmuxIO[A]):
 
-    def __init__(self, thunk: Callable[[Tmux], TmuxIO[A]], frame: FrameSummary=None) -> None:
+    def __init__(
+            self,
+            thunk: Callable[[Tmux], TmuxIO[A]],
+            frame: FrameSummary=None,
+    ) -> None:
         super().__init__(frame)
         self.thunk = thunk
 
@@ -281,8 +313,12 @@ class Suspend(Generic[A], TmuxIO[A]):
 
 class BindSuspend(Generic[A, B], TmuxIO[B]):
 
-    def __init__(self, thunk: Callable[[Tmux], TmuxIO[A]], f: Callable[[A], TmuxIO[B]], frame: FrameSummary
-                 ) -> None:
+    def __init__(
+            self,
+            thunk: Callable[[Tmux], TmuxIO[A]],
+            f: Callable[[A], TmuxIO[B]],
+            frame: FrameSummary=None,
+    ) -> None:
         super().__init__(frame)
         self.thunk = thunk
         self.f = f
@@ -294,12 +330,17 @@ class BindSuspend(Generic[A, B], TmuxIO[B]):
             raise e
         except Exception as e:
             raise TmuxIOException('', Nil, e, self.frame)
-        try:
-            return step.flat_map(self.f)
-        except TmuxIOException as e:
-            raise e
-        except Exception as e:
-            raise TmuxIOException('', Nil, e, step.frame)
+        if isinstance(step, TmuxWrite):
+            return ScheduleWrite(step.cmd, self.f)
+        if isinstance(step, TmuxRead):
+            return ExecuteRead(step.cmd, self.f)
+        else:
+            try:
+                return step.flat_map(self.f)
+            except TmuxIOException as e:
+                raise e
+            except Exception as e:
+                raise TmuxIOException('', Nil, e, step.frame)
 
     def _flat_map(self, f: Callable[[B], TmuxIO[C]]) -> TmuxIO[C]:
         def bs(tmux: Tmux) -> TmuxIO[C]:
@@ -310,7 +351,7 @@ class BindSuspend(Generic[A, B], TmuxIO[B]):
 class Pure(Generic[A], TmuxIO[A]):
 
     def __init__(self, value: A) -> None:
-        super().__init__()
+        super().__init__(Nil)
         self.value = value
 
     def _arg_desc(self) -> List[str]:
@@ -322,7 +363,61 @@ class Pure(Generic[A], TmuxIO[A]):
     def _flat_map(self, f: Callable[[A], TmuxIO[B]]) -> TmuxIO[B]:
         def g(tmux: Tmux) -> TmuxIO[B]:
             return f(self.value)
-        return Suspend(g)
+        return Suspend(g, Nil)
+
+
+class TmuxIOCmd(Generic[A], TmuxIO[A]):
+
+    def __init__(self, cmd: TmuxCmd) -> None:
+        super().__init__(Nil)
+        self.cmd = cmd
+
+    def _arg_desc(self) -> List[str]:
+        return self.cmd._arg_desc()
+
+
+class TmuxWrite(Generic[A], TmuxIOCmd[A]):
+
+    def step(self, tmux: Tmux) -> TmuxIO[A]:
+        return self
+
+    def _flat_map(self, f: Callable[[A], TmuxIO[B]]) -> TmuxIO[B]:
+        return BindSuspend(lambda t: self, f, self.frame)
+
+
+class TmuxRead(Generic[A], TmuxIOCmd[A]):
+
+    def step(self, tmux: Tmux) -> TmuxIO[A]:
+        return self
+
+    def _flat_map(self, f: Callable[[A], TmuxIO[B]]) -> TmuxIO[B]:
+        return BindSuspend(lambda t: self, f, self.frame)
+
+
+class ScheduleWrite(Generic[A], TmuxIO[A]):
+
+    def __init__(self, cmd: TmuxCmd, next: Callable[[None], TmuxIO[A]]) -> None:
+        self.cmd = cmd
+        self.next = next
+
+    def step(self, tmux: Tmux) -> TmuxIO[A]:
+        return self
+
+    def _flat_map(self, f: Callable[[A], TmuxIO[B]]) -> TmuxIO[B]:
+        return self
+
+
+class ExecuteRead(Generic[A], TmuxIO[A]):
+
+    def __init__(self, cmd: TmuxCmd, next: Callable[[List[str]], TmuxIO[A]]) -> None:
+        self.cmd = cmd
+        self.next = next
+
+    def step(self, tmux: Tmux) -> TmuxIO[A]:
+        return self
+
+    def _flat_map(self, f: Callable[[A], TmuxIO[B]]) -> TmuxIO[B]:
+        return self
 
 
 class TmuxIOError(Generic[A], TmuxIO[A]):

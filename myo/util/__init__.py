@@ -1,13 +1,7 @@
-from amino import Right, Left, Map, Maybe, __
+from amino import Map, Maybe, __
+from amino.util.numeric import parse_int
 
 from myo.util.ident import Ident
-
-
-def parse_int(i):
-    return Right(i) if isinstance(i, int) else (
-        Right(int(i)) if isinstance(i, str) and i.isdigit() else
-        Left('could not parse int {}'.format(i))
-    )
 
 
 def parse_id(value, rex, desc):
