@@ -10,7 +10,7 @@ class Window(Dat['Window']):
     def cons(
             window: Ident,
             name: str=None,
-            id: str=None,
+            id: int=None,
             panes: List[Pane]=Nil,
     ) -> 'Window':
         return Window(
@@ -20,7 +20,7 @@ class Window(Dat['Window']):
             panes,
         )
 
-    def __init__(self, window: Ident, name: str, id: Maybe[str], panes: List[Pane]) -> None:
+    def __init__(self, window: Ident, name: str, id: Maybe[int], panes: List[Pane]) -> None:
         self.window = window
         self.name = name
         self.id = id

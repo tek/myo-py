@@ -6,12 +6,12 @@ from typing import TypeVar, Callable, Any, Generic, Union, Tuple
 from amino.tc.base import ImplicitInstances, F, TypeClass, tc_prop
 from amino.lazy import lazy
 from amino.tc.monad import Monad
-from amino import Either, __, IO, Maybe, Left, Eval, List, Right, Lists, options, Nil, Try, Path, Just, Do, L
+from amino import Either, __, IO, Maybe, Left, Eval, List, Right, Lists, options, Nil, Try, Path, Just, Do, L, Nothing
 from amino.state import tcs, StateT, State, EitherState
 from amino.func import CallByName, tailrec
 from amino.do import do
 from amino.util.exception import format_exception
-from amino.dat import ADT
+from amino.dat import ADT, ADTMeta
 
 from ribosome.nvim.io import ToNvimIOState, NS
 from ribosome.nvim import NvimIO, NvimFacade
@@ -123,8 +123,15 @@ class TFatal(Generic[A], TResult[A]):
         return Left(self.exception)
 
 
+class TmuxIOMeta(ADTMeta):
+
+    @property
+    def unit(self) -> 'TmuxIO[A]':
+        return self.pure(None)
+
+
 class TmuxIO(Generic[A], F[A], ADT['TmuxIO'], implicits=True, imp_mod='myo.components.tmux.io',
-             imp_cls='TmuxIOInstances'):
+             imp_cls='TmuxIOInstances', metaclass=TmuxIOMeta):
     debug = options.io_debug.exists
 
     @staticmethod
@@ -138,10 +145,6 @@ class TmuxIO(Generic[A], F[A], ADT['TmuxIO'], implicits=True, imp_mod='myo.compo
     @staticmethod
     def from_maybe(e: Maybe[A], error: CallByName) -> 'TmuxIO[A]':
         return TmuxIO.from_either(e.to_either(error))
-
-    @staticmethod
-    def cmd(cmdline: str) -> 'TmuxIO[str]':
-        return TmuxIO.wrap_either(__.cmd(cmdline))
 
     @staticmethod
     def exception(exc: Exception) -> 'TmuxIO[A]':
@@ -180,10 +183,6 @@ class TmuxIO(Generic[A], F[A], ADT['TmuxIO'], implicits=True, imp_mod='myo.compo
         return Pure(a)
 
     @staticmethod
-    def unit() -> 'TmuxIO[A]':
-        return TmuxIO.pure(None)
-
-    @staticmethod
     def write(cmd: str, *args: str) -> 'TmuxIO[A]':
         return TmuxWrite(TmuxCmd(cmd, Lists.wrap(args)))
 
@@ -215,8 +214,17 @@ class TmuxIO(Generic[A], F[A], ADT['TmuxIO'], implicits=True, imp_mod='myo.compo
             elif isinstance(t, ExecuteRead):
                 a = execute_read(writes, t.cmd)
                 return True, (a.flat_map(t.next), Nil)
-            elif isinstance(t, Pure):
+            elif isinstance(t, TmuxWrite):
+                a = execute_write(t.cmd)
+                return True, (a, Nil)
+            elif isinstance(t, TmuxRead):
+                a = execute_read(Nil, t.cmd)
+                return True, (a, Nil)
+            elif isinstance(t, Pure) and writes.empty:
                 return False, TSuccess(t.value)
+            elif isinstance(t, Pure):
+                a = execute_writes(writes)
+                return True, (a.and_then(t), Nil)
             elif isinstance(t, TmuxIOError):
                 return False, TError(t.error)
             elif isinstance(t, TmuxIOFatal):
@@ -276,17 +284,31 @@ class TmuxIO(Generic[A], F[A], ADT['TmuxIO'], implicits=True, imp_mod='myo.compo
 @do(TmuxIO[List[TmuxCmdResult]])
 def execute_cmds(writes: List[TmuxCmd], read: Maybe[TmuxCmd]) -> Do:
     cmds = writes.cat_m(read)
-    yield TmuxIO.delay(__.control_mode(cmds))
+    yield TmuxIO.delay(__.execute_cmds(cmds))
 
 
-def read_result(result: TmuxCmdResult) -> Either[str, List[str]]:
-    return Right(result.output) if isinstance(result, TmuxCmdSuccess) else Left(result.message)
+def read_result(result: TmuxCmdResult) -> Either[List[str], List[str]]:
+    return (
+        Right(result.output)
+        if isinstance(result, TmuxCmdSuccess) else
+        Left(result.messages.cons(f'tmux commands failed: {result.cmds}'))
+    )
 
 
-@do(TmuxIO[Either[TmuxCmdResult, TmuxCmdResult]])
+@do(TmuxIO[Either[List[str], List[str]]])
 def execute_read(writes: List[TmuxCmd], read: TmuxCmd) -> Do:
     results = yield execute_cmds(writes, Just(read))
     yield TmuxIO.from_either(results.last.map(read_result) | L(Left)(f'no output for {read}'))
+
+
+@do(TmuxIO[Either[List[str], List[str]]])
+def execute_writes(writes: List[TmuxCmd]) -> Do:
+    results = yield execute_cmds(writes, Nothing)
+    yield TmuxIO.from_either(results.last.map(read_result) | L(Right)(Nil))
+
+
+def execute_write(write: TmuxCmd) -> TmuxIO[Either[List[str], List[str]]]:
+    return execute_writes(List(write))
 
 
 class Suspend(Generic[A], TmuxIO[A]):
@@ -499,6 +521,14 @@ class TmuxIOState(Generic[S, A], StateT[TmuxIO, S, A], tpe=TmuxIO):
     def inspect_either(f: Callable[[S], Either[str, A]]) -> 'TmuxIOState[S, A]':
         frame = cframe()
         return TmuxIOState.inspect_f(lambda s: TmuxIO.from_either(f(s), frame))
+
+    @staticmethod
+    def read(cmd: str, *args: str) -> 'TmuxIOState[S, A]':
+        return TS.lift(TmuxIO.read(cmd, *args))
+
+    @staticmethod
+    def write(cmd: str, *args: str) -> 'TmuxIOState[S, A]':
+        return TS.lift(TmuxIO.write(cmd, *args))
 
 
 tcs(TmuxIO, TmuxIOState)

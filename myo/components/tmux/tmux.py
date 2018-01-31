@@ -49,9 +49,9 @@ class TmuxCmdResult(ADT['TmuxCmdResult']):
 
 class TmuxCmdError(TmuxCmdResult):
 
-    def __init__(self, cmd: TmuxCmd, message: str) -> None:
-        self.cmd = cmd
-        self.message = message
+    def __init__(self, cmds: List[TmuxCmd], messages: List[str]) -> None:
+        self.cmds = cmds
+        self.messages = messages
 
 
 class TmuxCmdSuccess(TmuxCmdResult):
@@ -95,119 +95,27 @@ class Tmux(Logging, abc.ABC):
 
     @staticmethod
     def cons(socket: str=None) -> 'Tmux':
-        server = NativeServer(socket)
-        return NativeTmux(server)
-
-    @abc.abstractproperty
-    def sessions(self) -> List[NativeSession]:
-        ...
+        return NativeTmux(socket)
 
     @abc.abstractmethod
-    def session(self, session_id: str) -> Either[str, NativeSession]:
-        ...
-
-    @abc.abstractproperty
-    def pane_data(self) -> List[PaneData]:
-        ...
-
-    def kill_server(self) -> None:
-        self.server.kill_server()
-
-    @abc.abstractmethod
-    def windows(self, session_id: str) -> Either[str, List[NativeWindow]]:
-        ...
-
-    @abc.abstractmethod
-    def window(self, session_id: str, window_id: str) -> Either[str, NativeWindow]:
-        ...
-
-    @abc.abstractmethod
-    def window_exists(self, session_id: str, window_id: str) -> Boolean:
-        ...
-
-    @abc.abstractmethod
-    def create_window(self, session: Session, window: Window) -> Either[str, NativeWindow]:
-        ...
-
-    @abc.abstractmethod
-    def control_mode(self, cmds: List[TmuxCmd]) -> List[TmuxCmdResult]:
+    def execute_cmds(self, cmds: List[TmuxCmd]) -> List[TmuxCmdResult]:
         ...
 
 
 class NativeTmux(Tmux):
 
-    def __init__(self, server: libtmux.Server) -> None:
-        self.server = server
+    def __init__(self, socket: str) -> None:
+        self.socket = socket
 
-    def cmd(self, *args: str, **kw: str) -> None:
-        ret = self.server.cmd(*args, **kw)
-        if ret.stderr:
-            self.log.error(f'tmux cmd failed:')
-            self.log.error(blue(' '.join(args)))
-            Lists.wrap(ret.stderr) / red % self.log.error
-
-    def control_mode(self, cmds: List[TmuxCmd]) -> List[TmuxCmdResult]:
-        proc = Popen(args=['tmux', '-L', self.server.socket_name, '-C'], stdin=PIPE, stdout=PIPE, stderr=PIPE,
+    def execute_cmds(self, cmds: List[TmuxCmd]) -> List[TmuxCmdResult]:
+        proc = Popen(args=['tmux', '-L', self.socket, '-C', 'attach'], stdin=PIPE, stdout=PIPE, stderr=PIPE,
                      universal_newlines=True)
         cmdlines = (cmds / _.cmdline).cat('').join_lines
         stdout, stderr = proc.communicate(cmdlines)
-        output = Lists.lines(stdout)
-        return create_cmd_results(cmds, output)
-
-    @property
-    def sessions(self) -> List[NativeSession]:
-        return Lists.wrap(self.server.list_sessions())
-
-    def session(self, session_id: str) -> Either[str, NativeSession]:
-        return self.sessions.find(_.id == session_id).to_either(f'no such session: {session_id}')
-
-    @property
-    def pane_data(self):
-        return List.wrap(self.server._list_panes()) / Map / PaneData
-
-    def windows(self, session_id: str) -> Either[str, List[NativeWindow]]:
-        return self.session(session_id) / __.list_windows()
-
-    @property
-    def global_windows(self) -> Either[str, List[NativeWindow]]:
-        return self.sessions.traverse(__.list_windows(), Either)
-
-    def window(self, id: str) -> Either[str, NativeWindow]:
-        return self.global_windows.find(_.id == id).to_either(f'no window with id `{id}`')
-
-    def session_window(self, session_id: str, window_id: str) -> Either[str, NativeWindow]:
-        return self.session(session_id) // __.window(window_id)
-
-    def window_exists(self, session_id: str, window_id: str) -> Boolean:
-        return self.session_window(session_id, window_id).replace(true) | false
-
-    @do(Either[str, NativeWindow])
-    def create_window(self, session: Session, window: Window) -> Do:
-        session_id = yield session.id.to_either('session has no id')
-        nsession = yield self.session(session_id)
-        yield Try(nsession.create_window, window.name)
-
-    @do(Either[str, NativePane])
-    def pane(self, session: Session, window: Window, pane: Pane) -> Do:
-        session_id = yield session.id.to_either('session has no id')
-        window_id = yield window.id.to_either('window has no id')
-        pane_id = yield pane.id.to_either('pane has no id')
-        win = yield self.session_window(session_id, window_id)
-        yield win.pane(pane_id)
-
-    @do(Either[str, Either[str, NativePane]])
-    def create_pane(self, session: Session, window: Window, pane: Pane) -> Do:
-        session_id = yield session.id.to_either('session has no id')
-        window_id = yield window.id.to_either('window has no id')
-        w = yield self.session_window(session_id, window_id)
-        yield w.create_pane()
-
-    @property
-    def panes(self) -> List[NativePane]:
-        return Lists.wrap(NativePane(**pane) for pane in self.server._list_panes())
-
-    def pane_open(self, id: str) -> Boolean:
-        return self.pane_data.exists(__.id.contains(id))
+        if proc.returncode == 0:
+            return create_cmd_results(cmds, Lists.lines(stdout))
+        else:
+            return List(TmuxCmdError(cmds, Lists.lines(stderr)))
 
 
 class PureTmux(Tmux):
@@ -217,8 +125,7 @@ class PureTmux(Tmux):
         self._windows = _windows
         self._panes = _panes
 
-    @property
-    def sessions(self) -> List[Session]:
-        return self._sessions
+    def execute_cmds(self, cmds: List[TmuxCmd]) -> List[TmuxCmdResult]:
+        return Nil
 
 __all__ = ('Tmux',)

@@ -25,9 +25,13 @@ from myo.tmux.data.session import Session
 from myo.tmux.data.window import Window as TWindow
 # from myo.tmux.data.layout import Layout as TLayout, View as TView
 from myo.tmux.data.pane import Pane as TPane
-from myo.tmux.native.window import NativeWindow
-from myo.tmux.native.pane import NativePane
+from myo.tmux.native.pane import PaneData
 from myo.tmux.window.measure import measure_window, MeasuredLayout, MeasuredPane, MeasuredLayoutNode, MeasuredPaneNode
+from myo.tmux.commands.session import session_exists, create_session, sessions
+from myo.tmux.commands.window import session_window, create_window, window, WindowData, windows
+from myo.tmux.commands.pane import (pane_from_data, create_pane_from_data, window_panes, pane_open, resize_pane,
+                                    move_pane)
+from myo.tmux.commands.server import kill_server
 
 from unit.tmux.io_spec import start_tmux
 
@@ -56,8 +60,7 @@ def add_window(window: Window) -> Do:
 @do(State[TmuxData, TWindow])
 def find_or_create_window(window: Window) -> Do:
     existing = yield State.inspect(__.window_for_window(window))
-    twindow = existing.cata(lambda err: add_window(window), State.pure)
-    yield twindow
+    yield existing.cata(lambda err: add_window(window), State.pure)
 
 
 @do(State[TmuxData, TPane])
@@ -74,23 +77,19 @@ def find_or_create_pane(pane: Pane) -> Do:
     yield tpane
 
 
-@do(TS[TmuxData, None])
-def create_session(session: Session) -> Do:
-    yield TS.lift(TmuxIO.delay(__.create_session(session.name)))
-
-
-@do(TS[TmuxData, None])
+@do(TmuxIO[None])
 def ensure_session(session: Session) -> Do:
-    exists = yield TS.lift(TmuxIO.delay(__.sessions.exists(lambda s: session.id.contains(s.id))))
-    yield TS.pure(None) if exists else create_session(session)
+    exists = yield session.id.map(session_exists) | TmuxIO.pure(false)
+    yield TmuxIO.pure(None) if exists else create_session(session.space)
 
 
-@do(TS[TmuxData, NativeWindow])
-def create_window(session: Session, window: TWindow) -> Do:
-    principal = yield TS.inspect_f(__.principal(window))
-    window = yield TS.lift(TmuxIO.delay(__.create_window(session, window)))
-    yield TS.modify(__.set_principal_id(window, principal))
-    yield TS.from_either(window)
+@do(TS[TmuxData, WindowData])
+def create_tmux_window(session: Session, twindow: TWindow, ui_window: Window) -> Do:
+    princ = yield principal(ui_window)
+    sid = yield TS.from_maybe(session.id, 'no session id')
+    window = yield TS.lift(create_window(sid, ui_window.name))
+    # yield TS.modify(__.set_principal_id(window, princ))
+    # yield TS.from_either(window)
 
 
 @do(TS)
@@ -101,13 +100,11 @@ def add_principal_pane(pane: Pane) -> Do:
 
 
 @do(TS[TmuxData, TPane])
-def principal_native(session: Session, window: Window, pane: Pane) -> Do:
+def principal_native(window: Window) -> Do:
     twin = yield TS.inspect_f(__.window_for_window(window))
-    session_id = yield TS.from_either(session.id.to_either('no session id'))
     window_id = yield TS.from_either(twin.id.to_either('no window id'))
-    native_e = yield TS.delay(__.session_window(session_id, window_id))
-    native = yield TS.from_either(native_e)
-    yield TS.from_either(native.panes.head.to_either(lambda: f'no panes in {native}'))
+    panes = yield TS.lift(window_panes(window_id))
+    yield TS.from_either(panes.head.to_either(lambda: f'no tmux panes in {window}'))
 
 
 @do(TS[TmuxData, Tuple[Pane, Pane]])
@@ -119,21 +116,21 @@ def principal(window: Window) -> Do:
 
 
 @do(TS[TmuxData, None])
-def sync_principal(session: Session, window: Window, nwindow: NativeWindow) -> Do:
+def sync_principal(session: Session, window: Window, nwindow: WindowData) -> Do:
     (pane, tpane) = yield principal(window)
-    native = yield principal_native(session, window, tpane)
+    native = yield principal_native(window)
     yield TS.modify(__.update_pane(tpane.copy(id=Just(native.id))))
 
 
 @do(TS[TmuxData, None])
 def ensure_window(session: Session, window: TWindow, ui_window: Window) -> Do:
-    @do(Either[str, TmuxIO[Either[str, NativeWindow]]])
+    @do(Either[str, TmuxIO[Either[str, WindowData]]])
     def existing() -> Do:
         sid = yield session.id.to_either('session has no id')
         wid = yield window.id.to_either('window has no id')
-        yield Right(TmuxIO.delay(__.session_window(sid, wid)))
-    @do(TS[TmuxData, Either[str, NativeWindow]])
-    def sync(win_io: TmuxIO[Either[str, NativeWindow]]) -> Do:
+        yield Right(session_window(sid, wid))
+    @do(TS[TmuxData, Either[str, WindowData]])
+    def sync(win_io: TmuxIO[Either[str, WindowData]]) -> Do:
         win = yield TS.lift(win_io)
         yield (
             win /
@@ -142,25 +139,19 @@ def ensure_window(session: Session, window: TWindow, ui_window: Window) -> Do:
             (lambda: TS.pure(Left('window not open')))
         )
     win = yield (existing() / sync).value
-    yield win / TS.pure | (lambda: create_window(session, window))
+    yield win / TS.pure | (lambda: create_tmux_window(session, window, ui_window))
     yield TS.unit
 
 
-@do(TS[TmuxData, NativePane])
-def create_pane(session: Session, window: TWindow, pane: TPane) -> Do:
-    tpane_e = yield TS.delay(__.create_pane(session, window, pane))
-    tpane = yield TS.from_either(tpane_e)
+@do(TS[TmuxData, PaneData])
+def create_tmux_pane(session: Session, window: TWindow, pane: TPane) -> Do:
+    tpane = yield TS.lift(create_pane_from_data(window, pane))
     yield TS.modify(__.set_pane_id(pane, tpane.id))
 
 
-@do(TS[TmuxData, NativePane])
-def ensure_pane_open(session: Session, window: Window, pane: Pane, npane: Either[str, NativePane]) -> Do:
-    yield npane / TS.pure | (lambda: create_pane(session, window, pane))
-
-
-@do(TmuxIO[Either[str, NativePane]])
-def native_pane(session: Session, window: TWindow, pane: TPane) -> Do:
-    yield TmuxIO.delay(__.pane(session, window, pane))
+@do(TS[TmuxData, PaneData])
+def ensure_pane_open(session: Session, window: Window, pane: Pane, npane: Either[str, PaneData]) -> Do:
+    yield npane / TS.pure | (lambda: create_tmux_pane(session, window, pane))
 
 
 class EnsureView(PatMat, alg=ViewTree):
@@ -180,7 +171,7 @@ class EnsureView(PatMat, alg=ViewTree):
     def pane_node(self, node: PaneNode) -> Do:
         pane = node.data
         tpane = yield find_or_create_pane(node.data).tmux
-        pane1 = yield TS.lift(native_pane(self.session, self.window, tpane))
+        pane1 = yield TS.lift(pane_from_data(self.window, tpane))
         yield ensure_pane_open(self.session, self.window, tpane, pane1) if pane.open else TS.pure(None)
 
 
@@ -195,7 +186,7 @@ def pane_id_fatal(pane: Pane) -> TS[D, str]:
 @do(TS[TmuxData, Boolean])
 def tmux_pane_open(pane: Pane) -> Do:
     tpane = yield pane_for_pane(pane)
-    yield TS.lift(tpane.id.cata(lambda id: TmuxIO.delay(__.pane_open(id)), lambda: TmuxIO.pure(false)))
+    yield TS.lift(tpane.id.cata(pane_open, lambda: TmuxIO.pure(false)))
 
 
 @do(TS[TmuxData, Either[str, Pane]])
@@ -205,20 +196,19 @@ def reference_pane(node: MeasuredLayoutNode) -> Do:
 
 
 @do(TS[TmuxData, None])
-def move_pane(pane: Pane, reference: Pane, vertical: Boolean) -> Do:
+def move_tmux_pane(pane: Pane, reference: Pane, vertical: Boolean) -> Do:
     tpane = yield pane_for_pane(pane)
     ref_tpane = yield pane_for_pane(reference)
     id = yield pane_id_fatal(tpane)
     ref_id = yield pane_id_fatal(ref_tpane)
-    is_open = yield TS.delay(__.pane_open(id))
-    direction = '-v' if vertical else '-h'
-    yield TS.delay(__.cmd('move-pane', '-s', id, '-t', ref_id, direction)) if is_open else TS.pure(None)
+    is_open = yield TS.lift(pane_open(id))
+    yield TS.lift(move_pane(id, ref_id, vertical)) if is_open else TS.pure(None)
 
 
 @do(TS[TmuxData, None])
 def pack_pane(pane: Pane, reference: Pane, vertical: Boolean) -> Do:
     if pane.open and pane != reference:
-        yield move_pane(pane, reference, vertical)
+        yield move_tmux_pane(pane, reference, vertical)
     yield TS.unit
 
 
@@ -255,9 +245,8 @@ class resize_view(PatMat, alg=ViewTree):
         size = mp.measures.size
         tpane = yield pane_for_pane(mp.pane)
         id = yield pane_id_fatal(tpane)
-        direction = '-x' if self.vertical else '-y'
         ribo_log.debug(f'resize {mp.pane} to {size} ({self.vertical})')
-        yield TS.delay(__.cmd('resize-pane', '-t', id, direction, size))
+        yield TS.lift(resize_pane(id, self.vertical, size))
 
 
 # TODO sort views by `position` attr before positioning
@@ -288,7 +277,7 @@ class WindowState(ADT['WindowState']):
 
 class PristineWindow(WindowState):
 
-    def __init__(self, native_window: NativeWindow, ui_window: Window, pane: NativePane) -> None:
+    def __init__(self, native_window: WindowData, ui_window: Window, pane: PaneData) -> None:
         self.native_window = native_window
         self.ui_window = ui_window
         self.pane = pane
@@ -296,7 +285,7 @@ class PristineWindow(WindowState):
 
 class TrackedWindow(WindowState):
 
-    def __init__(self, native_window: NativeWindow, ui_window: Window, native: NativePane, pane: TPane) -> None:
+    def __init__(self, native_window: WindowData, ui_window: Window, native: PaneData, pane: TPane) -> None:
         self.native_window = native_window
         self.ui_window = ui_window
         self.native = native
@@ -309,10 +298,11 @@ def pane_by_id(id: str) -> TS[TmuxData, Either[str, TPane]]:
 
 @do(TS[TmuxData, WindowState])
 def window_state(ui_window: Window, twindow: TWindow) -> Do:
+    ws = yield TS.lift(windows())
     window_id = yield TS.from_maybe(twindow.id, 'window_state: `{twindow}` has no id')
-    native_window_e = yield TS.delay(__.window(window_id))
+    native_window_e = yield TS.lift(window(window_id))
     native_window = yield TS.from_either(native_window_e)
-    panes = yield TS.delay(lambda a: native_window.panes)
+    panes = yield TS.lift(window_panes(window_id))
     native_pane, tail = yield TS.from_maybe(panes.detach_head, 'no panes in window')
     reference_pane = yield pane_by_id(native_pane.id)
     state = (
@@ -346,7 +336,7 @@ class PackWindow(PatMat, alg=WindowState):
 @do(TS[TmuxData, None])
 def tmux_open_pane(space: Space, ui_window: Window) -> Do:
     session = yield find_or_create_session(space).tmux
-    yield ensure_session(session)
+    yield TS.lift(ensure_session(session))
     window = yield find_or_create_window(ui_window).tmux
     yield ensure_window(session, window, ui_window)
     yield EnsureView(session, window)(ui_window.layout)
@@ -393,10 +383,10 @@ class OPData(Dat['OPData']):
 
     @staticmethod
     def cons(layout: ViewTree) -> 'OPData':
-        windows = List(Window.cons('main', layout=layout))
-        spaces = List(Space.cons('main', windows))
+        ws = List(Window.cons('main', layout=layout))
+        spaces = List(Space.cons('main', ws))
         ui = UiData(spaces)
-        tm = TmuxData.cons(sessions=List(Session.cons('main', id='$0')), windows=List(TWindow.cons('main', id='@0')))
+        tm = TmuxData.cons(sessions=List(Session.cons('main', id=0)), windows=List(TWindow.cons('main', id=0)))
         return OPData(ui, tm)
 
     def __init__(self, ui: UiData, tmux: TmuxData) -> None:
@@ -409,7 +399,7 @@ def open_pane(name: str) -> Do:
     yield ui_open_pane(name).transform_s_lens(lens.ui).tmux
     a = yield pane_path(name).transform_s_lens(lens.ui).tmux
     yield tmux_open_pane(a.space, a.window).transform_s_lens(lens.tmux)
-    yield TS.delay(__.cmd('display-panes'))
+    yield TS.write('display-panes')
 
 
 class OpenPaneSpec(SpecBase):
@@ -423,17 +413,21 @@ class OpenPaneSpec(SpecBase):
         self.socket = 'op'
         self.proc = start_tmux(self.socket, True)
         self.tmux = Tmux.cons(self.socket)
-        vars = dict(op_tmux_socket='op')
-        self.vim = MockNvimFacade(prefix='op', vars=vars)
         self._wait(1)
+        self.client = TmuxIO.read('list-clients -F "#{client_name}"').unsafe(self.tmux).head.get_or_fail('no clients')
 
     def teardown(self) -> None:
         self.proc.kill()
         self.proc.wait()
-        self.tmux.kill_server()
+        kill_server().result(self.tmux)
+
+    def run(self, prog: TS[OPData, None], data: OPData) -> None:
+        self._wait(1)
+        r = prog.run(data).unsafe(self.tmux)
+        TmuxIO.write('display-panes', '-t', self.client).result(self.tmux)
+        self._wait(1)
 
     def one(self) -> Expectation:
-        self._wait(1)
         layout = ViewTree.layout(
             Layout.cons('root'),
             List(ViewTree.pane(Pane.cons('one')))
@@ -442,8 +436,7 @@ class OpenPaneSpec(SpecBase):
         @do(TS[OPData, None])
         def go() -> Do:
             yield open_pane('one')
-        go().nvim.run(data).unsafe(self.vim)
-        self._wait(1)
+        self.run(go(), data)
         return k(1) == 1
 
     def two_in_one(self) -> Expectation:
@@ -475,16 +468,14 @@ class OpenPaneSpec(SpecBase):
             yield open_pane('three')
             self._wait(1)
             yield open_pane('four')
-        go().nvim.run(data).unsafe(self.vim)
-        self._wait(1)
+        self.run(go(), data)
         return k(1) == 1
 
     def four(self) -> Expectation:
-        self._wait(1)
         layout = ViewTree.layout(
             Layout.cons('root'),
             List(
-                ViewTree.pane(Pane.cons('one', geometry=ViewGeometry.cons(min_size=40))),
+                ViewTree.pane(Pane.cons('one', geometry=ViewGeometry.cons(max_size=10))),
                 ViewTree.layout(
                     Layout.cons('main', vertical=false),
                     List(
@@ -514,8 +505,7 @@ class OpenPaneSpec(SpecBase):
             yield open_pane('three')
             yield open_pane('four')
             # yield open_pane('five')
-        go().nvim.run(data).unsafe(self.vim)
-        self._wait(1)
+        self.run(go(), data)
         return k(1) == 1
 
 
