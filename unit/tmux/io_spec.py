@@ -7,7 +7,7 @@ from amino.test.spec import SpecBase
 from amino import do, Do
 from amino.test import fixture_path
 
-from myo.components.tmux.io import TmuxIO
+from myo.tmux.io.compute import TmuxIO
 from myo.components.tmux.tmux import Tmux
 from myo.tmux.commands.pane import all_panes, window_panes
 from myo.tmux.commands.session import sessions

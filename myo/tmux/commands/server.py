@@ -1,4 +1,4 @@
-from myo.components.tmux.io import TmuxIO
+from myo.tmux.io.compute import TmuxIO
 
 
 def kill_server() -> TmuxIO[None]:

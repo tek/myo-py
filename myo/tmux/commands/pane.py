@@ -1,7 +1,7 @@
 from amino import List, Either, Regex, do, Do, Dat, Right, Try, Left, _, Boolean
 from amino.util.numeric import parse_int
 
-from myo.components.tmux.io import TmuxIO
+from myo.tmux.io.compute import TmuxIO
 from myo.tmux.command import tmux_data_cmd
 from myo.tmux.data.window import Window
 from myo.tmux.data.pane import Pane

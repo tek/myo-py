@@ -9,7 +9,6 @@ from amino.lenses.lens import lens
 from amino.dispatch import PatMat
 from amino.boolean import true, false
 
-from ribosome.test.spec import MockNvimFacade
 from ribosome import ribo_log
 
 from myo.ui.data.ui import UiData
@@ -19,19 +18,19 @@ from myo.ui.data.window import Window, find_principal
 from myo.ui.data.space import Space
 from myo.ui.data.view_path import pane_path
 from myo.components.tmux.tmux import Tmux
-from myo.components.tmux.io import TS, TmuxIO
+from myo.tmux.io.compute import TmuxIO
 from myo.tmux.data.tmux import TmuxData
 from myo.tmux.data.session import Session
 from myo.tmux.data.window import Window as TWindow
-# from myo.tmux.data.layout import Layout as TLayout, View as TView
 from myo.tmux.data.pane import Pane as TPane
 from myo.tmux.native.pane import PaneData
 from myo.tmux.window.measure import measure_window, MeasuredLayout, MeasuredPane, MeasuredLayoutNode, MeasuredPaneNode
-from myo.tmux.commands.session import session_exists, create_session, sessions
+from myo.tmux.commands.session import session_exists, create_session
 from myo.tmux.commands.window import session_window, create_window, window, WindowData, windows
 from myo.tmux.commands.pane import (pane_from_data, create_pane_from_data, window_panes, pane_open, resize_pane,
                                     move_pane)
 from myo.tmux.commands.server import kill_server
+from myo.tmux.io.tc import TS
 
 from unit.tmux.io_spec import start_tmux
 

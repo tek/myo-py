@@ -1,7 +1,7 @@
 from amino import Dat, do, Either, Do, Right, List, Nil, Regex, _, Boolean
 from amino.util.numeric import parse_int
 
-from myo.components.tmux.io import TmuxIO
+from myo.tmux.io.compute import TmuxIO
 from myo.tmux.command import tmux_data_cmd
 from myo.tmux.commands.session import sessions
 

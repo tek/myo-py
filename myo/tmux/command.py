@@ -2,7 +2,7 @@ from typing import TypeVar, Callable
 
 from amino import List, Either, Map, Lists, do, Do, _, L, Try
 
-from myo.components.tmux.io import TmuxIO
+from myo.tmux.io.compute import TmuxIO
 
 
 def tmux_fmt_attr(attr: str) -> str:
