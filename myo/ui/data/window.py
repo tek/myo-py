@@ -3,8 +3,9 @@ from uuid import uuid4
 from amino import Dat, Maybe, Just, Either
 from amino.dispatch import PatMat
 
+from chiasma.data.view_tree import ViewTree, LayoutNode, PaneNode
+
 from myo.util import Ident
-from myo.ui.data.tree import LayoutNode, ViewTree, PaneNode
 from myo.ui.data.view import Pane
 
 

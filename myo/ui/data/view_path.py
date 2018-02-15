@@ -4,11 +4,12 @@ from amino import Dat, List, do, Do, Maybe, Boolean, L, _, Nil
 from amino.dispatch import dispatch_alg
 from amino.state import EitherState
 
+from chiasma.data.view_tree import ViewTree, LayoutNode, PaneNode
+
 from myo.ui.data.view import Layout
 from myo.ui.data.space import Space
 from myo.ui.data.window import Window
 from myo.util import Ident
-from myo.ui.data.tree import ViewTree, LayoutNode, PaneNode
 from myo.ui.data.ui import UiData
 
 A = TypeVar('A')
