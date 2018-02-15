@@ -9,6 +9,7 @@ from chiasma.data.window import Window as TWindow
 from chiasma.render import render
 from chiasma.data.session import Session
 from chiasma.io.state import TS
+from chiasma.commands.pane import all_panes, PaneData
 
 from amino import List, do, Do, Dat, Either, Right, Boolean
 from amino.state import EitherState
@@ -67,60 +68,14 @@ def open_pane(name: str) -> Do:
 
 class OpenPaneSpec(TmuxSpec):
     '''
-    one pane $one
-    two panes in one layout $two_in_one
     four nested layouts $four
     '''
-
-    def one(self) -> Expectation:
-        layout = ViewTree.layout(
-            Layout.cons('root'),
-            List(ViewTree.pane(Pane.cons('one')))
-        )
-        data = OPData.cons(layout)
-        @do(TS[OPData, None])
-        def go() -> Do:
-            yield open_pane('one')
-        self.run(go(), data)
-        return k(1) == 1
-
-    def two_in_one(self) -> Expectation:
-        layout = ViewTree.layout(
-            Layout.cons('root'),
-            List(
-                ViewTree.layout(
-                    Layout.cons('main', false),
-                    List(
-                        ViewTree.pane(Pane.cons('one')),
-                        ViewTree.pane(Pane.cons('two')),
-                    )
-                ),
-                ViewTree.layout(
-                    Layout.cons('bottom', false),
-                    List(
-                        ViewTree.pane(Pane.cons('three')),
-                        ViewTree.pane(Pane.cons('four')),
-                    )
-                )
-            )
-        )
-        data = OPData.cons(layout)
-        @do(TS[OPData, None])
-        def go() -> Do:
-            yield open_pane('one')
-            yield open_pane('two')
-            self._wait(1)
-            yield open_pane('three')
-            self._wait(1)
-            yield open_pane('four')
-        self.run(go(), data)
-        return k(1) == 1
 
     def four(self) -> Expectation:
         layout = ViewTree.layout(
             Layout.cons('root'),
             List(
-                ViewTree.pane(Pane.cons('one', geometry=ViewGeometry.cons(max_size=10))),
+                ViewTree.pane(Pane.cons('one', geometry=ViewGeometry.cons(min_size=30))),
                 ViewTree.layout(
                     Layout.cons('main', vertical=false),
                     List(
@@ -143,15 +98,25 @@ class OpenPaneSpec(TmuxSpec):
             )
         )
         data = OPData.cons(layout)
+        def ui_open(name: str) -> TS[OPData, None]:
+            return ui_open_pane(name).transform_s_lens(lens.ui).tmux
         @do(TS[OPData, None])
         def go() -> Do:
-            yield open_pane('one')
-            yield open_pane('two')
-            yield open_pane('three')
-            yield open_pane('four')
-            # yield open_pane('five')
-        self.run(go(), data)
-        return k(1) == 1
+            yield ui_open('one')
+            yield ui_open('two')
+            yield ui_open('three')
+            yield ui_open('four')
+            yield open_pane('five')
+            yield all_panes().state
+        s, panes = self.run(go(), data)
+        target = List(
+            PaneData(0, 301, 59, 0),
+            PaneData(4, 150, 30, 60),
+            PaneData(3, 150, 2, 60),
+            PaneData(2, 75, 27, 63),
+            PaneData(1, 74, 27, 63),
+        )
+        return k(panes) == target
 
 
 __all__ = ('OpenPaneSpec',)
