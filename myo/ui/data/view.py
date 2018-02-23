@@ -12,10 +12,11 @@ from myo.util import Ident
 
 class View(ADT['View']):
 
-    def __init__(self, ident: Ident, state: ViewState, geometry: ViewGeometry) -> None:
+    def __init__(self, ident: Ident, state: ViewState, geometry: ViewGeometry, ui: str) -> None:
         self.ident = ident
         self.state = state
         self.geometry = geometry
+        self.ui = ui
 
 
 class Layout(View):
@@ -25,12 +26,14 @@ class Layout(View):
             ident: Ident=None,
             state: ViewState=None,
             geometry: ViewGeometry=None,
+            ui: str='tmux',
             vertical: bool=True,
     ) -> 'Layout':
         return Layout(
             ident or uuid4(),
             state or ViewState.cons(),
             geometry or ViewGeometry.cons(),
+            ui,
             Boolean(vertical),
         )
 
@@ -39,9 +42,10 @@ class Layout(View):
             ident: Ident,
             state: ViewState,
             geometry: ViewGeometry,
+            ui: str,
             vertical: Boolean,
     ) -> None:
-        super().__init__(ident, state, geometry)
+        super().__init__(ident, state, geometry, ui)
         self.vertical = vertical
 
 
@@ -52,12 +56,14 @@ class Pane(View):
             ident: Ident=None,
             state: ViewState=None,
             geometry: ViewGeometry=None,
+            ui: str='tmux',
             open: bool=False,
     ) -> 'Pane':
         return Pane(
             ident or uuid4(),
             state or ViewState.cons(),
             geometry or ViewGeometry.cons(),
+            ui,
             Boolean(open),
         )
 
@@ -66,9 +72,10 @@ class Pane(View):
             ident: Ident,
             state: ViewState,
             geometry: ViewGeometry,
+            ui: str,
             open: Boolean,
     ) -> None:
-        super().__init__(ident, state, geometry)
+        super().__init__(ident, state, geometry, ui)
         self.open = open
 
 

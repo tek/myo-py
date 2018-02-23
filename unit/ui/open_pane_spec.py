@@ -16,7 +16,7 @@ from amino.state import EitherState
 from amino.lenses.lens import lens
 from amino.boolean import true, false
 
-from myo.ui.data.ui import UiData
+from myo.ui.data.ui_data import UiData
 from myo.ui.data.view import Layout, Pane, ViewGeometry
 from myo.ui.data.window import Window
 from myo.ui.data.space import Space

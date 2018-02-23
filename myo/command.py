@@ -10,7 +10,7 @@ from ribosome.util.callback import parse_callback_spec
 from myo.record import Record, Named
 from myo.util import ident_field, Ident
 from myo.logging import Logging
-from myo.util.ident import Key
+from chiasma.util.id import Key
 
 
 default_signals = List('int', 'term', 'kill')

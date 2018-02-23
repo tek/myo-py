@@ -1,16 +1,16 @@
 from typing import TypeVar, Generic
 
-from amino import Dat, List, do, Do, Maybe, Boolean, L, _, Nil
+from amino import Dat, List, do, Do, Maybe, Boolean, L, _, Nil, Nothing
 from amino.dispatch import dispatch_alg
 from amino.state import EitherState
 
-from chiasma.data.view_tree import ViewTree, LayoutNode, PaneNode
+from chiasma.data.view_tree import ViewTree, LayoutNode, PaneNode, SubUiNode
 
 from myo.ui.data.view import Layout
 from myo.ui.data.space import Space
 from myo.ui.data.window import Window
 from myo.util import Ident
-from myo.ui.data.ui import UiData
+from myo.ui.data.ui_data import UiData
 
 A = TypeVar('A')
 
@@ -37,6 +37,10 @@ class ViewPath(Generic[A], Dat['ViewPath']):
         self.window = window
         self.space = space
 
+    @property
+    def root(self) -> ViewTree:
+        return self.window.layout
+
 
 class PanePathView:
 
@@ -55,6 +59,9 @@ class PanePathView:
     def pane_node(self, node: PaneNode) -> Maybe[ViewPath]:
         pane = node.data
         return Boolean(pane.ident == self.ident).m(lambda: ViewPath(pane, self.stack, self.window, self.space))
+
+    def sub_ui_node(self, node: SubUiNode) -> Maybe[ViewPath]:
+        return Nothing
 
 
 def pane_path_view(ident: Ident, view: ViewTree, stack: List[Layout], window: Window, space: Space) -> Maybe[ViewPath]:

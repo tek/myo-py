@@ -1,19 +1,23 @@
 from ribosome.trans.api import trans
 from ribosome.plugin_state import PluginState
 
+from chiasma.io.state import TS
+
 from amino import do, Do, Boolean
-from amino.state import EitherState
 from amino.boolean import true
 
 from myo.util import Ident
-from myo import MyoSettings, Env, MyoComponent
 from myo.data.command import Command
+import myo.tmux.trans  # noqa
+from myo.settings import MyoSettings
+from myo.env import Env
+from myo.config.component import MyoComponent
 
 
 @trans.free.unit(trans.st)
-@do(EitherState[PluginState[MyoSettings, Env, MyoComponent], None])
+@do(TS[PluginState[MyoSettings, Env, MyoComponent], None])
 def run_command(name: Ident) -> Do:
-    yield EitherState.pure(None)
+    yield TS.pure(None)
 
 
 def tmux_can_run(cmd: Command) -> Boolean:

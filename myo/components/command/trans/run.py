@@ -1,4 +1,4 @@
-from amino import do, Do, Maybe, __, Either, List, Left, _
+from amino import do, Do, Maybe, __, _
 from amino.state import EitherState
 from amino.dat import Dat
 from amino.boolean import false
@@ -10,7 +10,7 @@ from ribosome.trans.action import TransM
 
 from myo import Env, MyoSettings
 from myo.util import Ident
-from myo.config.component import MyoComponent
+from myo.config.component import MyoComponent, find_handler
 
 
 class RunCommandOptions(Dat['RunCommandOptions']):
@@ -26,14 +26,7 @@ class RunCommandOptions(Dat['RunCommandOptions']):
 @do(EitherState[PluginState[MyoSettings, Env, MyoComponent], TransHandler])
 def run_handler(ident: Ident) -> Do:
     cmd = yield EitherState.inspect_f(__.data.command_by_ident(ident))
-    eligible = yield EitherState.inspect(__.components.all.filter(__.config.exists(__.can_run(cmd))))
-    def select(h: MyoComponent, t: List[MyoComponent]) -> Either[str, TransHandler]:
-        return (
-            h.config.flat_map(_.run).to_either(f'{h} has no runner')
-            if t.empty else
-            Left(f'multiple handlers for {cmd}: {eligible}')
-        )
-    yield EitherState.lift(eligible.detach_head.map2(select) | Left(f'no handler for {cmd}'))
+    yield find_handler(__.can_run(cmd), _.run, str(cmd))
 
 
 @trans.free.do()

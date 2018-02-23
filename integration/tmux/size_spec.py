@@ -218,5 +218,4 @@ class MinimizeSpec(TmuxIntegrationSpec):
         cmd()
         return self._height(1, fix)
 
-__all__ = ('CutSizeSpec', 'DistributeSizeSpec',
-           'DefaultLayoutDistributeSizeSpec')
+__all__ = ('CutSizeSpec', 'DistributeSizeSpec', 'DefaultLayoutDistributeSizeSpec')

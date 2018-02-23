@@ -22,4 +22,5 @@ class MyoSettings(Settings):
                                                    tmux_watcher_interval_help, True, 1.0)
         self.tmux_socket = str_setting('tmux_socket', 'tmux socket path', tmux_socket_help, True, None)
 
+
 __all__ = ('MyoSettings',)

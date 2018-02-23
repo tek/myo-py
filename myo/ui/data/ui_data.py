@@ -1,4 +1,4 @@
-from amino import Dat, List, _
+from amino import Dat, List, _, Nil
 
 from myo.ui.data.space import Space
 
@@ -7,7 +7,7 @@ class UiData(Dat['UiData']):
 
     @staticmethod
     def cons(
-        spaces: List[Space],
+        spaces: List[Space]=Nil,
     ) -> 'UiData':
         return UiData(
             spaces,
@@ -18,5 +18,6 @@ class UiData(Dat['UiData']):
 
     def replace_space(self, space: Space) -> 'UiData':
         return self.copy(spaces=self.spaces.replace_where(space, _.ident == space.ident))
+
 
 __all__ = ('UiData',)

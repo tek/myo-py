@@ -1,9 +1,9 @@
 from uuid import uuid4
 
-from amino import Dat, Maybe, Just, Either
+from amino import Dat, Maybe, Just, Either, Nothing
 from amino.dispatch import PatMat
 
-from chiasma.data.view_tree import ViewTree, LayoutNode, PaneNode
+from chiasma.data.view_tree import ViewTree, LayoutNode, PaneNode, SubUiNode
 
 from myo.util import Ident
 from myo.ui.data.view import Pane
@@ -21,7 +21,7 @@ class Window(Dat['Window']):
         return Window(
             id,
             name or id,
-            layout or ViewTree.cons(),
+            layout or ViewTree.layout(),
         )
 
     def __init__(self, ident: Ident, name: str, layout: LayoutNode) -> None:
@@ -37,6 +37,9 @@ class FindPrincipal(PatMat, alg=ViewTree):
 
     def pane_node(self, node: PaneNode) -> Maybe[Pane]:
         return Just(node.data)
+
+    def sub_ui_node(self, node: SubUiNode) -> Maybe[Pane]:
+        return Nothing
 
 
 def find_principal(window: Window) -> Either[str, Pane]:
