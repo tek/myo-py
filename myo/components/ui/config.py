@@ -8,6 +8,7 @@ from myo.config.component import MyoComponent
 from myo.ui.data.ui_data import UiData
 from myo.components.ui.trans.open_pane import open_pane
 from myo.components.ui.trans.close_pane import close_pane
+from myo.components.ui.trans.minimize_pane import minimize_pane
 
 
 ui = Component.cons(
@@ -16,6 +17,7 @@ ui = Component.cons(
     request_handlers=List(
         RequestHandler.trans_cmd(open_pane)(json=true),
         RequestHandler.trans_cmd(close_pane)(),
+        RequestHandler.trans_cmd(minimize_pane)(),
     ),
     handlers=List(
     ),

@@ -6,44 +6,31 @@ from chiasma.data.view_tree import ViewTree
 from chiasma.ui.view_geometry import ViewGeometry
 from chiasma.io.compute import TmuxIO
 from chiasma.data.pane import Pane as TPane
+from chiasma.commands.pane import all_panes, pane
 
-from amino import List, Map, __, _, L
+from amino import List, __, L, _
 from amino.boolean import true
 from amino.lenses.lens import lens
 
-from ribosome.config.config import Config
 from ribosome.test.integration.klk import later
 
-from myo.components.tmux.config import tmux
-from myo.components.ui.config import ui
 from myo.ui.data.view import Layout, Pane
-from myo.env import Env
-from myo.config.component import MyoComponent
 from myo.ui.pane import map_panes_in_spaces
 
 from unit._support.tmux import init_tmux_data
 
 
-config = Config.cons(
-    name='myo',
-    prefix='myo',
-    state_ctor=Env.cons,
-    components=Map(ui=ui, tmux=tmux),
-    component_config_type=MyoComponent,
-)
-
-
-class ClosePaneSpec(TmuxSpec):
+class MinimizePaneSpec(TmuxSpec):
     '''
-    close a tmux pane $close_pane
+    minimize a tmux pane $minimize_pane
     '''
 
-    def close_pane(self) -> Expectation:
+    def minimize_pane(self) -> Expectation:
         layout = ViewTree.layout(
             Layout.cons('root', vertical=true),
             List(
-                ViewTree.pane(Pane.cons('one', geometry=ViewGeometry.cons(max_size=10))),
-                ViewTree.pane(Pane.cons('two', geometry=ViewGeometry.cons(max_size=10))),
+                ViewTree.pane(Pane.cons('one', geometry=ViewGeometry.cons())),
+                ViewTree.pane(Pane.cons('two', geometry=ViewGeometry.cons())),
             )
         )
         window, space, helper = init_tmux_data(layout)
@@ -59,9 +46,8 @@ class ClosePaneSpec(TmuxSpec):
             )
         )
         TmuxIO.write('split-window').unsafe(self.tmux)
-        self._wait(1)
-        helper1.loop('command:close_pane', args=('one',)).unsafe(helper.vim)
-        return later(kf(TmuxIO.read('list-panes').unsafe, self.tmux).must(have_length(1)))
+        helper1.loop('command:minimize_pane', args=('one',)).unsafe(helper.vim)
+        return later(kf(lambda: pane(0, 0).unsafe(self.tmux).height) == 2)
 
 
-__all__ = ('ClosePaneSpec',)
+__all__ = ('MinimizePaneSpec',)
