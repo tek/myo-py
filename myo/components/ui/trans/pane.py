@@ -2,12 +2,13 @@ from typing import Tuple
 
 from amino import do, Do, curried, Boolean, Maybe, Just, Nothing, _
 
-from chiasma.data.view_tree import PaneNode
-from amino.state import State
+from chiasma.data.view_tree import PaneNode, ViewTree
+from amino.state import State, EitherState
 from amino.lenses.lens import lens
 from amino.boolean import false
+from amino.util.tuple import lift_tuple
 
-from ribosome.trans.api import trans
+from ribosome.trans.api import trans, transm_lift_s
 from ribosome.trans.action import TransM
 from ribosome.dispatch.component import ComponentData
 from ribosome.plugin_state import PluginState
@@ -22,6 +23,7 @@ from myo.ui.pane import find_in_spaces
 from myo.settings import MyoSettings
 from myo.env import Env
 from myo.config.component import MyoComponent
+from myo.ui.data.ui_data import UiData
 
 
 @curried
@@ -34,10 +36,9 @@ def match_ident(ident: Ident, node: PaneNode[Layout, Pane]) -> Maybe[PaneNode[La
     return Just(node) if node.data.ident == ident else Nothing
 
 
-@trans.free.result(trans.st)
-@do(State[ComponentData, Pane])
+@do(State[ComponentData[Env, UiData], Maybe[Tuple[Space, Window, ViewTree[Layout, Pane]]]])
 def pane_path_by_ident(ident: Ident) -> Do:
-    yield find_in_spaces(match_ident(ident)).transform_s_lens(lens.comp)
+    yield find_in_spaces(match_ident(ident)).zoom(lens.comp)
 
 
 @trans.free.result(trans.st, component=false)
@@ -50,7 +51,7 @@ def config_uis() -> Do:
 @trans.free.do()
 @do(TransM[Tuple[Space, Window, Ui]])
 def pane_owners(ident: Ident) -> Do:
-    pane_path_m = yield pane_path_by_ident(ident).m
+    pane_path_m = yield transm_lift_s(pane_path_by_ident(ident))
     space, window, pane = yield TransM.from_maybe(pane_path_m, f'no pane with ident `{ident}`')
     uis = yield config_uis().m
     owns_handlers = uis / _.owns_pane
@@ -70,6 +71,19 @@ def render_pane(ident: Ident) -> Do:
     space, window, owner = yield pane_owners(ident).m
     renderer = yield TransM.from_maybe(owner.render, f'no renderer for {owner}')
     yield renderer(space.ident, window.ident, window.layout).switch
+
+
+@trans.free.result(trans.st)
+@do(EitherState[ComponentData[Env, UiData], Pane])
+def ui_pane_by_ident(ident: Ident) -> Do:
+    result = yield pane_path_by_ident(ident).to(EitherState)
+    pane = (
+        result
+        .flat_map(lift_tuple(2))
+        .map(_.data)
+        .to_either(f'invalid result from `pane_path_by_ident`')
+    )
+    yield EitherState.lift(pane)
 
 
 __all__ = ('config_uis', 'pane_owners', 'render_pane')

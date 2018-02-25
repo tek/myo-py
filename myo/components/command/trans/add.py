@@ -6,9 +6,9 @@ from amino.boolean import false
 
 from ribosome.trans.api import trans
 
-from myo import Env
 from myo.util import Ident
 from myo.data.command import Command, SystemInterpreter, VimInterpreter, ShellInterpreter
+from myo.env import Env
 
 
 class AddVimCommandOptions(Dat['AddVimCommandOptions']):

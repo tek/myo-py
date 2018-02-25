@@ -1,22 +1,26 @@
-from ribosome.trans.api import trans
-from ribosome.plugin_state import PluginState
-
-from chiasma.io.state import TS
-
 from amino import do, Do, Boolean
 from amino.boolean import true
+from amino.lenses.lens import lens
 
-from myo.util import Ident
+from chiasma.io.state import TS
+from chiasma.data.tmux import TmuxData
+from chiasma.pane import pane_by_ident
+from chiasma.commands.pane import send_keys
+
+from ribosome.trans.api import trans
+from ribosome.dispatch.component import ComponentData
+
 from myo.data.command import Command
-import myo.tmux.trans  # noqa
-from myo.settings import MyoSettings
 from myo.env import Env
-from myo.config.component import MyoComponent
+from myo.ui.data.view import Pane
 
 
 @trans.free.unit(trans.st)
-@do(TS[PluginState[MyoSettings, Env, MyoComponent], None])
-def run_command(name: Ident) -> Do:
+@do(TS[ComponentData[Env, TmuxData], None])
+def run_command(cmd: Command, pane: Pane) -> Do:
+    tpane = yield pane_by_ident(pane.ident).zoom(lens.comp)
+    id = yield TS.from_maybe(tpane.id, f'no tmux id for pane {pane.ident}')
+    yield TS.lift(send_keys(id, cmd.lines))
     yield TS.pure(None)
 
 

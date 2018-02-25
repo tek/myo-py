@@ -1,8 +1,7 @@
 from typing import Tuple, Callable, TypeVar
 
-from amino import do, Do, Either, Boolean, Right, Maybe, _, curried, L, List
+from amino import do, Do, Either, Right, Maybe, _, curried, L, List
 from amino.state import EitherState, State
-
 from chiasma.data.view_tree import map_panes, ViewTree, find_in_view_tree
 
 from myo.util import Ident
@@ -25,7 +24,8 @@ def find_in_windows(
         pred: Callable[[ViewTree[Layout, Pane]], Maybe[A]],
         space: Space,
 ) -> Maybe[Tuple[Space, Window, ViewTree[Layout, Pane]]]:
-    return space.windows.find_map(L(find_in_window)(pred, _)).map2(lambda w, p: (space, w, p))
+    a = space.windows.find_map(L(find_in_window)(pred, _))
+    return a.map2(lambda w, p: (space, w, p))
 
 
 @do(State[UiData, Maybe[Tuple[Space, Window, ViewTree[Layout, Pane]]]])
