@@ -6,7 +6,7 @@ from chiasma.test.tmux_spec import TmuxSpec
 from chiasma.io.compute import TmuxIO
 from chiasma.commands.pane import capture_pane
 
-from amino import List, __, Lists
+from amino import List, __, Lists, Just
 
 from ribosome.test.integration.klk import later
 
@@ -25,8 +25,8 @@ class RunCommandSpec(TmuxSpec):
         text1 = Lists.random_alpha()
         text2 = Lists.random_alpha()
         cmds = List(f'echo {text1}', f'echo {text2}')
-        cmd = Command(name, SystemInterpreter('one'), cmds)
-        helper = two_panes(List('command')).update_data(commands=List(cmd))
+        cmd = Command(name, SystemInterpreter(Just('one')), cmds)
+        helper = two_panes(List('command')).update_component('command', commands=List(cmd))
         helper.loop('command:run_command', args=(name, '{}')).unsafe(helper.vim)
         output = lambda: capture_pane(0).unsafe(self.tmux)
         return later(kf(output).must(contain(text1) & contain(text2)))

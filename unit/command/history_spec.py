@@ -1,10 +1,10 @@
-from kallikrein import k, Expectation
+from kallikrein import k, Expectation, pending
 
 from amino.test.spec import SpecBase
 from amino import List, Map
 
 from ribosome.test.integration.run import DispatchHelper
-from ribosome.config import Config
+from ribosome.config.config import Config
 
 
 config = Config.cons(
@@ -15,15 +15,16 @@ config = Config.cons(
 )
 
 
-class ComponentSpec(SpecBase):
+class HistorySpec(SpecBase):
     '''
     test $test
     '''
 
+    @pending
     def test(self) -> Expectation:
         helper = DispatchHelper.cons(config, 'command')
         r = helper.loop('command:load_history', args=(5,)).unsafe(helper.vim)
         return k(1) == 1
 
 
-__all__ = ('ComponentSpec',)
+__all__ = ('HistorySpec',)

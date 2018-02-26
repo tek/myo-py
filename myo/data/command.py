@@ -9,8 +9,9 @@ class Interpreter(ADT['Interpreter']):
 
 class VimInterpreter(Interpreter):
 
-    def __init__(self, silent: Boolean) -> None:
+    def __init__(self, silent: Boolean, target: Maybe[Ident]) -> None:
         self.silent = silent
+        self.target = target
 
 
 class SystemInterpreter(Interpreter):
@@ -63,5 +64,12 @@ class TestCommand(Dat['TestCommand']):
         self.params = params
 
 
+class HistoryEntry(Dat['HistoryEntry']):
+
+    def __init__(self, cmd: Command, target: Maybe[Ident]) -> None:
+        self.cmd = cmd
+        self.target = target
+
+
 __all__ = ('Command', 'Interpreter', 'VimInterpreter', 'SystemInterpreter', 'ShellInterpreter', 'Execute',
-           'TestLineParams', 'TestCommand')
+           'TestLineParams', 'TestCommand', 'HistoryEntry')

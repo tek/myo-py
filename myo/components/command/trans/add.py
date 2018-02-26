@@ -18,10 +18,12 @@ class AddVimCommandOptions(Dat['AddVimCommandOptions']):
             line: Maybe[str],
             lines: Maybe[List[str]],
             silent: Maybe[Boolean],
+            target: Maybe[Ident],
     ) -> None:
         self.line = line
         self.lines = lines
         self.silent = silent
+        self.target = target
 
 
 class AddSystemCommandOptions(Dat['AddSystemCommandOptions']):
@@ -50,8 +52,8 @@ class AddShellCommandOptions(Dat['AddShellCommandOptions']):
         self.target = target
 
 
-def cons_vim_command(name: str, options: AddSystemCommandOptions) -> Either[str, Command]:
-    return Command(name, VimInterpreter(options.silent | false), options.lines.o(options.line / List))
+def cons_vim_command(name: str, options: AddVimCommandOptions) -> Either[str, Command]:
+    return Command(name, VimInterpreter(options.silent | false, options.target), options.lines.o(options.line / List))
 
 
 def cons_system_command(name: str, options: AddSystemCommandOptions) -> Either[str, Command]:

@@ -1,5 +1,7 @@
-from amino import List, Dat, Nil
+from amino import List, Dat, Nil, Either, _
 from amino.boolean import true
+
+from chiasma.util.id import Ident
 
 from ribosome.dispatch.component import Component
 from ribosome.request.handler.handler import RequestHandler
@@ -22,6 +24,9 @@ class CommandData(Dat['CommandData']):
 
     def __init__(self, commands: List[Command]) -> None:
         self.commands = commands
+
+    def command_by_ident(self, ident: Ident) -> Either[str, Command]:
+        return self.commands.find(_.ident == ident).to_either(f'no command `{ident}`')
 
 
 command = Component.cons(

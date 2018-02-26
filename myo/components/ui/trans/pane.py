@@ -79,6 +79,7 @@ def ui_pane_by_ident(ident: Ident) -> Do:
     result = yield pane_path_by_ident(ident).to(EitherState)
     pane = (
         result
+        .to_either(f'no pane for `{ident}`')
         .flat_map(lift_tuple(2))
         .map(_.data)
         .to_either(f'invalid result from `pane_path_by_ident`')

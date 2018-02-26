@@ -1,8 +1,9 @@
-from typing import Tuple, TypeVar
+from typing import TypeVar
 
 from kallikrein import k, Expectation
+from kallikrein.matchers.length import have_length
 
-from chiasma.data.view_tree import map_nodes, ViewTree
+from chiasma.data.view_tree import ViewTree
 from chiasma.test.tmux_spec import TmuxSpec
 from chiasma.data.tmux import TmuxData
 from chiasma.data.window import Window as TWindow
@@ -11,37 +12,18 @@ from chiasma.data.session import Session
 from chiasma.io.state import TS
 from chiasma.commands.pane import all_panes, PaneData
 
-from amino import List, do, Do, Dat, Either, Right, Boolean
-from amino.state import EitherState
+from amino import List, do, Do, Dat
 from amino.lenses.lens import lens
-from amino.boolean import true, false
+from amino.boolean import false
 
 from myo.ui.data.ui_data import UiData
 from myo.ui.data.view import Layout, Pane, ViewGeometry
 from myo.ui.data.window import Window
 from myo.ui.data.space import Space
 from myo.ui.data.view_path import pane_path
+from myo.components.ui.trans.open_pane import ui_open_pane
 
 D = TypeVar('D')
-
-
-@do(EitherState[UiData, Window])
-def ui_open_pane(name: str) -> Do:
-    @do(Either[str, Window])
-    def find_pane(window: Window) -> Do:
-        new = yield map_nodes(lambda a: Boolean(a.data.ident == name), lens.data.open.set(true))(window.layout)
-        yield Right(window.copy(layout=new))
-    @do(Either[str, Tuple[Space, Window]])
-    def find_window(space: Space) -> Do:
-        win = yield space.windows.find_map_e(find_pane)
-        yield Right((space.replace_window(win), win))
-    @do(Either[str, Tuple[UiData, Window]])
-    def find_space(ui: UiData) -> Do:
-        new, window = yield ui.spaces.find_map_e(find_window).lmap(lambda err: f'pane not found: {name}')
-        yield Right((ui.replace_space(new), window))
-    data, window = yield EitherState.inspect_f(find_space)
-    yield EitherState.set(data)
-    yield EitherState.pure(window)
 
 
 class OPData(Dat['OPData']):
@@ -109,14 +91,7 @@ class OpenPaneSpec(TmuxSpec):
             yield open_pane('five')
             yield all_panes().state
         s, panes = self.run(go(), data)
-        target = List(
-            PaneData(0, 301, 59, 0),
-            PaneData(4, 150, 30, 60),
-            PaneData(3, 150, 2, 60),
-            PaneData(2, 75, 27, 63),
-            PaneData(1, 74, 27, 63),
-        )
-        return k(panes) == target
+        return k(panes).must(have_length(5))
 
 
 __all__ = ('OpenPaneSpec',)

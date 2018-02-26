@@ -1,22 +1,19 @@
 from ribosome.trans.api import trans
-from ribosome.plugin_state import PluginState
 from ribosome.nvim import NvimIO
 from ribosome.nvim.io import NS
 
-from amino import do, Do, Boolean, __
+from amino import do, Do, Boolean
 from amino.boolean import true
 
-from myo.util import Ident
-from myo import MyoSettings, Env, MyoComponent
 from myo.data.command import Command
+from myo.env import Env
 
 
 @trans.free.unit(trans.st)
-@do(NS[PluginState[MyoSettings, Env, MyoComponent], None])
-def run_command(ident: Ident) -> Do:
-    cmd = yield NS.inspect_f(__.main.data.command_by_ident(ident))
+@do(NS[Env, None])
+def run_command(cmd: Command) -> Do:
     yield NS.lift(cmd.lines.traverse(lambda a: NvimIO.cmd_sync(a, verbose=~cmd.interpreter.silent), NvimIO))
-    yield NS.pure(None)
+    yield NS.unit
 
 
 def vim_can_run(cmd: Command) -> Boolean:

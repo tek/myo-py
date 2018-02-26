@@ -12,6 +12,7 @@ from chiasma.data.pane import Pane as TPane
 from amino import List, __, Map, do, Do, L, _, Nil
 from amino.boolean import true
 from amino.lenses.lens import lens
+from amino.test import temp_dir
 
 from myo.ui.data.view import Layout, Pane
 from myo.ui.data.window import Window
@@ -35,7 +36,16 @@ tmux_spec_config = Config.cons(
 
 
 def tmux_spec_helper(extra: List[str]) -> DispatchHelper:
-    return DispatchHelper.cons(tmux_spec_config, 'ui', 'tmux', *extra, vars=dict(myo_tmux_socket=tmux_spec_socket))
+    return DispatchHelper.cons(
+        tmux_spec_config,
+        'ui',
+        'tmux',
+        *extra,
+        vars=dict(
+            myo_tmux_socket=tmux_spec_socket,
+            myo_state_dir=str(temp_dir('history', 'state')),
+        ),
+    )
 
 
 def init_tmux_data(layout: ViewTree[Layout, Pane], extra: List[str]=Nil) -> DispatchHelper:
