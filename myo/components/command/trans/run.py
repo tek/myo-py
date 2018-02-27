@@ -1,4 +1,4 @@
-from amino import do, Do, Maybe, __, _, ADT, L
+from amino import do, Do, Maybe, __, _, L
 from amino.state import EitherState, State
 
 from amino.dat import Dat
@@ -16,9 +16,8 @@ from myo.env import Env
 from myo.settings import MyoSettings
 from myo.config.handler import find_handler
 from myo.data.command import Command, Interpreter, SystemInterpreter, ShellInterpreter, VimInterpreter
-from myo.ui.data.view import Pane
 from myo.components.ui.trans.pane import ui_pane_by_ident, render_pane
-from myo.command.run_task import RunTask, UiSystemTask, UiShellTask
+from myo.command.run_task import RunTask, UiSystemTask, UiShellTask, VimTask
 from myo.components.command.trans.history import push_history
 
 
@@ -67,7 +66,7 @@ class run_task(PatMat[Interpreter, TransM[RunTask]], alg=Interpreter):
 
     @do(TransM[RunTask])
     def vim_interpreter(self, interpreter: VimInterpreter) -> Do:
-        pass
+        yield TransM.pure(VimTask(self.cmd))
 
 
 @trans.free.result(trans.st, component=false)

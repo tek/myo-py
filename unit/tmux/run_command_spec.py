@@ -1,13 +1,10 @@
-from kallikrein import Expectation, kf, k
-from kallikrein.matchers.length import have_length
+from kallikrein import Expectation, kf
 from kallikrein.matchers import contain
 
 from chiasma.test.tmux_spec import TmuxSpec
-from chiasma.io.compute import TmuxIO
 from chiasma.commands.pane import capture_pane
 
-from amino import List, __, Lists, Just
-from amino.boolean import true, false
+from amino import List, Lists, Just
 
 from ribosome.test.integration.klk import later
 
@@ -39,8 +36,8 @@ class RunCommandSpec(TmuxSpec):
         text2 = Lists.random_alpha()
         shell_cmd = 'python'
         cmds = List(f'print("{text1}")', f'print("{text2}")')
-        shell = Command(shell_cmd, SystemInterpreter(Just('one')), List(shell_cmd), true)
-        cmd = Command(name, ShellInterpreter(shell_cmd), cmds, false)
+        shell = Command(shell_cmd, SystemInterpreter(Just('one')), List(shell_cmd))
+        cmd = Command(name, ShellInterpreter(shell_cmd), cmds)
         helper = two_panes(List('command')).update_component('command', commands=List(shell, cmd))
         helper.loop('command:run_command', args=(shell_cmd, '{}')).unsafe(helper.vim)
         helper.loop('command:run_command', args=(name, '{}')).unsafe(helper.vim)

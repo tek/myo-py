@@ -9,7 +9,9 @@ class RunTask(ADT['RunTask']):
 
 
 class VimTask(RunTask):
-    pass
+
+    def __init__(self, command: Command) -> None:
+        self.command = command
 
 
 class SystemTask(RunTask):
