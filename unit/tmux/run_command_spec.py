@@ -17,6 +17,7 @@ class RunCommandSpec(TmuxSpec):
     '''
     run a command in a tmux pane $run_command
     run a shell in a tmux pane $run_shell
+    write output to a file $pipe_pane
     '''
 
     def run_command(self) -> Expectation:
@@ -43,6 +44,17 @@ class RunCommandSpec(TmuxSpec):
         helper.loop('command:run_command', args=(name, '{}')).unsafe(helper.vim)
         output = lambda: capture_pane(0).unsafe(self.tmux)
         return later(kf(output).must(contain(text1) & contain(text2)))
+
+    def pipe_pane(self) -> Expectation:
+        name = 'commo'
+        text = Lists.random_alpha()
+        cmds = List(f'echo {text}')
+        cmd = Command(name, SystemInterpreter(Just('one')), cmds)
+        helper = two_panes(List('command')).update_component('command', commands=List(cmd))
+        s = helper.loop('command:run_command', args=(name, '{}')).unsafe(helper.vim)
+        path = s.component_data['command'].logs['commo']
+        read = lambda: Lists.lines(path.read_text())
+        return later(kf(read).must(contain(text)))
 
 
 __all__ = ('RunCommandSpec',)
