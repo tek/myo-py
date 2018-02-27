@@ -19,6 +19,7 @@ from myo.data.command import Command, Interpreter, SystemInterpreter, ShellInter
 from myo.ui.data.view import Pane
 from myo.components.ui.trans.pane import ui_pane_by_ident, render_pane
 from myo.command.run_task import RunTask, UiSystemTask, UiShellTask
+from myo.components.command.trans.history import push_history
 
 
 class RunCommandOptions(Dat['RunCommandOptions']):
@@ -57,7 +58,6 @@ class run_task(PatMat[Interpreter, TransM[RunTask]], alg=Interpreter):
 
     @do(TransM[RunTask])
     def shell_interpreter(self, interpreter: ShellInterpreter) -> Do:
-        print(interpreter)
         shell = yield State.inspect_f(__.comp.command_by_ident(interpreter.target)).trans
         target = yield TransM.from_maybe(shell.interpreter.target,
                                          f'shell `{shell.ident}` for command `{self.cmd.ident}` has no pane')
@@ -81,10 +81,9 @@ def run_handler(cmd: Command) -> Do:
 def run_command(ident: Ident, options: RunCommandOptions) -> Do:
     cmd = yield EitherState.inspect_f(__.comp.command_by_ident(ident)).trans
     task = yield run_task(cmd)(cmd.interpreter)
-    print(task)
     handler = yield run_handler(task).m
     yield handler(task).m
-    # yield push_history(cmd, target).m
+    yield push_history(cmd, cmd.interpreter.target).m
 
 
 __all__ = ('run_command',)

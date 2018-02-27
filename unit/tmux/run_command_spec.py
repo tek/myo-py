@@ -45,7 +45,6 @@ class RunCommandSpec(TmuxSpec):
         helper.loop('command:run_command', args=(shell_cmd, '{}')).unsafe(helper.vim)
         helper.loop('command:run_command', args=(name, '{}')).unsafe(helper.vim)
         output = lambda: capture_pane(0).unsafe(self.tmux)
-        # return k(1) == 1
         return later(kf(output).must(contain(text1) & contain(text2)))
 
 

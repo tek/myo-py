@@ -19,7 +19,6 @@ class run_task_in_pane(PatMat, alg=RunTask):
 
     @do(TS)
     def ui_system_task(self, task: UiSystemTask) -> Do:
-        print(task.pane)
         cmd = task.command
         pane = task.pane
         tpane = yield pane_by_ident(pane.ident).zoom(lens.comp)
@@ -28,7 +27,6 @@ class run_task_in_pane(PatMat, alg=RunTask):
 
     @do(TS)
     def ui_shell_task(self, task: UiShellTask) -> Do:
-        print(task.pane)
         cmd = task.command
         pane = task.pane
         tpane = yield pane_by_ident(pane.ident).zoom(lens.comp)
@@ -53,7 +51,6 @@ def run_command(task: RunTask) -> Do:
 
 
 def tmux_can_run(task: RunTask) -> Boolean:
-    print(task)
     return isinstance(task, (UiSystemTask, UiShellTask))
 
 
