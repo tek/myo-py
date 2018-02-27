@@ -9,7 +9,7 @@ from myo.ui.data.ui_data import UiData
 from myo.components.ui.trans.open_pane import open_pane
 from myo.components.ui.trans.close_pane import close_pane
 from myo.components.ui.trans.minimize_pane import minimize_pane
-from myo.components.ui.trans.pane import ui_pane_by_ident
+from myo.components.ui.trans.pane import ui_pane_by_ident, render_pane, pane_owners
 
 
 ui = Component.cons(
@@ -20,6 +20,8 @@ ui = Component.cons(
         RequestHandler.trans_cmd(close_pane)(),
         RequestHandler.trans_cmd(minimize_pane)(),
         RequestHandler.trans_function(ui_pane_by_ident)(),
+        RequestHandler.trans_function(render_pane)(),
+        RequestHandler.trans_function(pane_owners)(),
     ),
     handlers=List(
     ),

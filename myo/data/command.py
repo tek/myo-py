@@ -28,10 +28,11 @@ class ShellInterpreter(Interpreter):
 
 class Command(Dat['Command']):
 
-    def __init__(self, ident: Ident, interpreter: Interpreter, lines: List[str]) -> None:
+    def __init__(self, ident: Ident, interpreter: Interpreter, lines: List[str], shell: Boolean) -> None:
         self.ident = ident
         self.interpreter = interpreter
         self.lines = lines
+        self.shell = shell
 
 
 class Execute(Dat['Execute']):

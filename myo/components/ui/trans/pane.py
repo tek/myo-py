@@ -8,7 +8,7 @@ from amino.lenses.lens import lens
 from amino.boolean import false
 from amino.util.tuple import lift_tuple
 
-from ribosome.trans.api import trans, transm_lift_s
+from ribosome.trans.api import trans
 from ribosome.trans.action import TransM
 from ribosome.dispatch.component import ComponentData
 from ribosome.plugin_state import PluginState
@@ -51,12 +51,12 @@ def config_uis() -> Do:
 @trans.free.do()
 @do(TransM[Tuple[Space, Window, Ui]])
 def pane_owners(ident: Ident) -> Do:
-    pane_path_m = yield transm_lift_s(pane_path_by_ident(ident))
+    pane_path_m = yield pane_path_by_ident(ident).trans
     space, window, pane = yield TransM.from_maybe(pane_path_m, f'no pane with ident `{ident}`')
     uis = yield config_uis().m
     owns_handlers = uis / _.owns_pane
     owns = yield owns_handlers.traverse(lambda a: a(pane.data).m, TransM)
-    owners = uis.zip(owns).filter2(lambda a, b: b).map(_[0])
+    owners = uis.zip(owns).filter2(lambda a, b: b).flat_map(lift_tuple(0))
     owner = yield (
         TransM.from_maybe(owners.head, f'no owner for pane {ident}')
         if owners.length <= 1
@@ -70,7 +70,7 @@ def pane_owners(ident: Ident) -> Do:
 def render_pane(ident: Ident) -> Do:
     space, window, owner = yield pane_owners(ident).m
     renderer = yield TransM.from_maybe(owner.render, f'no renderer for {owner}')
-    yield renderer(space.ident, window.ident, window.layout).switch
+    yield renderer(space.ident, window.ident, window.layout).m
 
 
 @trans.free.result(trans.st)
