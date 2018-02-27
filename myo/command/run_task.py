@@ -1,38 +1,41 @@
-from amino import ADT
+from amino import ADT, Path, Dat
 
 from myo.data.command import Command
 from myo.ui.data.view import Pane
 
 
-class RunTask(ADT['RunTask']):
+class RunTaskDetails(ADT['RunTaskDetails']):
     pass
 
 
-class VimTask(RunTask):
-
-    def __init__(self, command: Command) -> None:
-        self.command = command
+class VimTaskDetails(RunTaskDetails):
+    pass
 
 
-class SystemTask(RunTask):
-
-    def __init__(self, command: Command) -> None:
-        self.command = command
+class SystemTaskDetails(RunTaskDetails):
+    pass
 
 
-class UiSystemTask(RunTask):
+class UiSystemTaskDetails(RunTaskDetails):
 
-    def __init__(self, command: Command, pane: Pane) -> None:
-        self.command = command
+    def __init__(self, pane: Pane) -> None:
         self.pane = pane
 
 
-class UiShellTask(RunTask):
+class UiShellTaskDetails(RunTaskDetails):
 
-    def __init__(self, command: Command, shell: Command, pane: Pane) -> None:
-        self.command = command
+    def __init__(self, shell: Command, pane: Pane) -> None:
         self.shell = shell
         self.pane = pane
 
 
-__all__ = ('RunTask', 'VimTask', 'SystemTask', 'UiSystemTask', 'UiShellTask')
+class RunTask(Dat['RunTask']):
+
+    def __init__(self, command: Command, log: Path, details: RunTaskDetails) -> None:
+        self.command = command
+        self.log = log
+        self.details = details
+
+
+__all__ = ('RunTaskDetails', 'VimTaskDetails', 'SystemTaskDetails', 'UiSystemTaskDetails', 'UiShellTaskDetails',
+           'RunTask')
