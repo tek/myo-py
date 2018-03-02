@@ -3,45 +3,57 @@ from typing import Tuple
 from networkx import DiGraph
 
 from amino.lazy import lazy
-from amino import List, Empty, Just, Maybe, __, L, _
+from amino import List, Empty, Just, Maybe, __, L, _, Path, Regex, Nothing
 
-from ribosome.record import field, optional_field
-
-from myo.output.data import (PositionEntry, ErrorEntry, OutputEntry,
-                             OutputEvent, OutputLine, MultiEvent, CodeEntry)
+from myo.output.data import PositionEntry, ErrorEntry, OutputEntry, OutputEvent, OutputLine, MultiEvent, CodeEntry
 from myo.output.parser.base import EdgeData, SimpleParser
 
 
 class FileEntry(PositionEntry):
-    fun = optional_field(str)
-    code = optional_field(CodeEntry)
+
+    @staticmethod
+    def cons(
+            text: str,
+            path: Path,
+            line: int,
+            col: int=0,
+            fun: str=None,
+    ):
+        return FileEntry(text=text, path=path, line=line, col=col, fun=Maybe.optional(fun), code=Nothing)
+
+    def __init__(self, text: str, path: Path, line: int, col: int, fun: Maybe[str], code: Maybe[CodeEntry]) -> None:
+        super().__init__(text, path, line, col)
+        self.fun = fun
+        self.code = code
 
     def lines(self, event: OutputEvent, group=Empty()):
         x = self.code / L(OutputLine.create)(_.text, self)
         return super().lines(event) + x.to_list
 
-    @staticmethod
-    def create(text, path, line, fun=None):
-        return FileEntry(text=text, path=path, line=line, fun=Maybe(fun))
-
 
 class PyErrorEntry(ErrorEntry):
-    exc = field(str)
+
+    def __init__(self, text: str, error: str, exc: str) -> None:
+        super().__init__(text, error)
+        self.exc = exc
 
 
 class ColEntry(OutputEntry):
-    ws = field(str)
+
+    def __init__(self, text: str, ws: str) -> None:
+        super().__init__(text)
+        self.ws = ws
 
     def lines(self, event: OutputEvent, group=Empty()):
         return List()
 
 _file = EdgeData(
-    r='\s*File "(?P<path>.+)", line (?P<line>\d+)(?:, in (?P<fun>\S+))?',
-    entry=FileEntry.create
+    r=Regex('\s*File "(?P<path>.+)", line (?P<line>\d+)(?:, in (?P<fun>\S+))?'),
+    entry=FileEntry.cons
 )
-_code = EdgeData(r='^\s*(?P<code>.+)', entry=CodeEntry)
-_error = EdgeData(r='^\s*(?P<exc>\S+): (?P<error>.+)', entry=PyErrorEntry)
-_col = EdgeData(r='^\s*(?P<ws>\s+)\^', entry=ColEntry)
+_code = EdgeData(r=Regex('^\s*(?P<code>.+)'), entry=CodeEntry.cons)
+_error = EdgeData(r=Regex('^\s*(?P<exc>\S+): (?P<error>.+)'), entry=PyErrorEntry)
+_col = EdgeData(r=Regex('^\s*(?P<ws>\s+)\^'), entry=ColEntry)
 
 
 class Parser(SimpleParser):
@@ -63,13 +75,13 @@ class Parser(SimpleParser):
             add, new = (
                 (cur, Just(a))
                 if isinstance(a, FileEntry) else
-                ((cur / __.set(code=Just(a))).or_else(Just(a)), Empty())
+                ((cur / __.set.code(Just(a))).or_else(Just(a)), Empty())
                 if isinstance(a, CodeEntry) else
                 (Just(a), Empty())
             )
             return res + add.to_list, new
         grouped, rest = entries.fold_left((List(), Empty()))(folder)
         complete = grouped + rest.to_list
-        return Just(MultiEvent(entries=complete))
+        return Just(MultiEvent.cons(entries=complete))
 
 __all__ = ('Parser',)

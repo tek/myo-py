@@ -1,18 +1,18 @@
 import abc
 from typing import Tuple, Callable
 
-from amino import _, Path, List, __, Empty, Just, L
+from chiasma.util.id import Ident
+
+from amino import _, Path, List, __, Empty, Just, L, Dat, Maybe, Nil
 from amino.lazy import lazy
 
-from ribosome.record import (field, list_field, dfield, any_field, RecordMeta,
-                             optional_field)
-
-from myo.record import Record
 from myo.util import parse_int
 
 
-class OutputEntry(Record):
-    text = field(str)
+class OutputEntry(Dat['OutputEntry']):
+
+    def __init__(self, text: str) -> None:
+        self.text = text
 
     @property
     def _str_name(self):
@@ -22,19 +22,21 @@ class OutputEntry(Record):
         return self.format_lines(event, _.text, group)
 
     def format_lines(self, event, f: Callable, group=Empty()):
-        return List(OutputLine.create(f(self), event | self, Just(self),
-                                      group=group))
+        return List(OutputLine.create(f(self), event | self, Just(self), group=group))
 
 
-class OutputLine(Record):
-    text = field(str)
-    target = any_field()
-    entry = optional_field(OutputEntry)
-    indent = dfield(0)
-    group = optional_field(str)
+class OutputLine(Dat['OutputLine']):
+    # target = any_field()
+    # entry = optional_field(OutputEntry)
+    # indent = dfield(0)
+    # group = optional_field(str)
 
-    def __str__(self):
-        return '{}({})'.format(self._name, self.text)
+    def __init__(self, text: str, target: Ident, entry: Maybe[OutputEntry], indent: int, group: Maybe[str]) -> None:
+        self.text = text
+        self.target = target
+        self.entry = entry
+        self.indent = indent
+        self.group = group
 
     @staticmethod
     def create(text, target, entry=Empty(), group=Empty()):
@@ -57,19 +59,25 @@ class EmptyLine(OutputLine):
 
 
 class ErrorEntry(OutputEntry):
-    error = field(str)
+
+    def __init__(self, text: str, error: str) -> None:
+        self.text = text
+        self.error = error
 
 
 class CodeEntry(OutputEntry):
-    code = field(str)
+
+    @staticmethod
+    def cons(text: str, code: str) -> 'CodeEntry':
+        return CodeEntry(text, code)
+
+    def __init__(self, text: str, code: str) -> None:
+        self.text = text
+        self.code = code
 
 
 def _parse_line(data):
     return data if isinstance(data, int) else parse_int(data) | 0
-
-
-class LocationMeta(RecordMeta):
-    pass
 
 
 class Location:
@@ -91,9 +99,14 @@ class Location:
 
 
 class PositionEntry(OutputEntry, Location):
-    path = field(Path, factory=Path)
-    line = field(int, factory=_parse_line)
-    col = dfield(0)
+    # line = field(int, factory=_parse_line)
+    # col = dfield(0)
+
+    def __init__(self, text: str, path: Path, line: int, col: int) -> None:
+        self.text = text
+        self.path = path
+        self.line = line
+        self.col = col
 
     @property
     def _str_extra(self):
@@ -108,9 +121,15 @@ class PositionEntry(OutputEntry, Location):
         return (self.line, self.col)
 
 
-class OutputEvent(Record):
-    head = list_field(str)
-    entries = list_field(OutputEntry)
+class OutputEvent(Dat['OutputEvent']):
+
+    @staticmethod
+    def cons(head: List[str]=Nil, entries: List[OutputEntry]=Nil) -> 'OutputEvent':
+        return OutputEvent(head, entries)
+
+    def __init__(self, head: List[str], entries: List[OutputEntry]) -> None:
+        self.head = head
+        self.entries = entries
 
     @property
     def _str_extra(self):
@@ -139,10 +158,12 @@ class MultiEvent(OutputEvent):
         return Empty()
 
 
-class ParseResult(Record):
-    head = list_field(str)
-    events = list_field(OutputEvent)
-    langs = list_field(str)
+class ParseResult(Dat['ParseResult']):
+
+    def __init__(self, head: List[str], events: List[OutputEvent], langs: List[str]) -> None:
+        self.head = head
+        self.events = events
+        self.langs = langs
 
     @lazy
     def lines(self):
@@ -161,5 +182,6 @@ class ParseResult(Record):
     @property
     def locations(self):
         return self.events // _.locations
+
 
 __all__ = ('OutputEntry', 'OutputEvent', 'ParseResult')

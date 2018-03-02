@@ -1,4 +1,4 @@
-from amino import do, Do, Boolean, Path, Nothing, Just, L, _, Maybe
+from amino import do, Do, Boolean, Path, Just, L, _, Maybe
 from amino.lenses.lens import lens
 from amino.dispatch import PatMat
 

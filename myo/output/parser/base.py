@@ -1,21 +1,17 @@
 import abc
 from collections import namedtuple
 from types import FunctionType
-from typing import Any, Tuple, Callable
-
-from fn.recur import tco
+from typing import Any, Tuple, Callable, Union
 
 from networkx import DiGraph
 
-from amino import List, Maybe, Try, curried, Just, L, _, Right, Either, Lists
+from amino import List, Maybe, Try, curried, Just, _, Right, Either, Lists, Dat, Regex, Nothing
 from amino.regex import Match
 from amino.logging import Logger
-
-from ribosome.record import re_field, field
+from amino.func import tailrec
 
 from myo.logging import Logging
 from myo.output.data import OutputEvent, OutputEntry
-from myo.record import Record
 
 
 class ParserBase(Logging, metaclass=abc.ABCMeta):
@@ -25,9 +21,13 @@ class ParserBase(Logging, metaclass=abc.ABCMeta):
         ...
 
 
-class EdgeData(Record):
-    r = re_field()
-    entry = field((type, FunctionType))
+class EdgeData(Dat['EdgeData']):
+    # r = re_field()
+    # entry = field((type, FunctionType))
+
+    def __init__(self, r: Regex, entry: Union[type, FunctionType]) -> None:
+        self.r = r
+        self.entry = entry
 
     @property
     def _str_extra(self) -> List[Any]:
@@ -38,7 +38,7 @@ Step = namedtuple('Step', ['node', 'data', 'weight'])
 
 # TODO log errors
 @curried
-def cons(logger: Logger, entry: type, match: Match) -> Maybe[OutputEntry]:
+def cons_entry(logger: Logger, entry: type, match: Match) -> Maybe[OutputEntry]:
     return Try(entry, text=match.string, **match.group_map).leffect(logger.ddebug)
 
 
@@ -60,10 +60,10 @@ class SimpleParser(ParserBase, metaclass=abc.ABCMeta):
         return (
             self.edges(node)
             .sort_by(_.weight, reverse=True)
-            .find_map(match)
+            .find_map_e(match)
         )
 
-    @tco
+    @tailrec
     def _process(self, node: str, output: List[str], result: List[OutputEvent], current: List[OutputEntry]
                  ) -> List[OutputEvent]:
         '''
@@ -86,7 +86,7 @@ class SimpleParser(ParserBase, metaclass=abc.ABCMeta):
         10. add the last event and exit the recursion
         '''
         def add_event() -> List[OutputEvent]:
-            new = current.empty.no.flat_maybe_call(L(self.event)(current))
+            new = Nothing if current.empty else self.event(current)
             return result + new.to_list
         def parse_line(line: str, rest: List[str]) -> Tuple[bool, tuple]:
             self.log.ddebug('parsing line: {}'.format(line))
@@ -96,7 +96,7 @@ class SimpleParser(ParserBase, metaclass=abc.ABCMeta):
                 return (
                     step.data.r.match(line) %
                     dbg //
-                    cons(self.log)(step.data.entry)
+                    cons_entry(self.log, step.data.entry)
                 ) & Right(step.node)
             def cont(entry: OutputEntry, next_node: str) -> Tuple[bool, tuple]:
                 return True, (self, next_node, rest, result, current.cat(entry))
