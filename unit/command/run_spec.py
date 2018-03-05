@@ -2,7 +2,7 @@ from kallikrein import k, Expectation
 from kallikrein.matchers.end_with import end_with
 
 from amino.test.spec import SpecBase
-from amino import List, Map, Nothing
+from amino import List, Map, Nothing, Nil
 
 from ribosome.test.integration.run import DispatchHelper
 from ribosome.config.config import Config
@@ -32,7 +32,7 @@ class RunSpec(SpecBase):
     def vim_cmd(self) -> Expectation:
         name = 'test'
         cmds = List('let g:key = 7', 'let g:value = 13')
-        cmd = Command(name, VimInterpreter(silent=False, target=Nothing), cmds)
+        cmd = Command(name, VimInterpreter(silent=False, target=Nothing), cmds, Nil)
         helper = DispatchHelper.cons(config, 'command', 'vim', 'ui').update_component('command', commands=List(cmd))
         helper.loop('command:run_command', args=(name, '{}')).unsafe(helper.vim)
         return k(helper.vim.vim.request_log).must(end_with(cmds))

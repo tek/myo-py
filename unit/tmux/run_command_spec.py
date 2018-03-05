@@ -4,7 +4,7 @@ from kallikrein.matchers import contain
 from chiasma.test.tmux_spec import TmuxSpec
 from chiasma.commands.pane import capture_pane
 
-from amino import List, Lists, Just
+from amino import List, Lists, Just, Nil
 
 from ribosome.test.integration.klk import later
 
@@ -25,7 +25,7 @@ class RunCommandSpec(TmuxSpec):
         text1 = Lists.random_alpha()
         text2 = Lists.random_alpha()
         cmds = List(f'echo {text1}', f'echo {text2}')
-        cmd = Command(name, SystemInterpreter(Just('one')), cmds)
+        cmd = Command(name, SystemInterpreter(Just('one')), cmds, Nil)
         helper = two_panes(List('command')).update_component('command', commands=List(cmd))
         helper.loop('command:run_command', args=(name, '{}')).unsafe(helper.vim)
         output = lambda: capture_pane(0).unsafe(self.tmux)
@@ -37,8 +37,8 @@ class RunCommandSpec(TmuxSpec):
         text2 = Lists.random_alpha()
         shell_cmd = 'python'
         cmds = List(f'print("{text1}")', f'print("{text2}")')
-        shell = Command(shell_cmd, SystemInterpreter(Just('one')), List(shell_cmd))
-        cmd = Command(name, ShellInterpreter(shell_cmd), cmds)
+        shell = Command(shell_cmd, SystemInterpreter(Just('one')), List(shell_cmd), Nil)
+        cmd = Command(name, ShellInterpreter(shell_cmd), cmds, Nil)
         helper = two_panes(List('command')).update_component('command', commands=List(shell, cmd))
         helper.loop('command:run_command', args=(shell_cmd, '{}')).unsafe(helper.vim)
         helper.loop('command:run_command', args=(name, '{}')).unsafe(helper.vim)
@@ -49,7 +49,7 @@ class RunCommandSpec(TmuxSpec):
         name = 'commo'
         text = Lists.random_alpha()
         cmds = List(f'echo {text}')
-        cmd = Command(name, SystemInterpreter(Just('one')), cmds)
+        cmd = Command(name, SystemInterpreter(Just('one')), cmds, Nil)
         helper = two_panes(List('command')).update_component('command', commands=List(cmd))
         s = helper.loop('command:run_command', args=(name, '{}')).unsafe(helper.vim)
         path = s.component_data['command'].logs['commo']

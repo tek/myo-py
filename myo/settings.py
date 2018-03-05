@@ -1,4 +1,12 @@
-from ribosome.config.settings import state_dir_help_default, float_setting, str_setting, Settings
+from typing import TypeVar, Callable
+from amino import Right
+from amino.boolean import true
+
+from ribosome.config.settings import (state_dir_help_default, float_setting, str_setting, Settings, int_setting,
+                                      bool_setting)
+from ribosome.config.setting import Setting
+from ribosome.nvim.io import NS
+from ribosome.config.config import Resources
 
 state_dir_help = f'''{state_dir_help_default}
 Stored data consists of:
@@ -12,6 +20,11 @@ This specifies the polling interval.
 '''
 tmux_socket_help = '''The tmux server can be chosen by its socket path. This is mainly intended for tests.
 '''
+vim_tmux_pane_help = '''Skip discovery of the tmux pane hosting neovim by its process id and use the supplied pane id
+instead. Particularly helpful for tests.
+'''
+display_parse_result_help = '''After parsing the output of an executed command, display errors in a scratch buffer.
+'''
 
 
 class MyoSettings(Settings):
@@ -19,8 +32,20 @@ class MyoSettings(Settings):
     def __init__(self) -> None:
         super().__init__('myo', state_dir_help)
         self.tmux_watcher_interval = float_setting('tmux_watcher_interval', 'tmux process polling interval',
-                                                   tmux_watcher_interval_help, True, 1.0)
-        self.tmux_socket = str_setting('tmux_socket', 'tmux socket path', tmux_socket_help, True, None)
+                                                   tmux_watcher_interval_help, True, Right(1.0))
+        self.tmux_socket = str_setting('tmux_socket', 'tmux socket path', tmux_socket_help, True)
+        self.vim_tmux_pane = int_setting('vim_tmux_pane', 'vim tmux pane id', vim_tmux_pane_help, True)
+        self.display_parse_result = bool_setting('display_parse_result', 'display parse result',
+                                                 display_parse_result_help, True, Right(true))
 
 
-__all__ = ('MyoSettings',)
+A = TypeVar('A')
+D = TypeVar('D')
+CC = TypeVar('CC')
+
+
+def setting(attr: Callable[[MyoSettings], Setting]) -> NS[Resources[D, MyoSettings, CC], A]:
+    return NS.inspect_f(lambda a: attr(a.settings).value_or_default)
+
+
+__all__ = ('MyoSettings', 'setting')

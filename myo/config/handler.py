@@ -1,25 +1,24 @@
 from typing import Callable
 
 from amino.state import EitherState
-from amino import Maybe, do, Do, List, _, __, Either, Left
+from amino import Maybe, do, Do, List, _, Either, Left, Right
+from amino.boolean import false
 
 from myo.config.plugin_state import MyoPluginState
-from myo.config.component import MyoComponent, Comp
+from myo.config.component import MyoComponent
 
-from ribosome.trans.handler import TransHandler
+from ribosome.trans.handler import TransHandler, FreeTrans
+from ribosome.trans.api import trans
 
 
+@trans.free.result(trans.st, component=false)
 @do(EitherState[MyoPluginState, TransHandler])
-def find_handler(
-        pred: Callable[[MyoComponent], bool],
-        trans: Callable[[MyoComponent], Maybe[TransHandler]],
-        desc: str
-) -> Do:
+def find_handler(pred: Callable[[MyoComponent], Maybe[TransHandler]], desc: str) -> Do:
     components = yield EitherState.inspect(_.components.all)
-    eligible: List[Comp] = components.filter(__.config.exists(pred))
-    def select(h: Comp, t: List[Comp]) -> Either[str, TransHandler]:
+    eligible: List[FreeTrans] = components.flat_map(_.config).flat_map(pred)
+    def select(h: FreeTrans, t: List[FreeTrans]) -> Either[str, TransHandler]:
         return (
-            h.config.flat_map(trans).to_either(f'{h} has no runner')
+            Right(h)
             if t.empty else
             Left(f'multiple handlers for {desc}: {eligible}')
         )

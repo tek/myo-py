@@ -22,7 +22,7 @@ class OutputEntry(Dat['OutputEntry']):
         return self.format_lines(event, _.text, group)
 
     def format_lines(self, event, f: Callable, group=Empty()):
-        return List(OutputLine.create(f(self), event | self, Just(self), group=group))
+        return List(OutputLine.cons(f(self), event | self, Just(self), group=group))
 
 
 class OutputLine(Dat['OutputLine']):
@@ -31,16 +31,22 @@ class OutputLine(Dat['OutputLine']):
     # indent = dfield(0)
     # group = optional_field(str)
 
+    @staticmethod
+    def cons(
+            text: str,
+            target: Ident,
+            entry: OutputEntry=None,
+            indent: int=0,
+            group: str=None,
+    ):
+        return OutputLine(text, target, Maybe.optional(entry), indent, Maybe.optional(group))
+
     def __init__(self, text: str, target: Ident, entry: Maybe[OutputEntry], indent: int, group: Maybe[str]) -> None:
         self.text = text
         self.target = target
         self.entry = entry
         self.indent = indent
         self.group = group
-
-    @staticmethod
-    def create(text, target, entry=Empty(), group=Empty()):
-        return OutputLine(text=text, target=target, entry=entry, group=group)
 
     @property
     def formatted(self):
@@ -142,7 +148,7 @@ class OutputEvent(Dat['OutputEvent']):
     @property
     def lines(self):
         return (
-            (self.head / L(OutputLine.create)(_, self)) +
+            (self.head / L(OutputLine.cons)(_, self)) +
             (self.entries // __.lines(self._target))
         )
 
@@ -168,7 +174,7 @@ class ParseResult(Dat['ParseResult']):
     @lazy
     def lines(self):
         return (
-            (self.head / L(OutputLine.create)(_, self)) +
+            (self.head / L(OutputLine.cons)(_, self)) +
             (self.events // _.lines)
         )
 

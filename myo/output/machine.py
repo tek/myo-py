@@ -130,8 +130,7 @@ class OutputMachineTransitions(Component):
 
     @handle(DisplayLines)
     def display_lines(self):
-        return self.set_content.map2(
-            lambda a, b: (a, b.replace(Just(InitialError()))))
+        return self.set_content.map2(lambda a, b: (a, b.replace(Just(InitialError()))))
 
     @handle(InitialError)
     def initial_error(self):

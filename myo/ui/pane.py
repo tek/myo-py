@@ -1,8 +1,11 @@
 from typing import Tuple, Callable, TypeVar
 
-from amino import do, Do, Either, Right, Maybe, _, curried, L, List
+from amino import do, Do, Either, Right, Maybe, _, curried, L, List, Nothing, Just
 from amino.state import EitherState, State
-from chiasma.data.view_tree import map_panes, ViewTree, find_in_view_tree
+from amino.dispatch import PatMat
+from chiasma.data.view_tree import map_panes, ViewTree, find_in_view_tree, LayoutNode
+
+from ribosome import ribo_log
 
 from myo.util import Ident
 from myo.ui.data.ui_data import UiData
@@ -69,4 +72,40 @@ def map_panes_in_spaces(
     return spaces.map(lambda s: s.mod.windows(L(map_panes_in_windows)(pred, update, _)))
 
 
-__all__ = ('find_in_window', 'find_in_windows', 'find_in_spaces', 'ui_modify_pane')
+class insert_pane(PatMat, alg=ViewTree):
+
+    def __init__(self, pane: Pane, layout: Ident) -> None:
+        self.pane = pane
+        self.layout = layout
+
+    def layout_node(self, node: LayoutNode) -> Maybe[ViewTree]:
+        return (
+            Just(node.append1.sub(ViewTree.pane(self.pane)))
+            if node.data.ident == self.layout else
+            node.sub.find_map(self) / node.replace_sub
+        )
+
+    def patmat_default(self, node: ViewTree) -> Maybe[ViewTree]:
+        return Nothing
+
+
+@curried
+def insert_pane_into_window(pane: Pane, layout: Ident, window: Window) -> Maybe[Window]:
+    return insert_pane(pane, layout)(window.layout) / window.set.layout
+
+
+@curried
+def insert_pane_into_space(pane: Pane, layout: Ident, space: Space) -> Maybe[Space]:
+    return space.windows.find_map(insert_pane_into_window(pane, layout)) / space.replace_window
+
+
+@curried
+def insert_pane_into_ui(pane: Pane, layout: Ident, ui: UiData) -> Either[str, UiData]:
+    return (
+        ui.spaces.find_map(insert_pane_into_space(pane, layout))
+        .map(ui.replace_space)
+        .to_either(lambda: f'no layout with ident {layout}')
+    )
+
+
+__all__ = ('find_in_window', 'find_in_windows', 'find_in_spaces', 'ui_modify_pane', 'insert_pane_into_ui')

@@ -1,4 +1,4 @@
-from amino import List, Maybe, Dat, ADT, Boolean, Either, Map
+from amino import List, Maybe, Dat, ADT, Boolean, Either, Map, Nil
 
 from myo.util import Ident
 
@@ -16,6 +16,10 @@ class VimInterpreter(Interpreter):
 
 class SystemInterpreter(Interpreter):
 
+    @staticmethod
+    def cons(target: Ident=None) -> 'SystemInterpreter':
+        return SystemInterpreter(Maybe.optional(target))
+
     def __init__(self, target: Maybe[Ident]) -> None:
         self.target = target
 
@@ -28,10 +32,21 @@ class ShellInterpreter(Interpreter):
 
 class Command(Dat['Command']):
 
-    def __init__(self, ident: Ident, interpreter: Interpreter, lines: List[str]) -> None:
+    @staticmethod
+    def cons(
+            ident: Ident,
+            interpreter: Interpreter=None,
+            lines: List[str]=Nil,
+            langs: List[str]=Nil,
+    ) -> 'Command':
+        return Command(ident, interpreter or SystemInterpreter.cons(), lines, langs)
+
+
+    def __init__(self, ident: Ident, interpreter: Interpreter, lines: List[str], langs: List[str]) -> None:
         self.ident = ident
         self.interpreter = interpreter
         self.lines = lines
+        self.langs = langs
 
 
 class Execute(Dat['Execute']):

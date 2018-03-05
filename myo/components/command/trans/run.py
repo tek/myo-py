@@ -1,24 +1,19 @@
 import os
 import tempfile
 
-from amino import do, Do, Maybe, __, _, Path, IO, L
+from amino import do, Do, Maybe, __, _, Path, IO, L, List
 from amino.state import EitherState, State
 
 from amino.dat import Dat
-from amino.boolean import false
 from amino.dispatch import PatMat
 from amino.lenses.lens import lens
 
 from ribosome.trans.api import trans
-from ribosome.trans.handler import FreeTrans
-from ribosome.plugin_state import PluginState
 from ribosome.trans.action import TransM
 from ribosome.nvim.io import NS
+from ribosome import ribo_log
 
 from myo.util import Ident
-from myo.config.component import MyoComponent
-from myo.env import Env
-from myo.settings import MyoSettings
 from myo.config.handler import find_handler
 from myo.data.command import Command, Interpreter, SystemInterpreter, ShellInterpreter, VimInterpreter
 from myo.components.ui.trans.pane import ui_pane_by_ident, render_pane
@@ -76,12 +71,6 @@ class run_task_details(PatMat[Interpreter, TransM[RunTaskDetails]], alg=Interpre
         yield TransM.pure(VimTaskDetails())
 
 
-@trans.free.result(trans.st, component=false)
-@do(EitherState[PluginState[MyoSettings, Env, MyoComponent], FreeTrans])
-def run_handler(cmd: Command) -> Do:
-    yield find_handler(__.can_run(cmd), _.run, str(cmd))
-
-
 @do(IO[Path])
 def mk_log_file(base: str) -> Do:
     uid = yield IO.delay(os.getuid)
@@ -113,9 +102,29 @@ def run_command(ident: Ident, options: RunCommandOptions) -> Do:
     task_details = yield run_task_details(cmd)(cmd.interpreter)
     log = yield task_log(ident).zoom(lens.comp).trans
     task = RunTask(cmd, log, task_details)
-    handler = yield run_handler(task).m
+    handler = yield find_handler(__.run(task), str(task)).m
     yield handler(task).m
     yield push_history(cmd, cmd.interpreter.target).m
 
 
-__all__ = ('run_command',)
+class RunLineOptions(Dat['RunLineOptions']):
+
+    def __init__(self, pane: Maybe[Ident], lines: List[str], langs: List[str]) -> None:
+        self.pane = pane
+        self.lines = lines
+        self.langs = langs
+
+
+@trans.free.do()
+@do(TransM)
+def run_line(options: RunLineOptions) -> Do:
+    cmd = Command.cons(Ident.generate(), SystemInterpreter(options.pane), lines=options.lines, langs=options.langs)
+    task_details = yield run_task_details(cmd)(cmd.interpreter)
+    log = yield task_log(cmd.ident).zoom(lens.comp).trans
+    task = RunTask(cmd, log, task_details)
+    handler = yield find_handler(__.run(task), str(task)).m
+    yield handler(task).m
+    yield push_history(cmd, cmd.interpreter.target).m
+
+
+__all__ = ('run_command', 'run_line')

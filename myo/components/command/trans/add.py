@@ -53,7 +53,12 @@ class AddShellCommandOptions(Dat['AddShellCommandOptions']):
 
 
 def cons_vim_command(name: str, options: AddVimCommandOptions) -> Either[str, Command]:
-    return Command(name, VimInterpreter(options.silent | false, options.target), options.lines.o(options.line / List))
+    return Command(
+        name,
+        VimInterpreter(options.silent | false, options.target),
+        options.lines.o(options.line / List),
+        List('vim'),
+    )
 
 
 def cons_system_command(name: str, options: AddSystemCommandOptions) -> Either[str, Command]:

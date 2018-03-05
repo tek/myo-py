@@ -1,8 +1,6 @@
-from amino import List, L, _, I, Map
-from amino.boolean import true
+from amino import List, Map
 
-from ribosome.unite import mk_unite_candidates, mk_unite_action
-from ribosome.request.handler.handler import RequestHandler
+# from ribosome.request.handler.handler import RequestHandler
 # from ribosome.components.scratch import Mapping
 # from ribosome.trans.messages import UpdateRecord
 from ribosome.config.config import Config
@@ -26,6 +24,10 @@ from myo.env import Env
 # from myo.components.tmux.main import Tmux
 from myo.settings import MyoSettings
 from myo.config.component import MyoComponent
+from myo.components.core.config import core
+from myo.components.command.config import command
+from myo.components.tmux.config import tmux
+from myo.components.ui.config import ui
 
 # unite_candidates = mk_unite_candidates(UniteNames)
 # unite_action = mk_unite_action(UniteNames)
@@ -35,7 +37,7 @@ myo_config: Config = Config.cons(
     prefix='myo',
     state_ctor=Env.cons,
     component_config_type=MyoComponent,
-    # components=Map(core=Core, command=Cmd, tmux=Tmux, unite=Unite),
+    components=Map(core=core, command=command, ui=ui, tmux=tmux),
     settings=MyoSettings(),
     request_handlers=List(
         # RequestHandler.msg_cmd(AddVimCommand)(json=true),
@@ -75,7 +77,7 @@ myo_config: Config = Config.cons(
         # RequestHandler.msg_autocmd(Resized)(),
     ),
     core_components=List('core'),
-    default_components=List('command', 'tmux', 'unite'),
+    default_components=List('command', 'ui', 'tmux'),
 )
 
 

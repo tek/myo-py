@@ -27,7 +27,7 @@ class FileEntry(PositionEntry):
         self.code = code
 
     def lines(self, event: OutputEvent, group=Empty()):
-        x = self.code / L(OutputLine.create)(_.text, self)
+        x = self.code / L(OutputLine.cons)(_.text, self)
         return super().lines(event) + x.to_list
 
 

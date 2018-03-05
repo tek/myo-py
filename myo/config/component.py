@@ -1,33 +1,41 @@
-from typing import Callable
+from typing import Callable, Any
 
-from amino import Dat, Boolean, Maybe
-from amino.boolean import false
+from amino import Dat, Maybe, Nothing
 
-from ribosome.trans.handler import TransHandler
+from ribosome.trans.handler import FreeTrans
 from ribosome.dispatch.component import Component, ComponentData
 
-from myo.data.command import Command
 from myo.env import Env
 from myo.ui.ui import Ui
+from myo.command.run_task import RunTask
 
 
-def cannot_run(cmd: Command) -> Boolean:
-    return false
+def no_handler(*a: Any, **kw: Any) -> Maybe[FreeTrans]:
+    return Nothing
 
 
 class MyoComponent(Dat['MyoComponent']):
 
     @staticmethod
     def cons(
-            run: TransHandler=None,
-            can_run: Callable[[Command], Boolean]=None,
+            run: Callable[[RunTask], Maybe[FreeTrans]]=None,
+            create_vim_pane: Callable[[], Maybe[FreeTrans]]=None,
             ui: Ui=None,
     ) -> 'MyoComponent':
-        return MyoComponent(Maybe.check(run), can_run or cannot_run, Maybe.check(ui))
+        return MyoComponent(
+            run or no_handler,
+            create_vim_pane or no_handler,
+            Maybe.check(ui),
+        )
 
-    def __init__(self, run: Maybe[TransHandler], can_run: Callable[[Command], Boolean], ui: Maybe[Ui]) -> None:
+    def __init__(
+            self,
+            run: Callable[[RunTask], Maybe[FreeTrans]],
+            create_vim_pane: Callable[[RunTask], Maybe[FreeTrans]],
+            ui: Maybe[Ui],
+    ) -> None:
         self.run = run
-        self.can_run = can_run
+        self.create_vim_pane = create_vim_pane
         self.ui = ui
 
 

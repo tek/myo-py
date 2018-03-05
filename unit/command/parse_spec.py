@@ -2,18 +2,20 @@ from kallikrein import k, Expectation
 from kallikrein.matchers.length import have_length
 
 from amino.test.spec import SpecBase
-from amino import List, Map, Nothing, Lists
+from amino import List, Map, Nothing, Lists, Path, Nil
+from amino.test import fixture_path
 
 from ribosome.test.integration.run import DispatchHelper
 from ribosome.config.config import Config
 from ribosome.plugin_state import ComponentDispatch
-from ribosome.dispatch.execute import dispatch_state, run_trans_m
+from ribosome.dispatch.execute import dispatch_state
 
 from myo.components.command.config import command
 from myo.data.command import Command, VimInterpreter
 from myo.env import Env
 from myo.config.component import MyoComponent
-from myo.components.command.trans.parse import parse
+from myo.components.command.trans.parse import parse_output
+from myo.settings import MyoSettings
 
 
 config = Config.cons(
@@ -22,43 +24,28 @@ config = Config.cons(
     state_ctor=Env.cons,
     components=Map(command=command),
     component_config_type=MyoComponent,
+    settings=MyoSettings(),
 )
-
-_errmsg = 'error 23'
-
-trace = '''Traceback (most recent call last):
-  File "/path/to/file", line 23, in funcname
-    yield
-  File "/path/to/file", line 23, in funcname
-    yield
-RuntimeError: {err}
-
-Cause:
-  File "/path/to/file", line 23, in funcname
-    yield
-  File "/path/to/file", line 23
-    wrong =
-           ^
-SyntaxError: {err}
-
-trailing garbage
-'''.format(err=_errmsg)
 
 
 class ParseSpec(SpecBase):
     '''
-    parse command output $parse
+    parse text $text
     '''
 
-    def parse(self) -> Expectation:
+    @property
+    def trace_file(self) -> Path:
+        return fixture_path('tmux', 'parse', 'trace')
+
+    def text(self) -> Expectation:
         name = 'test'
         cmds = List('let g:key = 7', 'let g:value = 13')
-        cmd = Command(name, VimInterpreter(silent=False, target=Nothing), cmds)
+        cmd = Command(name, VimInterpreter(silent=False, target=Nothing), cmds, Nil)
         helper = DispatchHelper.cons(config, 'command').update_component('command', commands=List(cmd))
         compo = helper.state.component('command').get_or_raise()
-        output = Lists.lines(trace)
+        output = Lists.lines(self.trace_file.read_text())
         aff = ComponentDispatch(compo)
-        result = run_trans_m(parse(output).m).run(dispatch_state(helper.state, aff)).unsafe(None)
+        result = parse_output(output).run(dispatch_state(helper.state, aff)).unsafe(None)
         return k(result[1].events).must(have_length(2))
 
 
