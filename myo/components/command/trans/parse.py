@@ -1,17 +1,15 @@
 from typing import TypeVar
 
 from ribosome.trans.api import trans
-from ribosome.trans.action import TransM
 from ribosome.nvim.io import NS
 from ribosome.config.config import Resources
-from ribosome import ribo_log
 from ribosome.dispatch.component import ComponentData
-from ribosome.nvim.scratch import show_in_scratch_buffer, CreateScratchBufferOptions
 
 from chiasma.util.id import Ident
 
 from amino import do, Do, List, Dat, __, Either, _, Maybe, IO, Lists, Just
 from amino.lenses.lens import lens
+from amino.boolean import true
 
 from myo.settings import MyoSettings, setting
 from myo.config.component import MyoComponent
@@ -20,6 +18,8 @@ from myo.output import Parsing
 from myo.output.data import ParseResult
 from myo.components.command.data import CommandData
 from myo.data.command import HistoryEntry
+from myo.components.command.trans.output import display_parse_result
+from myo.config.plugin_state import MyoPluginState
 
 D = TypeVar('D')
 
@@ -73,25 +73,19 @@ def fetch_output() -> Do:
     yield cmd_output(cmd.ident)
 
 
-@do(NS[CommandData, None])
-def display_parse_result(result: ParseResult) -> Do:
-    yield NS.lift(show_in_scratch_buffer(result.lines / _.formatted, CreateScratchBufferOptions.cons()))
-    yield NS.unit
-
-
 @do(NS[Resources[ComponentData[Env, CommandData], MyoSettings, MyoComponent], None])
 def parse_most_recent() -> Do:
     output = yield fetch_output().zoom(lens.data.comp)
     yield parse_output(output)
 
 
-@trans.free.unit(trans.st)
-@do(NS[Resources[ComponentData[Env, CommandData], MyoSettings, MyoComponent], None])
+@trans.free.unit(trans.st, internal=true)
+@do(NS[Resources[ComponentData[MyoPluginState, CommandData], MyoSettings, MyoComponent], None])
 def parse() -> Do:
     parse_result = yield parse_most_recent()
     yield NS.modify(__.set.parse_result(Just(parse_result))).zoom(lens.data.comp)
     display_result = yield setting(_.display_parse_result)
-    yield display_parse_result(parse_result) if display_result else NS.unit
+    yield display_parse_result(parse_result).zoom(lens.data) if display_result else NS.unit
 
 
 __all__ = ('parse',)

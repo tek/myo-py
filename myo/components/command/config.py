@@ -1,14 +1,16 @@
-from amino import List
+from amino import List, Map
 from amino.boolean import true
 
 from ribosome.dispatch.component import Component
 from ribosome.request.handler.handler import RequestHandler
+from ribosome.dispatch.mapping import Mappings
 
 from myo.components.command.trans.add import add_system_command, add_vim_command, add_shell_command
 from myo.components.command.trans.run import run_command, run_line
 from myo.config.component import MyoComponent
 from myo.components.command.data import CommandData
 from myo.components.command.trans.parse import parse
+from myo.components.command.trans.output import current_entry_jump, jump_mapping
 
 
 command = Component.cons(
@@ -23,6 +25,9 @@ command = Component.cons(
         RequestHandler.trans_cmd(parse)(json=true),
     ),
     config=MyoComponent.cons(),
+    mappings=Mappings.cons(Map({
+        jump_mapping: current_entry_jump,
+    }))
 )
 
 __all__ = ('command',)

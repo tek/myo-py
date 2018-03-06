@@ -8,7 +8,6 @@ from amino import List
 
 from ribosome.nvim.api import current_buffer_content
 from ribosome.test.klk import kn
-from ribosome.test.integration.klk import later
 
 from integration._support.python_parse import events
 from integration._support.spec import TmuxDefaultSpec
