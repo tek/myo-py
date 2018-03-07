@@ -10,7 +10,8 @@ from myo.components.command.trans.run import run_command, run_line
 from myo.config.component import MyoComponent
 from myo.components.command.data import CommandData
 from myo.components.command.trans.parse import parse
-from myo.components.command.trans.output import current_entry_jump, jump_mapping
+from myo.components.command.trans.output import (current_entry_jump, jump_mapping, quit_mapping, quit_output,
+                                                 prev_mapping, prev_entry, next_mapping, next_entry)
 
 
 command = Component.cons(
@@ -27,6 +28,9 @@ command = Component.cons(
     config=MyoComponent.cons(),
     mappings=Mappings.cons(Map({
         jump_mapping: current_entry_jump,
+        quit_mapping: quit_output,
+        prev_mapping: prev_entry,
+        next_mapping: next_entry,
     }))
 )
 

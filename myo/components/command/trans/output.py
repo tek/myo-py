@@ -8,13 +8,15 @@ from ribosome.dispatch.component import ComponentData
 from ribosome.trans.api import trans
 from ribosome.trans.mapping import activate_mapping
 from ribosome.dispatch.mapping import Mapping
+from ribosome import ribo_log
+from ribosome.nvim.api import close_current_buffer
 
 from myo.components.command.data import CommandData
 from myo.output.data import ParseResult
 from myo.config.plugin_state import MyoPluginState
 
 jump_mapping = Mapping.cons('<cr>', true)
-quit_mappiing = Mapping.cons('q', true)
+quit_mapping = Mapping.cons('q', true)
 prev_mapping = Mapping.cons('<m-->', true)
 next_mapping = Mapping.cons('<m-=>', true)
 
@@ -22,7 +24,7 @@ next_mapping = Mapping.cons('<m-=>', true)
 @do(NS[ComponentData[MyoPluginState, CommandData], None])
 def display_parse_result(result: ParseResult) -> Do:
     yield NS.lift(show_in_scratch_buffer(result.lines / _.formatted, CreateScratchBufferOptions.cons()))
-    yield List(jump_mapping).traverse(activate_mapping, NS).zoom(lens.main)
+    yield List(jump_mapping, quit_mapping, prev_mapping, next_mapping).traverse(activate_mapping, NS).zoom(lens.main)
     yield NS.unit
 
 
@@ -32,4 +34,23 @@ def current_entry_jump() -> Do:
     yield NS.unit
 
 
-__all__ = ('display_parse_result', 'current_entry_jump')
+@trans.free.result(trans.st)
+@do(NS[None, None])
+def quit_output() -> Do:
+    yield NS.lift(close_current_buffer())
+    yield NS.unit
+
+
+@trans.free.result(trans.st)
+@do(NS[None, None])
+def prev_entry() -> Do:
+    yield NS.unit
+
+
+@trans.free.result(trans.st)
+@do(NS[None, None])
+def next_entry() -> Do:
+    yield NS.unit
+
+
+__all__ = ('display_parse_result', 'current_entry_jump', 'quit_output', 'prev_entry', 'next_entry')
