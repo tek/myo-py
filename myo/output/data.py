@@ -1,5 +1,5 @@
 import abc
-from typing import Tuple, Callable
+from typing import Tuple, Callable, Union
 
 from chiasma.util.id import Ident
 
@@ -34,14 +34,21 @@ class OutputLine(Dat['OutputLine']):
     @staticmethod
     def cons(
             text: str,
-            target: Ident,
+            target: Union[OutputEntry, 'OutputEvent'],
             entry: OutputEntry=None,
             indent: int=0,
             group: str=None,
     ):
         return OutputLine(text, target, Maybe.optional(entry), indent, Maybe.optional(group))
 
-    def __init__(self, text: str, target: Ident, entry: Maybe[OutputEntry], indent: int, group: Maybe[str]) -> None:
+    def __init__(
+            self,
+            text: str,
+            target: Union[OutputEntry, 'OutputEvent'],
+            entry: Maybe[OutputEntry],
+            indent: int,
+            group: Maybe[str],
+    ) -> None:
         self.text = text
         self.target = target
         self.entry = entry
@@ -95,6 +102,11 @@ class Location:
     @abc.abstractproperty
     def coords(self) -> Tuple[int, int]:
         ...
+
+    @property
+    def nvim_coords(self) -> Tuple[int, int]:
+        line, col = self.coords
+        return line + 1, col + 1
 
     @property
     def location(self) -> 'Location':
