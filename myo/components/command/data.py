@@ -17,11 +17,13 @@ class OutputData(Dat['OutputData']):
             lines: List[OutputLine]=Nil,
             locations: List[Location]=Nil,
             scratch: ScratchBuffer=None,
+            current: int=0,
     ) -> 'OutputData':
         return OutputData(
             lines,
             locations,
             Maybe.optional(scratch),
+            current,
         )
 
     def __init__(
@@ -29,10 +31,12 @@ class OutputData(Dat['OutputData']):
             lines: List[OutputLine],
             locations: List[Location],
             scratch: Maybe[ScratchBuffer],
+            current: int,
     ) -> None:
         self.lines = lines
         self.locations = locations
         self.scratch = scratch
+        self.current = current
 
 
 class CommandData(Dat['CommandData']):

@@ -22,7 +22,7 @@ class OutputEntry(Dat['OutputEntry']):
         return self.format_lines(event, _.text, group)
 
     def format_lines(self, event, f: Callable, group=Empty()):
-        return List(OutputLine.cons(f(self), event | self, Just(self), group=group))
+        return List(OutputLine.cons(f(self), event | self, self, group=group))
 
 
 class OutputLine(Dat['OutputLine']):
@@ -80,10 +80,6 @@ class ErrorEntry(OutputEntry):
 
 class CodeEntry(OutputEntry):
 
-    @staticmethod
-    def cons(text: str, code: str) -> 'CodeEntry':
-        return CodeEntry(text, code)
-
     def __init__(self, text: str, code: str) -> None:
         self.text = text
         self.code = code
@@ -106,7 +102,7 @@ class Location:
     @property
     def nvim_coords(self) -> Tuple[int, int]:
         line, col = self.coords
-        return line + 1, col + 1
+        return line + 1, col
 
     @property
     def location(self) -> 'Location':

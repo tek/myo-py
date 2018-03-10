@@ -10,7 +10,7 @@ from ribosome.test.integration.run import DispatchHelper, dispatch_helper
 from ribosome.config.config import Config
 from ribosome.plugin_state import ComponentDispatch, DispatchAffiliation
 from ribosome.dispatch.execute import dispatch_state, run_trans_m
-from ribosome.nvim.api import current_buffer_content, current_buffer_name, current_cursor
+from ribosome.nvim.api import current_buffer_content, current_buffer_name, current_cursor, current_window_number
 from ribosome.nvim import NvimIO
 from ribosome.test.klk import kn
 from ribosome.dispatch.run import DispatchState
@@ -22,7 +22,7 @@ from myo.env import Env
 from myo.config.component import MyoComponent
 from myo.components.command.trans.parse import parse
 from myo.settings import MyoSettings
-from myo.components.command.trans.output import display_parse_result, current_entry_jump
+from myo.components.command.trans.output import display_parse_result, current_entry_jump, next_entry, prev_entry
 from myo.output.data import ParseResult, CodeEntry, OutputEvent
 from myo.output.parser.python import FileEntry, PyErrorEntry, ColEntry
 
@@ -39,6 +39,7 @@ config = Config.cons(
     settings=MyoSettings(),
 )
 line, col = 2, 5
+line1 = 3
 file_path = fixture_path('command', 'parse', 'file.py')
 entry = FileEntry(
     f'  File "{file_path}", line {line}, in funcname',
@@ -48,12 +49,13 @@ entry = FileEntry(
     Just('funcname'),
     Just(CodeEntry('    yield', 'yield'))
 )
+entry1 = entry.set.col(line1)
 output_events = List(
     OutputEvent(
         Nil,
         List(
             entry,
-            entry,
+            entry1,
             PyErrorEntry('RuntimeError: error', 'error', 'RuntimeError')
         )
     ),
@@ -61,7 +63,7 @@ output_events = List(
         Nil,
         List(
             entry,
-            entry,
+            entry1,
             ColEntry('           ^', ' '),
             PyErrorEntry('SyntaxError: error', 'error', 'SyntaxError')
         )
@@ -83,6 +85,7 @@ class ParseSpec(ExternalSpec):
     '''
     parse command output $command_output
     jump to current error $jump
+    cycle to next error $next
     '''
 
     @property
@@ -112,6 +115,7 @@ class ParseSpec(ExternalSpec):
         )
         @do(NvimIO[List[str]])
         def run() -> Do:
+            yield helper1.settings.auto_jump.update(False)
             yield run_trans_m(parse().m).run(dispatch_state(helper1.state, aff))
             yield current_buffer_content()
         return kn(run(), self.vim).must(have_lines(events))
@@ -126,6 +130,22 @@ class ParseSpec(ExternalSpec):
             cursor = yield current_cursor()
             return name, cursor
         return kn(run(), self.vim) == (str(file_path), (line, col))
+
+    def next(self) -> Expectation:
+        @do(NvimIO[List[str]])
+        def run() -> Do:
+            helper, aff, data = yield component()
+            yield helper.settings.auto_jump.update(False)
+            data = ComponentData(helper.state, data)
+            (s1, ignore) = yield display_parse_result(parse_result).run(data)
+            cursor1 = yield current_cursor()
+            (s2, ignore) = yield next_entry.fun().run(helper.state.resources_with(s1))
+            cursor2 = yield current_cursor()
+            data = ComponentData(helper.state, data)
+            yield prev_entry.fun().run(s2)
+            cursor3 = yield current_cursor()
+            return cursor1, cursor2, cursor3
+        return kn(run(), self.vim) == ((1, 0), (3, 0), (1, 0))
 
 
 __all__ = ('ParseSpec',)

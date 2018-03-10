@@ -25,6 +25,9 @@ instead. Particularly helpful for tests.
 '''
 display_parse_result_help = '''After parsing the output of an executed command, display errors in a scratch buffer.
 '''
+auto_jump_help = '''When loading the output buffer or cycling through output events, jump to the code location without
+hitting the jump key.
+'''
 
 
 class MyoSettings(Settings):
@@ -37,6 +40,8 @@ class MyoSettings(Settings):
         self.vim_tmux_pane = int_setting('vim_tmux_pane', 'vim tmux pane id', vim_tmux_pane_help, True)
         self.display_parse_result = bool_setting('display_parse_result', 'display parse result',
                                                  display_parse_result_help, True, Right(true))
+        self.auto_jump = bool_setting('auto_jump', 'jump when changing output events', auto_jump_help, True,
+                                      Right(true))
 
 
 A = TypeVar('A')

@@ -1,13 +1,10 @@
 import abc
-from collections import namedtuple
-from types import FunctionType
-from typing import Any, Tuple, Callable, Union
+from typing import Any, Tuple, Callable
 
 from networkx import DiGraph
 
-from amino import List, Maybe, Try, curried, Just, _, Right, Either, Lists, Dat, Regex, Nothing
+from amino import List, Maybe, curried, Just, _, Right, Either, Lists, Dat, Regex, Nothing, Map
 from amino.regex import Match
-from amino.logging import Logger
 from amino.func import tailrec
 
 from myo.logging import Logging
@@ -22,28 +19,33 @@ class ParserBase(Logging, metaclass=abc.ABCMeta):
 
 
 class EdgeData(Dat['EdgeData']):
-    # r = re_field()
-    # entry = field((type, FunctionType))
 
-    def __init__(self, r: Regex, entry: Union[type, FunctionType]) -> None:
+    @staticmethod
+    def strict(r: Regex, cons_entry: Callable[..., Either[str, OutputEntry]]) -> 'EdgeData':
+        return EdgeData(r, lambda *a, **kw: Right(cons_entry(*a, **kw)))
+
+    def __init__(self, r: Regex, cons_entry: Callable[..., Either[str, OutputEntry]]) -> None:
         self.r = r
-        self.entry = entry
-
-    @property
-    def _str_extra(self) -> List[Any]:
-        return List(self.r, self.entry)
-
-Step = namedtuple('Step', ['node', 'data', 'weight'])
+        self.cons_entry = cons_entry
 
 
-# TODO log errors
+class Step(Dat['Step']):
+
+    def __init__(self, node: str, data: Map, weight: int) -> None:
+        self.node = node
+        self.data = data
+        self.weight = weight
+
+
 @curried
-def cons_entry(logger: Logger, entry: type, match: Match) -> Maybe[OutputEntry]:
-    return Try(entry, text=match.string, **match.group_map).leffect(logger.ddebug)
+def cons_entry(
+        cons_entry: Callable[..., Either[str, OutputEntry]],
+        match: Match,
+) -> Either[str, OutputEntry]:
+    return cons_entry(text=match.string, **match.group_map)
 
 
-# memoize `edges()`
-class SimpleParser(ParserBase, metaclass=abc.ABCMeta):
+class SimpleParser(ParserBase, abc.ABC):
 
     @abc.abstractproperty
     def graph(self) -> DiGraph:
@@ -89,14 +91,14 @@ class SimpleParser(ParserBase, metaclass=abc.ABCMeta):
             new = Nothing if current.empty else self.event(current)
             return result + new.to_list
         def parse_line(line: str, rest: List[str]) -> Tuple[bool, tuple]:
-            self.log.ddebug('parsing line: {}'.format(line))
+            self.log.debug2(lambda: f'parsing line: {line}')
             def match(step: Step) -> Either[str, Tuple[OutputEntry, str]]:
                 def dbg(a: Any) -> None:
-                    self.log.ddebug('matched edge to {}'.format, step.node)
+                    self.log.debug2(lambda: f'matched edge to {step.node}')
                 return (
                     step.data.r.match(line) %
                     dbg //
-                    cons_entry(self.log, step.data.entry)
+                    cons_entry(step.data.cons_entry)
                 ) & Right(step.node)
             def cont(entry: OutputEntry, next_node: str) -> Tuple[bool, tuple]:
                 return True, (self, next_node, rest, result, current.cat(entry))

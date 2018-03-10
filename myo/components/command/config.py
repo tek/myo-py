@@ -24,6 +24,10 @@ command = Component.cons(
         RequestHandler.trans_cmd(run_command)(json=true),
         RequestHandler.trans_cmd(run_line)(name='line', json=true),
         RequestHandler.trans_cmd(parse)(json=true),
+        RequestHandler.trans_cmd(current_entry_jump)(),
+        RequestHandler.trans_cmd(quit_output)(),
+        RequestHandler.trans_cmd(prev_entry)(),
+        RequestHandler.trans_cmd(next_entry)(),
     ),
     config=MyoComponent.cons(),
     mappings=Mappings.cons(Map({
