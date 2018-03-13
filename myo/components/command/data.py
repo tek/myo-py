@@ -1,6 +1,7 @@
 from uuid import uuid4, UUID
 
 from amino import Dat, Nil, Map, Path, List, Either, _, Maybe
+from amino.list import replace_one
 
 from myo.data.command import Command, HistoryEntry
 from myo.output.data import OutputLine, Location
@@ -73,6 +74,9 @@ class CommandData(Dat['CommandData']):
 
     def command_by_ident(self, ident: Ident) -> Either[str, Command]:
         return self.commands.find(_.ident == ident).to_either(f'no command `{ident}`')
+
+    def replace_command(self, cmd: Command) -> 'CommandData':
+        return self.mod.commands(lambda cs: replace_one(cs, _.ident == cmd.ident, cmd)._value() | (lambda: cs.cat(cmd)))
 
     def log_by_ident(self, ident: Ident) -> Either[str, Path]:
         return self.logs.lift(ident).to_either(f'no log for `{ident}`')

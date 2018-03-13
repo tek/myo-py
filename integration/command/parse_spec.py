@@ -1,43 +1,28 @@
-from typing import Tuple
-
 from kallikrein import Expectation
 from kallikrein.matchers.lines import have_lines
+from kallikrein.matchers import contain
 
 from amino import List, Map, Nothing, Path, do, Do, Nil, Just
 from amino.test import fixture_path
 
-from ribosome.test.integration.run import DispatchHelper, dispatch_helper
-from ribosome.config.config import Config
-from ribosome.plugin_state import ComponentDispatch, DispatchAffiliation
 from ribosome.dispatch.execute import dispatch_state, run_trans_m
-from ribosome.nvim.api import current_buffer_content, current_buffer_name, current_cursor, current_window_number
+from ribosome.nvim.api import current_buffer_content, current_buffer_name, current_cursor
 from ribosome.nvim import NvimIO
 from ribosome.test.klk import kn
-from ribosome.dispatch.run import DispatchState
 from ribosome.dispatch.component import ComponentData
+from ribosome.nvim.io import NSuccess
 
-from myo.components.command.config import command
 from myo.data.command import Command, HistoryEntry
-from myo.env import Env
-from myo.config.component import MyoComponent
 from myo.components.command.trans.parse import parse
-from myo.settings import MyoSettings
 from myo.components.command.trans.output import display_parse_result, current_entry_jump, next_entry, prev_entry
 from myo.output.data import ParseResult, CodeEntry, OutputEvent
 from myo.output.parser.python import FileEntry, PyErrorEntry, ColEntry
 
 from integration._support.spec import ExternalSpec
 from integration._support.python_parse import events
+from integration._support.command.setup import command_spec_data
 
 
-config = Config.cons(
-    name='myo',
-    prefix='myo',
-    state_ctor=Env.cons,
-    components=Map(command=command),
-    component_config_type=MyoComponent,
-    settings=MyoSettings(),
-)
 line, col = 2, 5
 line1 = 3
 file_path = fixture_path('command', 'parse', 'file.py')
@@ -70,15 +55,7 @@ output_events = List(
     )
 )
 parse_result = ParseResult(Nil, output_events, List('python'))
-
-
-@do(NvimIO[Tuple[DispatchHelper, ComponentData[Env, DispatchAffiliation]]])
-def component() -> Do:
-    helper = yield dispatch_helper(config, 'command')
-    compo = yield NvimIO.from_either(helper.state.component('command'))
-    aff = ComponentDispatch(compo)
-    compo_data = helper.state.data_for(compo)
-    return helper, aff, compo_data
+trace_file = fixture_path('tmux', 'python_parse', 'trace')
 
 
 class ParseSpec(ExternalSpec):
@@ -88,53 +65,34 @@ class ParseSpec(ExternalSpec):
     cycle to next error $next
     '''
 
-    @property
-    def trace_file(self) -> Path:
-        return fixture_path('tmux', 'python_parse', 'trace')
-
-    @property
-    def component(self) -> Tuple[DispatchHelper, ComponentData[Env, DispatchAffiliation]]:
-        helper = DispatchHelper.nvim(config, self.vim, 'command')
-        compo = helper.state.component('command').get_or_raise()
-        aff = ComponentDispatch(compo)
-        return helper, aff
-
-    @property
-    def dispatch_state(self) -> DispatchState:
-        helper, aff = self.component
-        return dispatch_state(helper.state, aff)
-
     def command_output(self) -> Expectation:
         cmd_ident = 'commo'
         cmd = Command.cons(cmd_ident)
         hist = HistoryEntry(cmd, Nothing)
-        helper, aff = self.component
-        helper1 = (
-            helper
-            .update_component('command', commands=List(cmd), history=List(hist), logs=Map({cmd_ident: self.trace_file}))
-        )
+        logs = Map({cmd_ident: trace_file})
         @do(NvimIO[List[str]])
         def run() -> Do:
-            yield helper1.settings.auto_jump.update(False)
-            yield run_trans_m(parse().m).run(dispatch_state(helper1.state, aff))
+            helper, aff, data = yield command_spec_data(commands=List(cmd), history=List(hist), logs=logs)
+            yield helper.settings.auto_jump.update(False)
+            yield parse.fun().run(helper.state.resources_with(ComponentData(helper.state, data)))
             yield current_buffer_content()
-        return kn(run(), self.vim).must(have_lines(events))
+        return kn(run(), self.vim).must(contain(have_lines(events)))
 
     def jump(self) -> Expectation:
         @do(NvimIO[List[str]])
         def run() -> Do:
-            helper, aff, data = yield component()
+            helper, aff, data = yield command_spec_data()
             (s1, ignore) = yield display_parse_result(parse_result).run(ComponentData(helper.state, data))
             (s2, ignore) = yield current_entry_jump.fun().run(s1)
             name = yield current_buffer_name()
             cursor = yield current_cursor()
             return name, cursor
-        return kn(run(), self.vim) == (str(file_path), (line, col))
+        return kn(run(), self.vim) == NSuccess((str(file_path), (line, col)))
 
     def next(self) -> Expectation:
         @do(NvimIO[List[str]])
         def run() -> Do:
-            helper, aff, data = yield component()
+            helper, aff, data = yield command_spec_data()
             yield helper.settings.auto_jump.update(False)
             data = ComponentData(helper.state, data)
             (s1, ignore) = yield display_parse_result(parse_result).run(data)
@@ -145,7 +103,7 @@ class ParseSpec(ExternalSpec):
             yield prev_entry.fun().run(s2)
             cursor3 = yield current_cursor()
             return cursor1, cursor2, cursor3
-        return kn(run(), self.vim) == ((1, 0), (3, 0), (1, 0))
+        return kn(run(), self.vim) == NSuccess(((1, 0), (3, 0), (1, 0)))
 
 
 __all__ = ('ParseSpec',)

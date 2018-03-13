@@ -1,7 +1,8 @@
 import os
 import tempfile
+from typing import TypeVar
 
-from amino import do, Do, Maybe, __, _, Path, IO, L, List
+from amino import do, Do, Maybe, __, _, Path, IO, L, List, Boolean, Lists
 from amino.state import EitherState, State
 
 from amino.dat import Dat
@@ -11,19 +12,62 @@ from amino.lenses.lens import lens
 from ribosome.trans.api import trans
 from ribosome.trans.action import TransM
 from ribosome.nvim.io import NS
-from ribosome import ribo_log
+from ribosome.process import Subprocess
 
 from myo.util import Ident
 from myo.config.handler import find_handler
 from myo.data.command import Command, Interpreter, SystemInterpreter, ShellInterpreter, VimInterpreter
 from myo.components.ui.trans.pane import ui_pane_by_ident, render_pane
-from myo.command.run_task import RunTaskDetails, UiSystemTaskDetails, UiShellTaskDetails, VimTaskDetails
+from myo.command.run_task import (RunTaskDetails, UiSystemTaskDetails, UiShellTaskDetails, VimTaskDetails,
+                                  SystemTaskDetails)
 from myo.components.command.trans.history import push_history
 from myo.command.run_task import RunTask
 from myo.components.command.data import CommandData
 
+D = TypeVar('D')
+
+
+def internal_can_run(task: RunTask) -> Boolean:
+    return isinstance(task.details, SystemTaskDetails)
+
+
+class run_task(PatMat, alg=RunTaskDetails):
+
+    def __init__(self, task: RunTask) -> None:
+        self.task = task
+
+    @do(NS[D, None])
+    def system_task_details(self, details: SystemTaskDetails) -> Do:
+        def popen(exe: str, args: List[str]) -> IO[None]:
+            return Subprocess(exe, args, None).execute(None)
+        parts = yield NS.from_either(
+            self.task.command.lines
+            .map(Lists.tokens)
+            .traverse(lambda a: a.detach_head, Maybe)
+            .to_either(lambda: f'empty command line in {self.task.cmd}')
+        )
+        result = yield NS.from_io(parts.traverse2(popen, IO))
+        output = result.flat_map(_.stdout)
+        yield NS.from_io(IO.delay(self.task.log.write_text, output.join_lines))
+        yield NS.unit
+
+    def patmat_default(self, details: RunTaskDetails) -> NS[D, None]:
+        yield NS.unit
+
+
+@trans.free.unit(trans.st)
+@do(NS[None, None])
+def run_internal_command(task: RunTask) -> Do:
+    yield run_task(task)(task.details)
+
 
 class RunCommandOptions(Dat['RunCommandOptions']):
+
+    @staticmethod
+    def cons(
+            interpreter: str=None,
+    ) -> 'RunCommandOptions':
+        return RunCommandOptions(Maybe.optional(interpreter))
 
     def __init__(
             self,
@@ -32,12 +76,8 @@ class RunCommandOptions(Dat['RunCommandOptions']):
         self.interpreter = interpreter
 
 
-def shell_task() -> TransM:
-    pass
-
-
-def system_task() -> TransM:
-    pass
+def system_task_details() -> TransM:
+    return TransM.pure(SystemTaskDetails())
 
 
 @do(TransM[RunTaskDetails])
@@ -55,7 +95,7 @@ class run_task_details(PatMat[Interpreter, TransM[RunTaskDetails]], alg=Interpre
 
     @do(TransM[RunTaskDetails])
     def system_interpreter(self, interpreter: SystemInterpreter) -> Do:
-        yield interpreter.target / ui_system_task_details | (lambda: system_task())
+        yield interpreter.target / ui_system_task_details | (lambda: system_task_details())
 
     @do(TransM[RunTaskDetails])
     def shell_interpreter(self, interpreter: ShellInterpreter) -> Do:

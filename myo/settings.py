@@ -28,6 +28,8 @@ display_parse_result_help = '''After parsing the output of an executed command, 
 auto_jump_help = '''When loading the output buffer or cycling through output events, jump to the code location without
 hitting the jump key.
 '''
+vim_test_filename_modifier_help = '''A vim-test setting that is applied to file names.
+'''
 
 
 class MyoSettings(Settings):
@@ -42,6 +44,8 @@ class MyoSettings(Settings):
                                                  display_parse_result_help, True, Right(true))
         self.auto_jump = bool_setting('auto_jump', 'jump when changing output events', auto_jump_help, True,
                                       Right(true))
+        self.vim_test_filename_modifier = str_setting('test#filename_modifier', 'vim-test filename modifier',
+                                                      vim_test_filename_modifier_help, False, Right(':.'))
 
 
 A = TypeVar('A')
