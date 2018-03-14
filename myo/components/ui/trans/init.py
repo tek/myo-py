@@ -8,7 +8,6 @@ from ribosome.trans.api import trans
 from ribosome.nvim.io import NS
 from ribosome.nvim import NvimIO
 from ribosome.trans.action import TransM
-from ribosome import ribo_log
 
 from myo.ui.data.ui_data import UiData
 from myo.ui.data.space import Space

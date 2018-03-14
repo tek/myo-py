@@ -14,7 +14,8 @@ from myo.components.command.trans.parse import parse
 from myo.components.command.trans.output import (current_entry_jump, jump_mapping, quit_mapping, quit_output,
                                                  prev_mapping, prev_entry, next_mapping, next_entry)
 from myo.command.run_task import RunTask
-from myo.components.command.trans.vim_test import test_determine_runner, test_executable, build_position, build_args
+from myo.components.command.trans.test import vim_test
+from myo.components.command.trans.init import stage1
 
 
 def run_handler_for(task: RunTask) -> Maybe[TransHandler]:
@@ -35,10 +36,8 @@ command = Component.cons(
         RequestHandler.trans_cmd(quit_output)(),
         RequestHandler.trans_cmd(prev_entry)(),
         RequestHandler.trans_cmd(next_entry)(),
-        RequestHandler.trans_function(test_determine_runner)(),
-        RequestHandler.trans_function(test_executable)(),
-        RequestHandler.trans_function(build_position)(),
-        RequestHandler.trans_function(build_args)(),
+        RequestHandler.trans_cmd(vim_test)(),
+        RequestHandler.trans_cmd(stage1)(),
     ),
     config=MyoComponent.cons(run_handler_for),
     mappings=Mappings.cons(Map({

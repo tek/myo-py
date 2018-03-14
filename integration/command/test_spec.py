@@ -1,6 +1,8 @@
 from kallikrein import Expectation
+from kallikrein.matchers.lines import have_lines
+from kallikrein.matchers import contain
 
-from integration._support.spec import ExternalSpec
+from integration._support.spec import ExternalSpec, DefaultSpec
 from integration._support.command.setup import command_spec_data
 
 from chiasma.util.id import Ident
@@ -12,7 +14,7 @@ from ribosome.nvim import NvimIO
 from ribosome.test.klk import kn
 from ribosome.dispatch.execute import run_trans_m, dispatch_state
 from ribosome.nvim.io import NSuccess
-from ribosome.nvim.api import define_function
+from ribosome.nvim.api import define_function, current_buffer_content, buffers, buffer_content
 
 from myo.components.command.trans.test import vim_test, vim_test_command, test_ident
 from myo.components.command.trans.run import RunCommandOptions
@@ -24,8 +26,8 @@ file = fixture_path('command', 'test', 'code.py')
 @do(NvimIO[None])
 def mock_test_functions() -> Do:
     yield define_function('MyoTestDetermineRunner', List('file'), f'return "python"')
-    yield define_function('MyoTestExecutable', List('runner'), f'return "echo"')
-    yield define_function('MyoTestBuildPosition', List('runner', 'pos'), f'return ["arg"]')
+    yield define_function('MyoTestExecutable', List('runner'), f'return "python"')
+    yield define_function('MyoTestBuildPosition', List('runner', 'pos'), f'return ["-c", "raise Exception(1)"]')
     yield define_function('MyoTestBuildArgs', List('runner', 'args'), f'return a:args')
 
 
@@ -58,5 +60,30 @@ class TestSpec(ExternalSpec):
             log = yield NvimIO.from_either(cmd.log_by_ident(test_ident))
             return log.read_text()
         return kn(run(), self.vim) == NSuccess('arg')
+
+
+# TODO test empty `ParseOutput`
+class TestISpec(DefaultSpec):
+    '''run a test command $run
+    '''
+
+    def _pre_start(self) -> None:
+        self.vim.vars.set_p('components', List('command'))
+        super()._pre_start()
+
+    def run(self) -> Expectation:
+        self.cmd_sync('MyoStage1')
+        mock_test_functions().unsafe(self.vim)
+        self.json_cmd_sync('MyoVimTest')
+        self.cmd_sync('MyoParse')
+        self._wait(1)
+        target = List('  File "<string>", line 1, in <module>', 'RuntimeError: No active exception to reraise')
+        @do(NvimIO[List[str]])
+        def content() -> Do:
+            bufs = yield buffers()
+            buf = yield NvimIO.from_maybe(bufs.lift(1), 'scratch buffer wasn\'t opened')
+            yield buffer_content(buf)
+        return kn(content(), self.vim).must(contain(have_lines(target)))
+
 
 __all__ = ('TestSpec',)

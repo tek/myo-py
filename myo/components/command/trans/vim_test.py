@@ -5,9 +5,8 @@ from ribosome.nvim import NvimIO
 from ribosome.nvim.io import NS
 from ribosome.config.config import Resources
 from ribosome.dispatch.component import ComponentData
-from ribosome.trans.api import trans
 
-from amino import _, L, List, Right, Left, Either, do, Do, Dat
+from amino import _, Either, do, Do, Dat
 from amino.json import encode_json
 
 from myo.components.command.data import CommandData
@@ -56,31 +55,6 @@ def assemble_vim_test_line(position: VimTestPosition) -> Do:
 def vim_test_line() -> Do:
     position = yield vim_test_position()
     yield NS.lift(assemble_vim_test_line(position))
-
-
-
-@trans.free.result(trans.st)
-@do(NS[None, None])
-def test_determine_runner(file: str) -> Do:
-    yield NS.lift(vim_test_call(cons_decode_str, 'determine_runner', file))
-
-
-@trans.free.result(trans.st)
-@do(NS[None, None])
-def test_executable(runner: str) -> Do:
-    yield NS.lift(vim_test_call(cons_decode_str, f'{runner}#executable'))
-
-
-@trans.free.result(trans.st)
-@do(NS[None, None])
-def build_position(runner: str, pos: dict) -> Do:
-    yield NS.lift(vim_test_call(cons_decode_str_list, f'base#build_position', runner, pos))
-
-
-@trans.free.result(trans.st)
-@do(NS[None, None])
-def build_args(runner: str, args: list) -> Do:
-    yield NS.lift(vim_test_call(cons_decode_str_list, f'base#build_args', runner, args))
 
 
 __all__ = ('vim_test_line', 'test_determine_runner', 'test_executable', 'build_position', 'build_args')

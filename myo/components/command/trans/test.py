@@ -10,6 +10,7 @@ from ribosome.trans.api import trans
 from ribosome.trans.action import TransM
 from ribosome.dispatch.component import ComponentData
 from ribosome.config.config import Resources
+from ribosome import ribo_log
 
 from myo.components.command.data import CommandData
 from myo.settings import MyoSettings
@@ -45,7 +46,6 @@ def vim_test_lines() -> Do:
 def vim_test_command() -> Do:
     lines = yield vim_test_lines()
     yield update_test_line(lines).zoom(lens.data.comp)
-    yield NS.unit
 
 
 @trans.free.do()

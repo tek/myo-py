@@ -1,5 +1,6 @@
 import os
 import tempfile
+import subprocess
 from typing import TypeVar
 
 from amino import do, Do, Maybe, __, _, Path, IO, L, List, Boolean, Lists
@@ -13,6 +14,7 @@ from ribosome.trans.api import trans
 from ribosome.trans.action import TransM
 from ribosome.nvim.io import NS
 from ribosome.process import Subprocess
+from ribosome import ribo_log
 
 from myo.util import Ident
 from myo.config.handler import find_handler
@@ -39,7 +41,7 @@ class run_task(PatMat, alg=RunTaskDetails):
     @do(NS[D, None])
     def system_task_details(self, details: SystemTaskDetails) -> Do:
         def popen(exe: str, args: List[str]) -> IO[None]:
-            return Subprocess(exe, args, None).execute(None)
+            return Subprocess(exe, args, None).execute(None, stderr=subprocess.STDOUT)
         parts = yield NS.from_either(
             self.task.command.lines
             .map(Lists.tokens)

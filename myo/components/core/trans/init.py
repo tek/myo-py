@@ -10,8 +10,8 @@ from myo.env import Env
 
 @trans.free.unit(trans.st)
 @do(State[ComponentData[Env, CoreData], None])
-def init() -> Do:
+def stage1() -> Do:
     yield State.pure(None)
 
 
-__all__ = ('init',)
+__all__ = ('stage1',)
