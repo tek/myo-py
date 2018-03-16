@@ -14,7 +14,7 @@ from ribosome.nvim import NvimIO
 from ribosome.test.klk import kn
 from ribosome.dispatch.execute import run_trans_m, dispatch_state
 from ribosome.nvim.io import NSuccess
-from ribosome.nvim.api import define_function, current_buffer_content, buffers, buffer_content
+from ribosome.nvim.api import define_function, buffers, buffer_content
 
 from myo.components.command.trans.test import vim_test, vim_test_command, test_ident
 from myo.components.command.trans.run import RunCommandOptions
@@ -76,7 +76,7 @@ class TestISpec(DefaultSpec):
         mock_test_functions().unsafe(self.vim)
         self.json_cmd_sync('MyoVimTest')
         self.cmd_sync('MyoParse')
-        self._wait(1)
+        self._wait(.5)
         target = List('  File "<string>", line 1, in <module>', 'RuntimeError: No active exception to reraise')
         @do(NvimIO[List[str]])
         def content() -> Do:
