@@ -1,4 +1,4 @@
-from amino import do, Do, Maybe, List, Either, __, Boolean
+from amino import do, Do, Maybe, List, Either, __, Boolean, Nil
 from amino.state import State
 from amino.dat import Dat
 from amino.lenses.lens import lens
@@ -15,78 +15,100 @@ class AddVimCommandOptions(Dat['AddVimCommandOptions']):
 
     def __init__(
             self,
+            ident: Maybe[Ident],
             line: Maybe[str],
             lines: Maybe[List[str]],
             silent: Maybe[Boolean],
             target: Maybe[Ident],
+            langs: Maybe[List[str]],
     ) -> None:
+        self.ident = ident
         self.line = line
         self.lines = lines
         self.silent = silent
         self.target = target
+        self.langs = langs
 
 
 class AddSystemCommandOptions(Dat['AddSystemCommandOptions']):
 
     def __init__(
             self,
+            ident: Maybe[Ident],
             line: Maybe[str],
             lines: Maybe[List[str]],
             target: Maybe[Ident],
+            langs: Maybe[List[str]],
     ) -> None:
+        self.ident = ident
         self.line = line
         self.lines = lines
         self.target = target
+        self.langs = langs
 
 
 class AddShellCommandOptions(Dat['AddShellCommandOptions']):
 
     def __init__(
             self,
+            ident: Maybe[Ident],
             line: Maybe[str],
             lines: Maybe[List[str]],
             target: Ident,
+            langs: Maybe[List[str]],
     ) -> None:
+        self.ident = ident
         self.line = line
         self.lines = lines
         self.target = target
+        self.langs = langs
 
 
-def cons_vim_command(name: str, options: AddVimCommandOptions) -> Either[str, Command]:
+def cons_vim_command(options: AddVimCommandOptions) -> Either[str, Command]:
     return Command(
-        name,
+        options.ident | Ident.generate,
         VimInterpreter(options.silent | false, options.target),
-        options.lines.o(options.line / List),
-        List('vim'),
+        options.lines.o(options.line / List) | Nil,
+        options.langs | List('vim'),
     )
 
 
-def cons_system_command(name: str, options: AddSystemCommandOptions) -> Either[str, Command]:
-    return Command(name, SystemInterpreter(options.target), options.lines.o(options.line / List))
+def cons_system_command(options: AddSystemCommandOptions) -> Either[str, Command]:
+    return Command(
+        options.ident | Ident.generate,
+        SystemInterpreter(options.target),
+        options.lines.o(options.line / List) | Nil,
+        options.langs | Nil,
+    )
 
 
-def cons_shell_command(name: str, options: AddShellCommandOptions) -> Either[str, Command]:
-    return Command(name, ShellInterpreter(options.target), options.lines.o(options.line / List))
+def cons_shell_command(options: AddShellCommandOptions) -> Either[str, Command]:
+    return Command(
+        options.ident | Ident.generate,
+        ShellInterpreter(options.target),
+        options.lines.o(options.line / List) | Nil,
+        options.langs | Nil,
+    )
 
 
 @trans.free.unit(trans.st)
 @do(State[Env, None])
-def add_vim_command(name: str, options: AddVimCommandOptions) -> Do:
-    cmd = cons_vim_command(name, options)
+def add_vim_command(options: AddVimCommandOptions) -> Do:
+    cmd = cons_vim_command(options)
     yield State.modify(lens.comp.commands.modify(__.cat(cmd)))
 
 
 @trans.free.unit(trans.st)
 @do(State[Env, None])
-def add_system_command(name: str, options: AddSystemCommandOptions) -> Do:
-    cmd = cons_system_command(name, options)
+def add_system_command(options: AddSystemCommandOptions) -> Do:
+    cmd = cons_system_command(options)
     yield State.modify(lens.comp.commands.modify(__.cat(cmd)))
 
 
 @trans.free.unit(trans.st)
 @do(State[Env, None])
-def add_shell_command(name: str, options: AddShellCommandOptions) -> Do:
-    cmd = cons_shell_command(name, options)
+def add_shell_command(options: AddShellCommandOptions) -> Do:
+    cmd = cons_shell_command(options)
     yield State.modify(lens.comp.commands.modify(__.cat(cmd)))
 
 

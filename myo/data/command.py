@@ -9,6 +9,10 @@ class Interpreter(ADT['Interpreter']):
 
 class VimInterpreter(Interpreter):
 
+    @staticmethod
+    def cons(silent: bool=False, target: Ident=None) -> 'VimInterpreter':
+        return VimInterpreter(Boolean(silent), Maybe.optional(target))
+
     def __init__(self, silent: Boolean, target: Maybe[Ident]) -> None:
         self.silent = silent
         self.target = target
