@@ -7,7 +7,6 @@ from chiasma.ui.view_geometry import ViewGeometry
 
 from ribosome.trans.api import trans
 from ribosome.dispatch.component import ComponentData
-from ribosome import ribo_log
 
 from myo.env import Env
 from myo.ui.data.ui_data import UiData

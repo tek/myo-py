@@ -1,6 +1,7 @@
 from ribosome.trans.api import trans
-from ribosome.nvim import NvimIO
-from ribosome.nvim.io import NS
+from ribosome.nvim.io.compute import NvimIO
+from ribosome.nvim.io.state import NS
+from ribosome.nvim.api.command import nvim_command
 
 from amino import do, Do, Boolean
 
@@ -12,7 +13,7 @@ from myo.command.run_task import RunTask, VimTaskDetails
 @do(NS[Env, None])
 def run_command(task: RunTask) -> Do:
     cmd = task.command
-    yield NS.lift(cmd.lines.traverse(lambda a: NvimIO.cmd_sync(a, verbose=~cmd.interpreter.silent), NvimIO))
+    yield NS.lift(cmd.lines.traverse(lambda a: nvim_command(a, verbose=~cmd.interpreter.silent), NvimIO))
     yield NS.unit
 
 

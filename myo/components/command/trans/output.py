@@ -4,16 +4,17 @@ from amino import do, _, Do, List, __, Just, Boolean, IO
 from amino.boolean import true
 from amino.lenses.lens import lens
 
-from ribosome.nvim.io import NS
+from ribosome.nvim.io.state import NS
 from ribosome.nvim.scratch import show_in_scratch_buffer, CreateScratchBufferOptions, ScratchBuffer
 from ribosome.dispatch.component import ComponentData
 from ribosome.trans.api import trans
 from ribosome.trans.mapping import activate_mapping
 from ribosome.dispatch.mapping import Mapping
-from ribosome.nvim.api import (window_line, focus_window, edit_file, set_local_cursor, set_line, window_buffer_name,
-                               close_buffer)
-from ribosome.nvim import NvimIO
+from ribosome.nvim.io.compute import NvimIO
 from ribosome.config.config import Resources
+from ribosome.nvim.api.ui import (window_line, focus_window, edit_file, set_local_cursor, set_line, window_buffer_name,
+                                  close_buffer)
+from ribosome.nvim.io.api import N
 
 from myo.components.command.data import CommandData, OutputData
 from myo.output.data import ParseResult, OutputEntry, OutputLine, Location
@@ -56,11 +57,11 @@ def jump_to_location(scratch: ScratchBuffer, location: Location) -> Do:
     window = scratch.ui.previous
     yield focus_window(window)
     current_file = yield window_buffer_name(window)
-    location_exists = yield NvimIO.from_io(IO.delay(location.file_path.exists))
+    location_exists = yield N.from_io(IO.delay(location.file_path.exists))
     if location_exists:
-        yield edit_file(location.file_path) if current_file != location.file_path else NvimIO.pure(None)
+        yield edit_file(location.file_path) if current_file != location.file_path else N.pure(None)
         yield set_local_cursor(location.coords)
-    yield NvimIO.pure(None)
+    yield N.pure(None)
 
 
 # FIXME entries can be identical, need uuid for lookup; or implement better model

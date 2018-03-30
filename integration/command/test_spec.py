@@ -10,11 +10,12 @@ from chiasma.util.id import Ident
 from amino import do, Do, _, __, List
 from amino.test import fixture_path
 
-from ribosome.nvim import NvimIO
+from ribosome.nvim.io.compute import NvimIO
 from ribosome.test.klk import kn
-from ribosome.dispatch.execute import run_trans_m, dispatch_state
+from ribosome.dispatch.execute import eval_trans, dispatch_state
 from ribosome.nvim.io import NSuccess
 from ribosome.nvim.api import define_function, buffers, buffer_content
+from ribosome.nvim.io.api import N
 
 from myo.components.command.trans.test import vim_test, vim_test_command, test_ident
 from myo.components.command.trans.run import RunCommandOptions
@@ -42,12 +43,12 @@ class TestSpec(ExternalSpec):
         def run() -> Do:
             helper, aff, data = yield command_spec_data()
             (s1, ig) = yield vim_test_command.fun().run(helper.component_res(data))
-            yield NvimIO.from_either(
+            yield N.from_either(
                 s1.data.comp //
                 __.commands.head.to_either('no commands') /
                 _.ident
             )
-        return kn(run(), self.vim) == NSuccess(test_ident)
+        return kn(self.vim, run) == NSuccess(test_ident)
 
     def run(self) -> Expectation:
         @do(NvimIO[None])
@@ -55,11 +56,11 @@ class TestSpec(ExternalSpec):
             helper, aff, data = yield command_spec_data()
             ds = dispatch_state(helper.state, aff)
             yield mock_test_functions()
-            (s1, ignore) = yield run_trans_m(vim_test(RunCommandOptions.cons()).m).run(ds)
-            cmd = yield NvimIO.from_either(s1.state.data_by_name('command'))
-            log = yield NvimIO.from_either(cmd.log_by_ident(test_ident))
+            (s1, ignore) = yield eval_trans.match(vim_test(RunCommandOptions.cons()).m).run(ds)
+            cmd = yield N.from_either(s1.state.data_by_name('command'))
+            log = yield N.from_either(cmd.log_by_ident(test_ident))
             return log.read_text()
-        return kn(run(), self.vim) == NSuccess('arg')
+        return kn(self.vim, run) == NSuccess('arg')
 
 
 # TODO test empty `ParseOutput`
@@ -81,9 +82,9 @@ class TestISpec(DefaultSpec):
         @do(NvimIO[List[str]])
         def content() -> Do:
             bufs = yield buffers()
-            buf = yield NvimIO.from_maybe(bufs.lift(1), 'scratch buffer wasn\'t opened')
+            buf = yield N.from_maybe(bufs.lift(1), 'scratch buffer wasn\'t opened')
             yield buffer_content(buf)
-        return kn(content(), self.vim).must(contain(have_lines(target)))
+        return kn(self.vim, content).must(contain(have_lines(target)))
 
 
 __all__ = ('TestSpec',)

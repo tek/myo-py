@@ -11,6 +11,7 @@ from chiasma.render import render
 from chiasma.data.session import Session
 from chiasma.io.state import TS
 from chiasma.commands.pane import all_panes, PaneData
+from chiasma.util.id import IdentSpec, ensure_ident, StrIdent
 
 from amino import List, do, Do, Dat
 from amino.lenses.lens import lens
@@ -42,9 +43,10 @@ class OPData(Dat['OPData']):
 
 
 @do(TS[OPData, None])
-def open_pane(name: str) -> Do:
-    yield ui_open_pane(name).transform_s_lens(lens.ui).tmux
-    a = yield pane_path(name).transform_s_lens(lens.ui).tmux
+def open_pane(ident_spec: IdentSpec) -> Do:
+    ident = ensure_ident(ident_spec)
+    yield ui_open_pane(ident).transform_s_lens(lens.ui).tmux
+    a = yield pane_path(ident).transform_s_lens(lens.ui).tmux
     yield render(P=Pane, L=Layout)(a.space.ident, a.window.ident, a.window.layout).transform_s_lens(lens.tmux)
 
 
@@ -81,7 +83,7 @@ class OpenPaneSpec(TmuxSpec):
         )
         data = OPData.cons(layout)
         def ui_open(name: str) -> TS[OPData, None]:
-            return ui_open_pane(name).transform_s_lens(lens.ui).tmux
+            return ui_open_pane(StrIdent(name)).transform_s_lens(lens.ui).tmux
         @do(TS[OPData, None])
         def go() -> Do:
             yield ui_open('one')

@@ -4,7 +4,7 @@ from amino.boolean import true
 from ribosome.dispatch.component import Component
 from ribosome.request.handler.handler import RequestHandler
 from ribosome.dispatch.mapping import Mappings
-from ribosome.trans.handler import TransHandler
+from ribosome.trans.handler import Trans
 
 from myo.components.command.trans.add import add_system_command, add_vim_command, add_shell_command
 from myo.components.command.trans.run import run_command, run_line, internal_can_run, run_internal_command
@@ -18,7 +18,7 @@ from myo.components.command.trans.test import vim_test
 from myo.components.command.trans.init import stage1
 
 
-def run_handler_for(task: RunTask) -> Maybe[TransHandler]:
+def run_handler_for(task: RunTask) -> Maybe[Trans]:
     return Just(run_internal_command) if internal_can_run(task) else Nothing
 
 

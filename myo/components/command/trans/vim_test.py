@@ -1,10 +1,13 @@
 from typing import Callable, Any, TypeVar
 
-from ribosome.nvim.api import nvim_call_cons, current_cursor, cons_decode_str, cons_decode_str_list
-from ribosome.nvim import NvimIO
-from ribosome.nvim.io import NS
+from ribosome.nvim.io.compute import NvimIO
+from ribosome.nvim.io.state import NS
 from ribosome.config.config import Resources
 from ribosome.dispatch.component import ComponentData
+from ribosome.nvim.api.function import nvim_call_cons
+from ribosome.nvim.api.ui import current_cursor
+from ribosome.nvim.api.util import cons_decode_str, cons_decode_str_list
+from ribosome.nvim.io.api import N
 
 from amino import _, Either, do, Do, Dat
 from amino.json import encode_json
@@ -45,7 +48,7 @@ def vim_test_position() -> Do:
 def assemble_vim_test_line(position: VimTestPosition) -> Do:
     runner = yield vim_test_call_wrap(cons_decode_str, 'DetermineRunner', position.file)
     exe = yield vim_test_call_wrap(cons_decode_str, 'Executable', runner)
-    pos_json = yield NvimIO.from_either(encode_json(position))
+    pos_json = yield N.from_either(encode_json(position))
     pre_args = yield vim_test_call_wrap(cons_decode_str_list, f'BuildPosition', runner, pos_json.native)
     args = yield vim_test_call_wrap(cons_decode_str_list, f'BuildArgs', runner, pre_args)
     return args.cons(exe).join_tokens

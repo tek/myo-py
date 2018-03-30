@@ -24,24 +24,26 @@ from myo.components.ui.config import ui
 from myo.settings import MyoSettings
 from myo.ui.pane import map_panes_in_spaces
 from myo.components.command.config import command
+from myo.components.core.config import core
 
 
 tmux_spec_config = Config.cons(
     name='myo',
     prefix='myo',
     state_ctor=Env.cons,
-    components=Map(ui=ui, tmux=tmux, command=command),
+    components=Map(core=core, ui=ui, tmux=tmux, command=command),
     component_config_type=MyoComponent,
+    core_components=List('core'),
 )
 
 
 def tmux_spec_helper(extra: List[str]) -> DispatchHelper:
-    return DispatchHelper.cons(
+    return DispatchHelper.strict(
         tmux_spec_config,
         'ui',
         'tmux',
         *extra,
-        vars=dict(
+        vars=Map(
             myo_tmux_socket=tmux_spec_socket,
             myo_state_dir=str(temp_dir('history', 'state')),
         ),
@@ -72,8 +74,8 @@ def two_panes(extra: List[str]=Nil) -> DispatchHelper[MyoSettings, Env, MyoCompo
     layout = ViewTree.layout(
         Layout.cons('root', vertical=true),
         List(
-            ViewTree.pane(Pane.cons('one', geometry=ViewGeometry.cons())),
-            ViewTree.pane(Pane.cons('two', geometry=ViewGeometry.cons())),
+            ViewTree.pane(Pane.cons('one', geometry=ViewGeometry.cons(min_size=10, max_size=90))),
+            ViewTree.pane(Pane.cons('two', geometry=ViewGeometry.cons(weight=0.5, position=12))),
         )
     )
     window, space, helper = init_tmux_data(layout, extra)

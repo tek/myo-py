@@ -13,6 +13,7 @@ from myo.components.ui.trans.minimize_pane import minimize_pane
 from myo.components.ui.trans.pane import ui_pane_by_ident, render_pane, pane_owners
 from myo.components.ui.trans.create_pane import create_pane
 from myo.components.ui.trans.init import stage1
+from myo.components.ui.trans.info import ui_info
 
 
 ui = Component.cons(
@@ -27,10 +28,9 @@ ui = Component.cons(
         RequestHandler.trans_function(render_pane)(),
         RequestHandler.trans_function(pane_owners)(),
         RequestHandler.trans_cmd(stage1)(prefix=Full()),
+        RequestHandler.trans_function(ui_info)(),
     ),
-    handlers=List(
-    ),
-    config=MyoComponent.cons(),
+    config=MyoComponent.cons(info=ui_info),
 )
 
 __all__ = ('ui',)

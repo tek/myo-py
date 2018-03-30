@@ -1,15 +1,17 @@
-from amino import do, Do, _, Either, Just
+from psutil import Process
+
+from amino import do, Do, _, Either, IO, Boolean, Lists
 from amino.lenses.lens import lens
 
 from ribosome.trans.api import trans
-from ribosome.nvim.io import NS
+from ribosome.nvim.io.state import NS
 from ribosome.dispatch.component import ComponentData
 from ribosome.config.config import Resources
 
 from chiasma.io.state import TS
 from chiasma.data.tmux import TmuxData
 from chiasma.util.id import Ident
-from chiasma.commands.pane import all_panes, pane
+from chiasma.commands.pane import all_panes, pane, PaneData
 from chiasma.io.compute import TmuxIO
 from chiasma.data.pane import Pane
 from chiasma.data.session import Session
@@ -20,10 +22,20 @@ from myo.config.component import MyoComponent
 from myo.settings import MyoSettings
 
 
-@do(TmuxIO)
+@do(IO[Boolean])
+def contains_child_pid(vim_pid: int, pane_data: PaneData) -> Do:
+    proc = yield IO.delay(Process, pane_data.pid)
+    children = yield IO.delay(proc.children, recursive=True)
+    pids = yield IO.delay(Lists.wrap(children).map, lambda a: a.pid)
+    return pids.contains(vim_pid)
+
+
+@do(TmuxIO[PaneData])
 def discover_pane(vim_pid: int) -> Do:
     panes = yield all_panes()
-    yield TmuxIO.from_maybe(panes.find(_.pid == vim_pid), f'could not find vim pane with pid `{vim_pid}`')
+    indicators = yield TmuxIO.from_io(panes.traverse(lambda a: contains_child_pid(vim_pid, a), IO))
+    candidate = panes.zip(indicators).find_map(lambda a: a[1].m(a[0]))
+    yield TmuxIO.from_maybe(candidate, f'could not find vim pane with pid `{vim_pid}`')
 
 
 @do(TS[TmuxData, None])

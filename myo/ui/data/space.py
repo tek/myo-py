@@ -2,6 +2,8 @@ from uuid import uuid4
 
 from amino import Dat, List, Nil, _
 
+from chiasma.util.id import IdentSpec, ensure_ident
+
 from myo.ui.data.window import Window
 from myo.util import Ident
 
@@ -10,11 +12,11 @@ class Space(Dat['Space']):
 
     @staticmethod
     def cons(
-            ident: Ident=None,
+            ident: IdentSpec=None,
             windows: List[Window]=Nil,
     ) -> 'Space':
         return Space(
-            ident or uuid4(),
+            ensure_ident(ident),
             windows,
         )
 
@@ -24,5 +26,6 @@ class Space(Dat['Space']):
 
     def replace_window(self, window: Window) -> 'Space':
         return self.copy(windows=self.windows.replace_where(window, _.ident == window.ident))
+
 
 __all__ = ('Space',)

@@ -2,15 +2,16 @@ from typing import Callable, Any
 
 from amino import Dat, Maybe, Nothing
 
-from ribosome.trans.handler import FreeTrans
+from ribosome.trans.handler import Trans
 from ribosome.dispatch.component import Component, ComponentData
 
 from myo.env import Env
 from myo.ui.ui import Ui
 from myo.command.run_task import RunTask
+from myo.data.info import InfoWidget
 
 
-def no_handler(*a: Any, **kw: Any) -> Maybe[FreeTrans]:
+def no_handler(*a: Any, **kw: Any) -> Maybe[Trans]:
     return Nothing
 
 
@@ -18,24 +19,28 @@ class MyoComponent(Dat['MyoComponent']):
 
     @staticmethod
     def cons(
-            run: Callable[[RunTask], Maybe[FreeTrans]]=None,
-            create_vim_pane: Callable[[], Maybe[FreeTrans]]=None,
+            run: Callable[[RunTask], Maybe[Trans]]=None,
+            create_vim_pane: Callable[[], Maybe[Trans]]=None,
+            info: Trans[InfoWidget]=None,
             ui: Ui=None,
     ) -> 'MyoComponent':
         return MyoComponent(
             run or no_handler,
             create_vim_pane or no_handler,
+            Maybe.optional(info),
             Maybe.check(ui),
         )
 
     def __init__(
             self,
-            run: Callable[[RunTask], Maybe[FreeTrans]],
-            create_vim_pane: Callable[[RunTask], Maybe[FreeTrans]],
+            run: Callable[[RunTask], Maybe[Trans]],
+            create_vim_pane: Callable[[RunTask], Maybe[Trans]],
+            info: Maybe[Trans[InfoWidget]],
             ui: Maybe[Ui],
     ) -> None:
         self.run = run
         self.create_vim_pane = create_vim_pane
+        self.info = info
         self.ui = ui
 
 

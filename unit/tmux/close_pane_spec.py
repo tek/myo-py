@@ -16,7 +16,7 @@ class ClosePaneSpec(TmuxSpec):
 
     def close_pane(self) -> Expectation:
         helper = two_open_panes().unsafe(self.tmux)
-        helper.loop('command:close_pane', args=('one',)).unsafe(helper.vim)
+        helper.unsafe_run('command:close_pane', args=('one',))
         return later(kf(TmuxIO.read('list-panes').unsafe, self.tmux).must(have_length(1)))
 
 

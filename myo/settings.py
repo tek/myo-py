@@ -5,7 +5,7 @@ from amino.boolean import true
 from ribosome.config.settings import (state_dir_help_default, float_setting, str_setting, Settings, int_setting,
                                       bool_setting)
 from ribosome.config.setting import Setting
-from ribosome.nvim.io import NS
+from ribosome.nvim.io.state import NS
 from ribosome.config.config import Resources
 
 state_dir_help = f'''{state_dir_help_default}

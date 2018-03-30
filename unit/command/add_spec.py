@@ -10,31 +10,28 @@ from amino.json import dump_json
 
 from ribosome.test.integration.run import DispatchHelper
 from ribosome.config.config import Config
-from ribosome.nvim import NvimIO
+from ribosome.nvim.io.compute import NvimIO
 from ribosome.test.klk import kn
+from ribosome.nvim.io.api import N
 
 from myo.components.command.config import command
-from myo.env import Env
 from myo.data.command import Command, SystemInterpreter, VimInterpreter, ShellInterpreter
 
 
 config = Config.cons(
     name='myo',
-    prefix='myo',
-    state_ctor=Env.cons,
     components=Map(command=command),
-    default_components=List('command'),
 )
 
 
 def add_cmd(cmd_type: str, args: dict, goal: Command) -> Expectation[Command]:
-    helper = DispatchHelper.cons(config, 'command')
+    helper = DispatchHelper.strict(config, 'command')
     @do(NvimIO[Command])
     def run() -> Do:
-        args_json = yield NvimIO.e(dump_json(args))
+        args_json = yield N.e(dump_json(args))
         r = yield helper.run_s(f'command:add_{cmd_type}_command', args=(args_json,))
-        yield NvimIO.e(r.data_by_name('command') / _.commands // __.head.to_either('commands empty'))
-    return kn(run(), helper.vim).must(contain(goal))
+        yield N.e(r.data_by_name('command') / _.commands // __.head.to_either('commands empty'))
+    return kn(helper.vim, run).must(contain(goal))
 
 
 class AddSpec(SpecBase):

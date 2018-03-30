@@ -5,9 +5,9 @@ from amino.lenses.lens import lens
 
 from chiasma.util.id import StrIdent
 
-from ribosome.nvim.io import NS
+from ribosome.nvim.io.state import NS
 from ribosome.trans.api import trans
-from ribosome.trans.action import TransM
+from ribosome.trans.action import Trans
 from ribosome.dispatch.component import ComponentData
 from ribosome.config.config import Resources
 from ribosome import ribo_log
@@ -49,7 +49,7 @@ def vim_test_command() -> Do:
 
 
 @trans.free.do()
-@do(TransM)
+@do(Trans)
 def vim_test(run_options: RunCommandOptions) -> Do:
     yield vim_test_command.m
     yield run_command(test_ident, run_options).m

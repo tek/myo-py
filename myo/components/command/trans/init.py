@@ -4,9 +4,9 @@ from amino.util.string import camelcase
 from ribosome.trans.api import trans
 from ribosome.dispatch.component import ComponentData
 from ribosome import ribo_log
-from ribosome.nvim.api import define_function
-from ribosome.nvim import NvimIO
-from ribosome.nvim.io import NS
+from ribosome.nvim.io.compute import NvimIO
+from ribosome.nvim.io.state import NS
+from ribosome.nvim.api.function import define_function
 
 from myo.components.core.data import CoreData
 from myo.env import Env

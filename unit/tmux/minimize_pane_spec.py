@@ -15,7 +15,7 @@ class MinimizePaneSpec(TmuxSpec):
 
     def minimize_pane(self) -> Expectation:
         helper = two_open_panes().unsafe(self.tmux)
-        helper.loop('command:minimize_pane', args=('one',)).unsafe(helper.vim)
+        helper.unsafe_run('command:minimize_pane', args=('one',))
         return later(kf(lambda: pane(0).unsafe(self.tmux).height) == 2)
 
 

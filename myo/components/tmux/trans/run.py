@@ -1,6 +1,6 @@
 from amino import do, Do, Boolean, Path, Just, L, _, Maybe
 from amino.lenses.lens import lens
-from amino.dispatch import PatMat
+from amino.case import Case
 
 from chiasma.io.state import TS
 from chiasma.data.tmux import TmuxData
@@ -9,7 +9,7 @@ from chiasma.commands.pane import send_keys, pipe_pane
 
 from ribosome.trans.api import trans
 from ribosome.dispatch.component import ComponentData
-from ribosome.trans.action import TransM
+from ribosome.trans.action import Trans
 
 from myo.env import Env
 from myo.command.run_task import RunTaskDetails, UiSystemTaskDetails, UiShellTaskDetails, RunTask
@@ -25,7 +25,7 @@ def run_system_task(cmd: Command, pane: Pane, log_path: Maybe[Path]) -> Do:
     yield TS.lift(send_keys(id, cmd.lines))
 
 
-class run_task_in_pane(PatMat, alg=RunTaskDetails):
+class run_task_in_pane(Case, alg=RunTaskDetails):
 
     def __init__(self, task: RunTask) -> None:
         self.task = task
@@ -38,7 +38,7 @@ class run_task_in_pane(PatMat, alg=RunTaskDetails):
     def ui_shell_task_details(self, details: UiShellTaskDetails) -> Do:
         yield run_system_task(self.task.command, details.pane, Just(self.task.log))
 
-    def patmat_default(self, task: RunTaskDetails) -> TS:
+    def case_default(self, task: RunTaskDetails) -> TS:
         yield TS.error(f'cannot run {task} in tmux')
 
 
@@ -49,10 +49,10 @@ def run_in_pane(task: RunTask) -> Do:
     yield TS.pure(None)
 
 
-@trans.free.do(trans.st)
-@do(TransM)
+@trans.free.do()
+@do(Trans)
 def run_command(task: RunTask) -> Do:
-    yield run_in_pane(task).m
+    yield run_in_pane(task)
 
 
 def tmux_can_run(task: RunTask) -> Boolean:

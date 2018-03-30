@@ -1,7 +1,7 @@
 from typing import TypeVar, Generic
 
 from amino import Dat, List, do, Do, Maybe, Boolean, L, _, Nil, Nothing
-from amino.dispatch import dispatch_alg
+from amino.case import Case
 from amino.state import EitherState
 
 from chiasma.data.view_tree import ViewTree, LayoutNode, PaneNode, SubUiNode
@@ -42,7 +42,7 @@ class ViewPath(Generic[A], Dat['ViewPath']):
         return self.window.layout
 
 
-class PanePathView:
+class pane_path_view(Case, alg=ViewTree):
 
     def __init__(self, ident: Ident, stack: List[Layout], window: Window, space: Space) -> None:
         self.ident = ident
@@ -51,7 +51,7 @@ class PanePathView:
         self.space = space
 
     def recurse(self, layout: Layout, node: ViewTree) -> Maybe[ViewPath]:
-        return pane_path_view(self.ident, node, self.stack.cons(layout), self.window, self.space)
+        return pane_path_view(self.ident, self.stack.cons(layout), self.window, self.space)(node)
 
     def layout_node(self, node: LayoutNode) -> Maybe[ViewPath]:
         return node.sub.find_map(L(self.recurse)(node.data, _))
@@ -64,12 +64,8 @@ class PanePathView:
         return Nothing
 
 
-def pane_path_view(ident: Ident, view: ViewTree, stack: List[Layout], window: Window, space: Space) -> Maybe[ViewPath]:
-    return dispatch_alg(PanePathView(ident, stack, window, space), ViewTree)(view)
-
-
 def pane_path_space(ident: Ident, space: Space) -> Maybe[ViewPath]:
-    return space.windows.find_map(lambda a: pane_path_view(ident, a.layout, Nil, a, space))
+    return space.windows.find_map(lambda a: pane_path_view(ident, Nil, a, space)(a.layout))
 
 
 @do(EitherState[UiData, ViewPath])

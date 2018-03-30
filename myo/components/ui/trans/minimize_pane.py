@@ -1,11 +1,15 @@
+from typing import Union
+
 from amino import do, Do
+
+from chiasma.util.id import ensure_ident
 from amino.boolean import true
 from amino.state import EitherState
 from amino.lenses.lens import lens
 
 from ribosome.trans.api import trans
 from ribosome.dispatch.component import ComponentData
-from ribosome.trans.action import TransM
+from ribosome.trans.action import Trans
 
 from myo.util import Ident
 from myo.ui.data.ui_data import UiData
@@ -27,10 +31,11 @@ def ui_minimize_pane_trans(ident: Ident) -> Do:
 
 
 @trans.free.do()
-@do(TransM[None])
-def minimize_pane(ident: Ident) -> Do:
-    yield ui_minimize_pane_trans(ident).m
-    yield render_pane(ident).m
+@do(Trans[None])
+def minimize_pane(ident_spec: Union[str, Ident]) -> Do:
+    ident = ensure_ident(ident_spec)
+    yield ui_minimize_pane_trans(ident)
+    yield render_pane(ident)
 
 
 __all__ = ('minimize_pane',)

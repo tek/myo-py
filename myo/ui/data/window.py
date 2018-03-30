@@ -1,9 +1,10 @@
 from uuid import uuid4
 
 from amino import Dat, Maybe, Just, Either, Nothing
-from amino.dispatch import PatMat
+from amino.case import Case
 
 from chiasma.data.view_tree import ViewTree, LayoutNode, PaneNode, SubUiNode
+from chiasma.util.id import IdentSpec, ensure_ident
 
 from myo.util import Ident
 from myo.ui.data.view import Pane
@@ -13,24 +14,20 @@ class Window(Dat['Window']):
 
     @staticmethod
     def cons(
-            ident: Ident=None,
-            name: str=None,
+            ident: IdentSpec=None,
             layout: LayoutNode=None,
     ) -> 'Window':
-        id = ident or uuid4()
         return Window(
-            id,
-            name or id,
+            ensure_ident(ident),
             layout or ViewTree.layout(),
         )
 
-    def __init__(self, ident: Ident, name: str, layout: LayoutNode) -> None:
+    def __init__(self, ident: Ident, layout: LayoutNode) -> None:
         self.ident = ident
-        self.name = name
         self.layout = layout
 
 
-class FindPrincipal(PatMat, alg=ViewTree):
+class FindPrincipal(Case, alg=ViewTree):
 
     def layout_node(self, node: LayoutNode) -> Maybe[Pane]:
         return node.sub.find_map(self)

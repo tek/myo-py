@@ -25,9 +25,9 @@ class RunCommandSpec(TmuxSpec):
         text1 = Lists.random_alpha()
         text2 = Lists.random_alpha()
         cmds = List(f'echo {text1}', f'echo {text2}')
-        cmd = Command(name, SystemInterpreter(Just('one')), cmds, Nil)
+        cmd = Command.cons(name, SystemInterpreter.cons('one'), cmds, Nil)
         helper = two_panes(List('command')).update_component('command', commands=List(cmd))
-        helper.loop('command:run_command', args=(name, '{}')).unsafe(helper.vim)
+        helper.unsafe_run('command:run_command', args=(name, '{}'))
         output = lambda: capture_pane(0).unsafe(self.tmux)
         return later(kf(output).must(contain(text1) & contain(text2)))
 
@@ -37,11 +37,11 @@ class RunCommandSpec(TmuxSpec):
         text2 = Lists.random_alpha()
         shell_cmd = 'python'
         cmds = List(f'print("{text1}")', f'print("{text2}")')
-        shell = Command(shell_cmd, SystemInterpreter(Just('one')), List(shell_cmd), Nil)
-        cmd = Command(name, ShellInterpreter(shell_cmd), cmds, Nil)
+        shell = Command.cons(shell_cmd, SystemInterpreter.cons('one'), List(shell_cmd), Nil)
+        cmd = Command.cons(name, ShellInterpreter.cons(shell_cmd), cmds, Nil)
         helper = two_panes(List('command')).update_component('command', commands=List(shell, cmd))
-        helper.loop('command:run_command', args=(shell_cmd, '{}')).unsafe(helper.vim)
-        helper.loop('command:run_command', args=(name, '{}')).unsafe(helper.vim)
+        helper.unsafe_run('command:run_command', args=(shell_cmd, '{}'))
+        helper.unsafe_run('command:run_command', args=(name, '{}'))
         output = lambda: capture_pane(0).unsafe(self.tmux)
         return later(kf(output).must(contain(text1) & contain(text2)))
 
@@ -49,9 +49,9 @@ class RunCommandSpec(TmuxSpec):
         name = 'commo'
         text = Lists.random_alpha()
         cmds = List(f'echo {text}')
-        cmd = Command(name, SystemInterpreter(Just('one')), cmds, Nil)
+        cmd = Command.cons(name, SystemInterpreter.cons('one'), cmds, Nil)
         helper = two_panes(List('command')).update_component('command', commands=List(cmd))
-        s = helper.loop('command:run_command', args=(name, '{}')).unsafe(helper.vim)
+        s = helper.unsafe_run_s('command:run_command', args=(name, '{}'))
         path = s.component_data['command'].logs['commo']
         read = lambda: Lists.lines(path.read_text())
         return later(kf(read).must(contain(text)))

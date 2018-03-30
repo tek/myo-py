@@ -1,5 +1,5 @@
 ribosome~=13.0.0a17
-chiasma~=0.1.0.a4
+chiasma~=0.1.0.a8
 psutil==5.3.1
 networkx==2.0
 kallikrein~=0.22.0a6

@@ -2,7 +2,7 @@ from amino import List, Just, Nothing, Maybe
 
 from ribosome.dispatch.component import Component
 from ribosome.request.handler.handler import RequestHandler
-from ribosome.trans.handler import TransHandler
+from ribosome.trans.handler import Trans
 
 from chiasma.data.tmux import TmuxData
 
@@ -13,9 +13,10 @@ from myo.components.tmux.trans.owns_pane import tmux_owns_pane
 from myo.components.tmux.trans.render import tmux_render
 from myo.command.run_task import RunTask
 from myo.components.tmux.trans.create_vim_pane import create_vim_pane
+from myo.components.tmux.trans.info import tmux_info
 
 
-def run_handler_for(task: RunTask) -> Maybe[TransHandler]:
+def run_handler_for(task: RunTask) -> Maybe[Trans]:
     return Just(run_command) if tmux_can_run(task) else Nothing
 
 
@@ -27,10 +28,9 @@ tmux = Component.cons(
         RequestHandler.trans_function(tmux_render)(),
         RequestHandler.trans_function(run_command)(),
         RequestHandler.trans_function(create_vim_pane)(),
+        RequestHandler.trans_function(tmux_info)(),
     ),
-    handlers=List(
-    ),
-    config=MyoComponent.cons(run_handler_for, lambda: Just(create_vim_pane), ui),
+    config=MyoComponent.cons(run_handler_for, lambda: Just(create_vim_pane), tmux_info, ui),
 )
 
 __all__ = ('tmux',)

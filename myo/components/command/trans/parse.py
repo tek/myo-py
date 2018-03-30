@@ -1,7 +1,7 @@
 from typing import TypeVar
 
 from ribosome.trans.api import trans
-from ribosome.nvim.io import NS
+from ribosome.nvim.io.state import NS
 from ribosome.config.config import Resources
 from ribosome.dispatch.component import ComponentData
 

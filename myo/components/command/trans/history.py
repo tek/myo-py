@@ -5,7 +5,7 @@ from amino.boolean import false
 from amino.lenses.lens import lens
 
 from ribosome.trans.api import trans
-from ribosome.nvim.io import NS
+from ribosome.nvim.io.state import NS
 from ribosome.trans.persist import store_json_state
 from ribosome.config.config import Resources
 from ribosome.dispatch.component import ComponentData

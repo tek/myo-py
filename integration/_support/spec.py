@@ -5,7 +5,7 @@ from ribosome.test.integration.klk import AutoPluginIntegrationKlkSpec, VimInteg
 
 class DefaultSpec(AutoPluginIntegrationKlkSpec):
 
-    def plugin_prefix(self) -> str:
+    def plugin_name(self) -> str:
         return 'myo'
 
 

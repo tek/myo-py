@@ -22,8 +22,8 @@ class HistorySpec(SpecBase):
 
     @pending
     def test(self) -> Expectation:
-        helper = DispatchHelper.cons(config, 'command')
-        r = helper.loop('command:load_history', args=(5,)).unsafe(helper.vim)
+        helper = DispatchHelper.strict(config, 'command')
+        r = helper.unsafe_run('command:load_history', args=(5,))
         return k(1) == 1
 
 

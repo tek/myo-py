@@ -31,10 +31,10 @@ class PythonParseSpec(TmuxDefaultSpec):
         self.json_cmd_sync('MyoLine', pane=pane, lines=List(f'cat {file}'), langs=List('python'))
         self.cmd_sync('MyoParse')
         self._wait(1)
-        kn(current_buffer_content(), self.vim).must(have_lines(events)).fatal_eval()
+        kn(self.vim, current_buffer_content).must(have_lines(events)).fatal_eval()
         send_input('q').unsafe(self.vim)
         self._wait(.5)
-        return kn(buffers(), self.vim).must(have_length(1))
+        return kn(self.vim, buffers).must(have_length(1))
 
 
 __all__ = ('PythonParseSpec',)

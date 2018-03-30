@@ -3,7 +3,7 @@ from amino.boolean import false
 
 from chiasma.util.id import Ident
 
-from ribosome.trans.handler import TransHandler
+from ribosome.trans.handler import Trans
 from ribosome.trans.api import trans
 
 
@@ -16,11 +16,11 @@ class Ui(Dat['Ui']):
 
     @staticmethod
     def cons(
-            owns_pane: TransHandler=owns_no_pane,
-            render: TransHandler=None,
-            open_pane: TransHandler=None,
-            open_window: TransHandler=None,
-            open_space: TransHandler=None,
+            owns_pane: Trans=owns_no_pane,
+            render: Trans=None,
+            open_pane: Trans=None,
+            open_window: Trans=None,
+            open_space: Trans=None,
     ) -> 'Ui':
         return Ui(
             owns_pane,
@@ -32,11 +32,11 @@ class Ui(Dat['Ui']):
 
     def __init__(
             self,
-            owns_pane: TransHandler,
-            render: Maybe[TransHandler],
-            open_pane: Maybe[TransHandler],
-            open_window: Maybe[TransHandler],
-            open_space: Maybe[TransHandler],
+            owns_pane: Trans,
+            render: Maybe[Trans],
+            open_pane: Maybe[Trans],
+            open_window: Maybe[Trans],
+            open_space: Maybe[Trans],
     ) -> None:
         self.owns_pane = owns_pane
         self.render = render

@@ -1,8 +1,7 @@
-from uuid import uuid4
-
 from chiasma.ui.view import UiPane, UiLayout, UiView
 from chiasma.ui.state import ViewState
 from chiasma.ui.view_geometry import ViewGeometry
+from chiasma.util.id import ensure_ident, IdentSpec
 
 from amino import Boolean, ADT
 from amino.tc.base import tc_prop
@@ -23,14 +22,14 @@ class Layout(View):
 
     @staticmethod
     def cons(
-            ident: Ident=None,
+            ident: IdentSpec=None,
             state: ViewState=None,
             geometry: ViewGeometry=None,
             ui: str='tmux',
             vertical: bool=True,
     ) -> 'Layout':
         return Layout(
-            ident or uuid4(),
+            ensure_ident(ident),
             state or ViewState.cons(),
             geometry or ViewGeometry.cons(),
             ui,
@@ -48,19 +47,23 @@ class Layout(View):
         super().__init__(ident, state, geometry, ui)
         self.vertical = vertical
 
+    @property
+    def vertical_str(self) -> str:
+        return 'vertical' if self.vertical else 'horizontal'
+
 
 class Pane(View):
 
     @staticmethod
     def cons(
-            ident: Ident=None,
+            ident: IdentSpec=None,
             state: ViewState=None,
             geometry: ViewGeometry=None,
             ui: str='tmux',
             open: bool=False,
     ) -> 'Pane':
         return Pane(
-            ident or uuid4(),
+            ensure_ident(ident),
             state or ViewState.cons(),
             geometry or ViewGeometry.cons(),
             ui,

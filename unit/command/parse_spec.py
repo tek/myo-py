@@ -8,7 +8,7 @@ from amino.test import fixture_path
 from ribosome.test.integration.run import DispatchHelper
 from ribosome.config.config import Config
 from ribosome.plugin_state import ComponentDispatch
-from ribosome.dispatch.execute import dispatch_state
+from ribosome.dispatch.execute import DispatchState
 
 from myo.components.command.config import command
 from myo.data.command import Command, VimInterpreter
@@ -41,11 +41,11 @@ class ParseSpec(SpecBase):
         name = 'test'
         cmds = List('let g:key = 7', 'let g:value = 13')
         cmd = Command(name, VimInterpreter(silent=False, target=Nothing), cmds, Nil)
-        helper = DispatchHelper.cons(config, 'command').update_component('command', commands=List(cmd))
+        helper = DispatchHelper.strict(config, 'command').update_component('command', commands=List(cmd))
         compo = helper.state.component('command').get_or_raise()
         output = Lists.lines(self.trace_file.read_text())
         aff = ComponentDispatch(compo)
-        result = parse_output(output).run(dispatch_state(helper.state, aff)).unsafe(None)
+        result = parse_output(output).run(DispatchState(helper.state, aff)).unsafe(None)
         return k(result[1].events).must(have_length(2))
 
 

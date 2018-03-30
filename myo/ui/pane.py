@@ -2,7 +2,7 @@ from typing import Tuple, Callable, TypeVar
 
 from amino import do, Do, Either, Right, Maybe, _, curried, L, List, Nothing, Just
 from amino.state import EitherState, State
-from amino.dispatch import PatMat
+from amino.case import Case
 from chiasma.data.view_tree import map_panes, ViewTree, find_in_view_tree, LayoutNode
 
 from ribosome import ribo_log
@@ -72,7 +72,7 @@ def map_panes_in_spaces(
     return spaces.map(lambda s: s.mod.windows(L(map_panes_in_windows)(pred, update, _)))
 
 
-class insert_pane(PatMat, alg=ViewTree):
+class insert_pane(Case, alg=ViewTree):
 
     def __init__(self, pane: Pane, layout: Ident) -> None:
         self.pane = pane
@@ -85,7 +85,7 @@ class insert_pane(PatMat, alg=ViewTree):
             node.sub.find_map(self) / node.replace_sub
         )
 
-    def patmat_default(self, node: ViewTree) -> Maybe[ViewTree]:
+    def case_default(self, node: ViewTree) -> Maybe[ViewTree]:
         return Nothing
 
 

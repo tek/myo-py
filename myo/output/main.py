@@ -5,7 +5,7 @@ from amino import List, Path, Either, __, L, _, Just, Maybe, Map, Empty, Nil
 from amino.io import IO
 from amino.lazy import lazy
 
-from ribosome import NvimFacade
+from ribosome import NvimApi
 from ribosome.util.callback import VimCallback
 
 from myo.logging import Logging
@@ -27,7 +27,7 @@ class OutputHandler(Logging, metaclass=abc.ABCMeta):
 # `IfUnhandled` part to the core machine, using transition priorities
 class CustomOutputHandler(OutputHandler):
 
-    def __init__(self, vim: NvimFacade, handler: Callable[[str], ParseResult]
+    def __init__(self, vim: NvimApi, handler: Callable[[str], ParseResult]
                  ) -> None:
         self.vim = vim
         self.handler = handler
@@ -61,7 +61,7 @@ class VimCompiler(OutputHandler, VimCallback):
 
 class Parsing(CustomOutputHandler):
 
-    def __init__(self, vim: NvimFacade, langs: List[str]) -> None:
+    def __init__(self, vim: NvimApi, langs: List[str]) -> None:
         self.vim = vim
         self.langs = langs
 

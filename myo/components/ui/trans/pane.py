@@ -9,10 +9,10 @@ from amino.boolean import false
 from amino.util.tuple import lift_tuple
 
 from ribosome.trans.api import trans
-from ribosome.trans.action import TransM
+from ribosome.trans.action import Trans
 from ribosome.dispatch.component import ComponentData
 from ribosome.plugin_state import PluginState
-from ribosome.trans.handler import TransHandler
+from ribosome.trans.handler import Trans
 
 from myo.util import Ident
 from myo.ui.data.window import Window
@@ -42,35 +42,35 @@ def pane_path_by_ident(ident: Ident) -> Do:
 
 
 @trans.free.result(trans.st, component=false)
-@do(State[PluginState[MyoSettings, Env, MyoComponent], TransHandler])
+@do(State[PluginState[MyoSettings, Env, MyoComponent], Trans])
 def config_uis() -> Do:
     components = yield State.inspect(_.components.all)
     yield State.pure(components // _.config // _.ui)
 
 
 @trans.free.do()
-@do(TransM[Tuple[Space, Window, Ui]])
+@do(Trans[Tuple[Space, Window, Ui]])
 def pane_owners(ident: Ident) -> Do:
     pane_path_m = yield pane_path_by_ident(ident).trans
-    space, window, pane = yield TransM.from_maybe(pane_path_m, f'no pane with ident `{ident}`')
-    uis = yield config_uis().m
+    space, window, pane = yield Trans.from_maybe(pane_path_m, f'no pane with ident `{ident}`')
+    uis = yield config_uis()
     owns_handlers = uis / _.owns_pane
-    owns = yield owns_handlers.traverse(lambda a: a(pane.data).m, TransM)
+    owns = yield owns_handlers.traverse(lambda a: a(pane.data), Trans)
     owners = uis.zip(owns).filter2(lambda a, b: b).flat_map(lift_tuple(0))
     owner = yield (
-        TransM.from_maybe(owners.head, f'no owner for pane {ident}')
+        Trans.from_maybe(owners.head, f'no owner for pane {ident}')
         if owners.length <= 1
-        else TransM.error('multiple owners for pane {ident}')
+        else Trans.error('multiple owners for pane {ident}')
     )
-    yield TransM.pure((space, window, owner))
+    yield Trans.pure((space, window, owner))
 
 
 @trans.free.do()
-@do(TransM[None])
+@do(Trans[None])
 def render_pane(ident: Ident) -> Do:
-    space, window, owner = yield pane_owners(ident).m
-    renderer = yield TransM.from_maybe(owner.render, f'no renderer for {owner}')
-    yield renderer(space.ident, window.ident, window.layout).m
+    space, window, owner = yield pane_owners(ident)
+    renderer = yield Trans.from_maybe(owner.render, f'no renderer for {owner}')
+    yield renderer(space.ident, window.ident, window.layout)
 
 
 @trans.free.result(trans.st)

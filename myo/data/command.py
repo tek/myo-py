@@ -2,6 +2,8 @@ from amino import List, Maybe, Dat, ADT, Boolean, Either, Map, Nil
 
 from myo.util import Ident
 
+from chiasma.util.id import IdentSpec, ensure_ident
+
 
 class Interpreter(ADT['Interpreter']):
     pass
@@ -10,8 +12,8 @@ class Interpreter(ADT['Interpreter']):
 class VimInterpreter(Interpreter):
 
     @staticmethod
-    def cons(silent: bool=False, target: Ident=None) -> 'VimInterpreter':
-        return VimInterpreter(Boolean(silent), Maybe.optional(target))
+    def cons(silent: bool=False, target: IdentSpec=None) -> 'VimInterpreter':
+        return VimInterpreter(Boolean(silent), Maybe.optional(target) / ensure_ident)
 
     def __init__(self, silent: Boolean, target: Maybe[Ident]) -> None:
         self.silent = silent
@@ -21,14 +23,18 @@ class VimInterpreter(Interpreter):
 class SystemInterpreter(Interpreter):
 
     @staticmethod
-    def cons(target: Ident=None) -> 'SystemInterpreter':
-        return SystemInterpreter(Maybe.optional(target))
+    def cons(target: IdentSpec=None) -> 'SystemInterpreter':
+        return SystemInterpreter(Maybe.optional(target) / ensure_ident)
 
     def __init__(self, target: Maybe[Ident]) -> None:
         self.target = target
 
 
 class ShellInterpreter(Interpreter):
+
+    @staticmethod
+    def cons(target: IdentSpec) -> 'SystemInterpreter':
+        return ShellInterpreter(ensure_ident(target))
 
     def __init__(self, target: Ident) -> None:
         self.target = target
@@ -38,12 +44,12 @@ class Command(Dat['Command']):
 
     @staticmethod
     def cons(
-            ident: Ident,
+            ident: IdentSpec,
             interpreter: Interpreter=None,
             lines: List[str]=Nil,
             langs: List[str]=Nil,
     ) -> 'Command':
-        return Command(ident, interpreter or SystemInterpreter.cons(), lines, langs)
+        return Command(ensure_ident(ident), interpreter or SystemInterpreter.cons(), lines, langs)
 
 
     def __init__(self, ident: Ident, interpreter: Interpreter, lines: List[str], langs: List[str]) -> None:

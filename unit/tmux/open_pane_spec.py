@@ -16,9 +16,9 @@ class OpenPaneSpec(TmuxSpec):
 
     def open_pane(self) -> Expectation:
         helper = two_panes()
-        state = helper.loop('command:open_pane', args=('one', '{}')).unsafe(helper.vim)
+        state = helper.unsafe_run_s('command:open_pane', args=('one', '{}'))
         helper1 = helper.set.state(state)
-        helper1.loop('command:open_pane', args=('two', '{}')).unsafe(helper.vim)
+        helper1.unsafe_run('command:open_pane', args=('two', '{}'))
         return later(kf(TmuxIO.read('list-panes').unsafe, self.tmux).must(have_length(2)))
 
 
