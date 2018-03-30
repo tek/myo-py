@@ -25,15 +25,20 @@ class PythonParseSpec(TmuxDefaultSpec):
     parse a python traceback $parse
     '''
 
+    def _pre_start(self) -> None:
+        @do(NvimIO[None])
+        def run() -> Do:
+            yield variable_set_prefixed('vim_tmux_pane', 0)
+            yield variable_set_prefixed('tmux_socket', tmux_spec_socket)
+            yield variable_set_prefixed('auto_jump', 0)
+        run().unsafe(self.vim)
+        super()._pre_start()
+
     def parse(self) -> Expectation:
         pane = 'paney'
         file = fixture_path('tmux', 'python_parse', 'trace')
         @do(NvimIO[List[Buffer]])
         def run() -> Do:
-            yield variable_set_prefixed('vim_tmux_pane', 0)
-            yield variable_set_prefixed('tmux_socket', tmux_spec_socket)
-            yield variable_set_prefixed('auto_jump', 0)
-            yield nvim_command('MyoStage1')
             yield self.json_cmd_sync('MyoCreatePane', name=pane, layout='root')
             yield self.json_cmd_sync('MyoOpenPane', pane)
             yield self.json_cmd_sync('MyoLine', pane=pane, lines=List(f'cat {file}'), langs=List('python'))

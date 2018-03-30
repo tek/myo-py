@@ -27,7 +27,7 @@ def define_vim_test_wrappers() -> Do:
 
 @trans.free.unit(trans.st)
 @do(NS[ComponentData[Env, CoreData], None])
-def stage1() -> Do:
+def init() -> Do:
     r = yield NS.lift(define_vim_test_wrappers())
     yield NS.unit
 
@@ -56,4 +56,4 @@ def build_args(runner: str, args: list) -> Do:
     yield NS.lift(vim_test_call(cons_decode_str_list, f'base#build_args', runner, args))
 
 
-__all__ = ('stage1',)
+__all__ = ('init',)

@@ -28,6 +28,7 @@ from myo.components.core.config import core
 from myo.components.command.config import command
 from myo.components.tmux.config import tmux
 from myo.components.ui.config import ui
+from myo.components.core.trans.init import init
 
 # unite_candidates = mk_unite_candidates(UniteNames)
 # unite_action = mk_unite_action(UniteNames)
@@ -78,6 +79,7 @@ myo_config: Config = Config.cons(
     ),
     core_components=List('core'),
     default_components=List('command', 'ui', 'tmux'),
+    init=init,
 )
 
 

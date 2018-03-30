@@ -79,8 +79,6 @@ class TestISpec(DefaultSpec):
         self._wait(.5)
         @do(NvimIO[List[str]])
         def run() -> Do:
-            yield nvim_command('MyoStage1')
-            self._wait(.5)
             yield mock_test_functions()
             yield self.json_cmd_sync('MyoVimTest')
             yield nvim_command('MyoParse')

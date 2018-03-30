@@ -29,7 +29,6 @@ class InfoSpec(TmuxDefaultSpec):
     def info(self) -> Expectation:
         @do(NvimIO[List[str]])
         def run() -> Do:
-            yield nvim_command('MyoStage1')
             yield nvim_command('MyoInfo')
             self._wait(1)
             yield current_buffer_content()
