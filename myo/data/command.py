@@ -1,4 +1,4 @@
-from amino import List, Maybe, Dat, ADT, Boolean, Either, Map, Nil
+from amino import List, Maybe, Dat, ADT, Boolean, Either, Map, Nil, Just, Nothing
 
 from myo.util import Ident
 
@@ -33,7 +33,7 @@ class SystemInterpreter(Interpreter):
 class ShellInterpreter(Interpreter):
 
     @staticmethod
-    def cons(target: IdentSpec) -> 'SystemInterpreter':
+    def cons(target: IdentSpec) -> 'ShellInterpreter':
         return ShellInterpreter(ensure_ident(target))
 
     def __init__(self, target: Ident) -> None:
@@ -51,12 +51,21 @@ class Command(Dat['Command']):
     ) -> 'Command':
         return Command(ensure_ident(ident), interpreter or SystemInterpreter.cons(), lines, langs)
 
-
     def __init__(self, ident: Ident, interpreter: Interpreter, lines: List[str], langs: List[str]) -> None:
         self.ident = ident
         self.interpreter = interpreter
         self.lines = lines
         self.langs = langs
+
+    @property
+    def interpreter_target(self) -> Maybe[Ident]:
+        return (
+            self.interpreter.target
+            if isinstance(self.interpreter, SystemInterpreter) else
+            Just(self.interpreter.target)
+            if isinstance(self.interpreter, ShellInterpreter) else
+            Nothing
+        )
 
 
 class Execute(Dat['Execute']):

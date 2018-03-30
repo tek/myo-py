@@ -7,6 +7,7 @@ from ribosome.config.settings import (state_dir_help_default, float_setting, str
 from ribosome.config.setting import Setting
 from ribosome.nvim.io.state import NS
 from ribosome.config.config import Resources
+from ribosome.trans.handler import Trans
 
 state_dir_help = f'''{state_dir_help_default}
 Stored data consists of:
@@ -30,6 +31,9 @@ hitting the jump key.
 '''
 vim_test_filename_modifier_help = '''A vim-test setting that is applied to file names.
 '''
+init_default_ui_help = '''Create space, window, layout and pane for vim and the default execution target at startup.
+The default target pane will be positioned to the right of vim.
+'''
 
 
 class MyoSettings(Settings):
@@ -46,6 +50,8 @@ class MyoSettings(Settings):
                                       Right(true))
         self.vim_test_filename_modifier = str_setting('test#filename_modifier', 'vim-test filename modifier',
                                                       vim_test_filename_modifier_help, False, Right(':.'))
+        self.init_default_ui = bool_setting('init_default_ui', 'initialize vim and make panes', init_default_ui_help,
+                                            True, Right(true))
 
 
 A = TypeVar('A')
@@ -53,8 +59,12 @@ D = TypeVar('D')
 CC = TypeVar('CC')
 
 
-def setting(attr: Callable[[MyoSettings], Setting]) -> NS[Resources[D, MyoSettings, CC], A]:
+def setting(attr: Callable[[MyoSettings], Setting[A]]) -> NS[Resources[D, MyoSettings, CC], A]:
     return NS.inspect_f(lambda a: attr(a.settings).value_or_default)
+
+
+def setting_trans(attr: Callable[[MyoSettings], Setting[A]]) -> Trans[A]:
+    return setting(attr).trans_with(resources=true)
 
 
 __all__ = ('MyoSettings', 'setting')

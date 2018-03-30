@@ -5,7 +5,7 @@ from chiasma.test.tmux_spec import TmuxSpec
 from chiasma.commands.pane import capture_pane
 from chiasma.util.id import StrIdent
 
-from amino import List, Lists, Just, Nil
+from amino import List, Lists, Nil
 
 from ribosome.test.integration.klk import later
 

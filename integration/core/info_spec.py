@@ -20,10 +20,13 @@ class InfoSpec(TmuxDefaultSpec):
     '''
 
     def _pre_start(self) -> None:
-        variable_set_prefixed('components', List('command', 'ui', 'tmux')).unsafe(self.vim)
-        variable_set_prefixed('vim_tmux_pane', 0).unsafe(self.vim)
-        variable_set_prefixed('tmux_socket', tmux_spec_socket).unsafe(self.vim)
-        variable_set_prefixed('auto_jump', 0).unsafe(self.vim)
+        @do(NvimIO[None])
+        def run() -> Do:
+            yield variable_set_prefixed('components', List('command', 'ui', 'tmux'))
+            yield variable_set_prefixed('vim_tmux_pane', 0)
+            yield variable_set_prefixed('tmux_socket', tmux_spec_socket)
+            yield variable_set_prefixed('auto_jump', 0)
+        run().unsafe(self.vim)
         super()._pre_start()
 
     def info(self) -> Expectation:

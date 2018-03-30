@@ -15,8 +15,7 @@ from amino.lenses.lens import lens
 from ribosome.trans.api import trans
 from ribosome.trans.action import Trans
 from ribosome.nvim.io.state import NS
-from ribosome.process import Subprocess
-from ribosome import ribo_log
+from ribosome.process import Subprocess, SubprocessResult
 
 from myo.util import Ident
 from myo.config.handler import find_handler
@@ -27,12 +26,13 @@ from myo.command.run_task import (RunTaskDetails, UiSystemTaskDetails, UiShellTa
 from myo.components.command.trans.history import push_history
 from myo.command.run_task import RunTask
 from myo.components.command.data import CommandData
+from myo.components.ui.trans.open_pane import open_pane, OpenPaneOptions
 
 D = TypeVar('D')
 
 
 def internal_can_run(task: RunTask) -> Boolean:
-    return isinstance(task.details, SystemTaskDetails)
+    return Boolean.isinstance(task.details, SystemTaskDetails)
 
 
 class run_task(Case, alg=RunTaskDetails):
@@ -42,20 +42,21 @@ class run_task(Case, alg=RunTaskDetails):
 
     @do(NS[D, None])
     def system_task_details(self, details: SystemTaskDetails) -> Do:
-        def popen(exe: str, args: List[str]) -> IO[None]:
-            return Subprocess(exe, args, None).execute(None, stderr=subprocess.STDOUT)
+        def popen(exe: str, args: List[str]) -> IO[SubprocessResult[None]]:
+            return Subprocess(Path(exe), args, None).execute(None, stderr=subprocess.STDOUT)
         parts = yield NS.from_either(
             self.task.command.lines
             .map(Lists.tokens)
             .traverse(lambda a: a.detach_head, Maybe)
-            .to_either(lambda: f'empty command line in {self.task.cmd}')
+            .to_either(lambda: f'empty command line in {self.task.command}')
         )
         result = yield NS.from_io(parts.traverse2(popen, IO))
         output = result.flat_map(_.stdout)
         yield NS.from_io(IO.delay(self.task.log.write_text, output.join_lines))
         yield NS.unit
 
-    def case_default(self, details: RunTaskDetails) -> NS[D, None]:
+    @do(NS[D, None])
+    def case_default(self, details: RunTaskDetails) -> Do:
         yield NS.unit
 
 
@@ -86,10 +87,19 @@ def system_task_details() -> Trans:
 
 @do(Trans[RunTaskDetails])
 def ui_system_task_details(target: Ident) -> Do:
-    # ensure_view
+    pane = yield ui_pane_by_ident(target)
+    yield open_pane(pane.ident, OpenPaneOptions())
+    return UiSystemTaskDetails(pane)
+
+
+@do(Trans[RunTaskDetails])
+def ui_shell_task_details(cmd_ident: Ident, target: Ident) -> Do:
+    shell = yield State.inspect_f(__.comp.command_by_ident(target)).trans
+    target = yield Trans.from_maybe(shell.interpreter.target,
+                                    f'shell `{shell.ident}` for command `{cmd_ident}` has no pane')
     pane = yield ui_pane_by_ident(target)
     yield render_pane(pane.ident)
-    return UiSystemTaskDetails(pane)
+    return UiShellTaskDetails(shell, pane)
 
 
 class run_task_details(Case[Interpreter, Trans[RunTaskDetails]], alg=Interpreter):
@@ -101,14 +111,8 @@ class run_task_details(Case[Interpreter, Trans[RunTaskDetails]], alg=Interpreter
     def system_interpreter(self, interpreter: SystemInterpreter) -> Do:
         yield interpreter.target / ui_system_task_details | (lambda: system_task_details())
 
-    @do(Trans[RunTaskDetails])
-    def shell_interpreter(self, interpreter: ShellInterpreter) -> Do:
-        shell = yield State.inspect_f(__.comp.command_by_ident(interpreter.target)).trans
-        target = yield Trans.from_maybe(shell.interpreter.target,
-                                        f'shell `{shell.ident}` for command `{self.cmd.ident}` has no pane')
-        pane = yield ui_pane_by_ident(target)
-        yield render_pane(pane.ident)
-        return UiShellTaskDetails(shell, pane)
+    def shell_interpreter(self, interpreter: ShellInterpreter) -> Trans[RunTaskDetails]:
+        return ui_shell_task_details(self.cmd.ident, interpreter.target)
 
     @do(Trans[RunTaskDetails])
     def vim_interpreter(self, interpreter: VimInterpreter) -> Do:
@@ -139,17 +143,22 @@ def task_log(ident: Ident) -> Do:
     yield existing / NS.pure | L(insert_log)(ident)
 
 
-@trans.free.do()
-@do(Trans)
-def run_command(ident_spec: IdentSpec, options: RunCommandOptions) -> Do:
-    ident = ensure_ident(ident_spec)
-    cmd = yield EitherState.inspect_f(__.comp.command_by_ident(ident)).trans
+@do(Trans[None])
+def run_command_1(cmd: Command) -> Do:
     task_details = yield run_task_details(cmd)(cmd.interpreter)
-    log = yield task_log(ident).zoom(lens.comp).trans
+    log = yield task_log(cmd.ident).zoom(lens.comp).trans
     task = RunTask(cmd, log, task_details)
     handler = yield find_handler(__.run(task), str(task))
     yield handler(task)
-    yield push_history(cmd, cmd.interpreter.target)
+    yield push_history(cmd, cmd.interpreter_target)
+
+
+@trans.free.do()
+@do(Trans[None])
+def run_command(ident_spec: IdentSpec, options: RunCommandOptions) -> Do:
+    ident = ensure_ident(ident_spec)
+    cmd = yield EitherState.inspect_f(__.comp.command_by_ident(ident)).trans
+    yield run_command_1(cmd)
 
 
 class RunLineOptions(Dat['RunLineOptions']):
@@ -161,15 +170,10 @@ class RunLineOptions(Dat['RunLineOptions']):
 
 
 @trans.free.do()
-@do(Trans)
+@do(Trans[None])
 def run_line(options: RunLineOptions) -> Do:
     cmd = Command.cons(Ident.generate(), SystemInterpreter(options.pane), lines=options.lines, langs=options.langs)
-    task_details = yield run_task_details(cmd)(cmd.interpreter)
-    log = yield task_log(cmd.ident).zoom(lens.comp).trans
-    task = RunTask(cmd, log, task_details)
-    handler = yield find_handler(__.run(task), str(task))
-    yield handler(task)
-    yield push_history(cmd, cmd.interpreter.target)
+    yield run_command_1(cmd)
 
 
 __all__ = ('run_command', 'run_line')
