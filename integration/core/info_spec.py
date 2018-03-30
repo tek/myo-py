@@ -35,7 +35,7 @@ class InfoSpec(TmuxDefaultSpec):
             yield nvim_command('MyoInfo')
             self._wait(1)
             yield current_buffer_content()
-        return kn(self.vim, run).must(contain(have_length(10)))
+        return kn(self.vim, run).must(contain(have_length(12)))
 
 
 __all__ = ('InfoSpec',)
