@@ -11,11 +11,7 @@ class DefaultSpec(AutoPluginIntegrationKlkSpec):
 
 class ExternalSpec(VimIntegrationKlkSpec):
 
-    @property
     def plugin_name(self) -> str:
-        return 'myo'
-
-    def plugin_prefix(self) -> str:
         return 'myo'
 
 

@@ -2,15 +2,15 @@ from kallikrein import Expectation
 from kallikrein.matchers.lines import have_lines
 from kallikrein.matchers import contain
 
+from chiasma.util.id import StrIdent
+
 from amino import List, Map, Nothing, Path, do, Do, Nil, Just
 from amino.test import fixture_path
 
-from ribosome.dispatch.execute import dispatch_state, eval_trans
-from ribosome.nvim.api import current_buffer_content, current_buffer_name, current_cursor
 from ribosome.nvim.io.compute import NvimIO
 from ribosome.test.klk import kn
 from ribosome.dispatch.component import ComponentData
-from ribosome.nvim.io import NSuccess
+from ribosome.nvim.api.ui import current_buffer_content, current_buffer_name, current_cursor
 
 from myo.data.command import Command, HistoryEntry
 from myo.components.command.trans.parse import parse
@@ -66,7 +66,7 @@ class ParseSpec(ExternalSpec):
     '''
 
     def command_output(self) -> Expectation:
-        cmd_ident = 'commo'
+        cmd_ident = StrIdent('commo')
         cmd = Command.cons(cmd_ident)
         hist = HistoryEntry(cmd, Nothing)
         logs = Map({cmd_ident: trace_file})
@@ -87,7 +87,7 @@ class ParseSpec(ExternalSpec):
             name = yield current_buffer_name()
             cursor = yield current_cursor()
             return name, cursor
-        return kn(self.vim, run) == NSuccess((str(file_path), (line, col)))
+        return kn(self.vim, run).must(contain((str(file_path), (line, col))))
 
     def next(self) -> Expectation:
         @do(NvimIO[List[str]])
@@ -103,7 +103,7 @@ class ParseSpec(ExternalSpec):
             yield prev_entry.fun().run(s2)
             cursor3 = yield current_cursor()
             return cursor1, cursor2, cursor3
-        return kn(self.vim, run) == NSuccess(((1, 0), (3, 0), (1, 0)))
+        return kn(self.vim, run).must(contain(((1, 0), (3, 0), (1, 0))))
 
 
 __all__ = ('ParseSpec',)

@@ -51,7 +51,7 @@ def vim_test_command() -> Do:
 @trans.free.do()
 @do(Trans)
 def vim_test(run_options: RunCommandOptions) -> Do:
-    yield vim_test_command.m
-    yield run_command(test_ident, run_options).m
+    yield vim_test_command
+    yield run_command(test_ident, run_options)
 
 __all__ = ('vim_test',)

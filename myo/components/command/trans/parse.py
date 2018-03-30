@@ -49,7 +49,7 @@ def parse_output(output: List[str]) -> Do:
 
 @do(NS[CommandData, List[str]])
 def cmd_output(ident: Ident) -> Do:
-    log = yield NS.inspect_f(__.log_by_ident(ident))
+    log = yield NS.inspect_either(__.log_by_ident(ident))
     text = yield NS.from_io(IO.delay(log.read_text))
     return Lists.lines(text)
 

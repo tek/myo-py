@@ -3,6 +3,7 @@ from kallikrein.matchers import contain
 
 from chiasma.test.tmux_spec import TmuxSpec
 from chiasma.commands.pane import capture_pane
+from chiasma.util.id import StrIdent
 
 from amino import List, Lists, Just, Nil
 
@@ -52,7 +53,7 @@ class RunCommandSpec(TmuxSpec):
         cmd = Command.cons(name, SystemInterpreter.cons('one'), cmds, Nil)
         helper = two_panes(List('command')).update_component('command', commands=List(cmd))
         s = helper.unsafe_run_s('command:run_command', args=(name, '{}'))
-        path = s.component_data['command'].logs['commo']
+        path = s.component_data['command'].logs[StrIdent('commo')]
         read = lambda: Lists.lines(path.read_text())
         return later(kf(read).must(contain(text)))
 

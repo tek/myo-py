@@ -32,12 +32,11 @@ def insert_vim_ui(ident: Ident, layout_ident: Ident) -> Do:
 @trans.free.do()
 @do(Trans)
 def stage1() -> Do:
-    handler = yield find_handler(__.create_vim_pane(), 'insert_vim_pane').m
+    handler = yield find_handler(__.create_vim_pane(), 'insert_vim_pane')
     ident = StrIdent('vim')
     layout_ident = StrIdent('root')
     yield insert_vim_ui(ident, layout_ident).zoom(lens.comp).trans
     pid = yield NS.lift(vim_pid()).trans
-    yield handler(ident, pid).m
-    yield NS.unit
+    yield handler(ident, pid)
 
 __all__ = ('stage1',)

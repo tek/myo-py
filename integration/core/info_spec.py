@@ -2,27 +2,38 @@ from kallikrein import Expectation
 from kallikrein.matchers import contain
 from kallikrein.matchers.length import have_length
 
-from integration._support.spec import DefaultSpec
+from integration._support.spec import TmuxDefaultSpec
 
-from amino import List
+from chiasma.test.tmux_spec import tmux_spec_socket
 
-from ribosome.nvim.api import current_buffer_content
+from amino import List, do, Do
+
 from ribosome.test.klk import kn
-from ribosome.test.integration.klk import later
+from ribosome.nvim.api.ui import current_buffer_content
+from ribosome.nvim.api.variable import variable_set_prefixed
+from ribosome.nvim.io.compute import NvimIO
+from ribosome.nvim.api.command import nvim_command
 
 
-class InfoSpec(DefaultSpec):
-    '''run a test command $run
+class InfoSpec(TmuxDefaultSpec):
+    '''show information $info
     '''
 
     def _pre_start(self) -> None:
-        self.vim.vars.set_p('components', List('command', 'ui', 'tmux'))
+        variable_set_prefixed('components', List('command', 'ui', 'tmux')).unsafe(self.vim)
+        variable_set_prefixed('vim_tmux_pane', 0).unsafe(self.vim)
+        variable_set_prefixed('tmux_socket', tmux_spec_socket).unsafe(self.vim)
+        variable_set_prefixed('auto_jump', 0).unsafe(self.vim)
         super()._pre_start()
 
-    def run(self) -> Expectation:
-        self.cmd_sync('MyoStage1')
-        self.cmd_sync('MyoInfo')
-        return later(kn(self.vim, current_buffer_content).must(contain(have_length(10))))
+    def info(self) -> Expectation:
+        @do(NvimIO[List[str]])
+        def run() -> Do:
+            yield nvim_command('MyoStage1')
+            yield nvim_command('MyoInfo')
+            self._wait(1)
+            yield current_buffer_content()
+        return kn(self.vim, run).must(contain(have_length(10)))
 
 
 __all__ = ('InfoSpec',)
