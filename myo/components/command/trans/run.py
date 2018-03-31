@@ -5,7 +5,7 @@ from typing import TypeVar
 
 from chiasma.util.id import IdentSpec, ensure_ident
 
-from amino import do, Do, Maybe, __, _, Path, IO, L, List, Boolean, Lists
+from amino import do, Do, Maybe, __, _, Path, IO, L, List, Boolean, Lists, Nil
 from amino.state import EitherState, State
 
 from amino.dat import Dat
@@ -164,7 +164,7 @@ def run_command(ident_spec: IdentSpec, options: RunCommandOptions) -> Do:
 
 class RunLineOptions(Dat['RunLineOptions']):
 
-    def __init__(self, pane: Maybe[Ident], shell: Maybe[Ident], lines: List[str], langs: List[str]) -> None:
+    def __init__(self, pane: Maybe[Ident], shell: Maybe[Ident], lines: List[str], langs: Maybe[List[str]]) -> None:
         self.pane = pane
         self.shell = shell
         self.lines = lines
@@ -175,7 +175,7 @@ class RunLineOptions(Dat['RunLineOptions']):
 @do(Trans[None])
 def run_line(options: RunLineOptions) -> Do:
     interpreter = options.shell.cata(ShellInterpreter, lambda: SystemInterpreter(options.pane))
-    cmd = Command.cons(Ident.generate(), interpreter, lines=options.lines, langs=options.langs)
+    cmd = Command.cons(Ident.generate(), interpreter, lines=options.lines, langs=options.langs | Nil)
     yield run_command_1(cmd)
 
 
