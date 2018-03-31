@@ -13,7 +13,7 @@ from ribosome.dispatch.component import ComponentData
 from ribosome.nvim.api.ui import current_buffer_content, current_buffer_name, current_cursor
 
 from myo.data.command import Command, HistoryEntry
-from myo.components.command.trans.parse import parse
+from myo.components.command.trans.parse import parse, ParseOptions
 from myo.components.command.trans.output import display_parse_result, current_entry_jump, next_entry, prev_entry
 from myo.output.data import ParseResult, CodeEntry, OutputEvent
 from myo.output.parser.python import FileEntry, PyErrorEntry, ColEntry
@@ -74,7 +74,7 @@ class ParseSpec(ExternalSpec):
         def run() -> Do:
             helper, aff, data = yield command_spec_data(commands=List(cmd), history=List(hist), logs=logs)
             yield helper.settings.auto_jump.update(False)
-            yield parse.fun().run(helper.state.resources_with(ComponentData(helper.state, data)))
+            yield parse.fun(ParseOptions.cons()).run(helper.state.resources_with(ComponentData(helper.state, data)))
             yield current_buffer_content()
         return kn(self.vim, run).must(contain(have_lines(events)))
 

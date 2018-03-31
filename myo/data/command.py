@@ -57,16 +57,6 @@ class Command(Dat['Command']):
         self.lines = lines
         self.langs = langs
 
-    @property
-    def interpreter_target(self) -> Maybe[Ident]:
-        return (
-            self.interpreter.target
-            if isinstance(self.interpreter, SystemInterpreter) else
-            Just(self.interpreter.target)
-            if isinstance(self.interpreter, ShellInterpreter) else
-            Nothing
-        )
-
 
 class Execute(Dat['Execute']):
 

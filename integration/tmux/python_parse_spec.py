@@ -36,11 +36,16 @@ class PythonParseSpec(TmuxDefaultSpec):
     def parse(self) -> Expectation:
         pane = 'make'
         file = fixture_path('tmux', 'python_parse', 'trace')
+        statements = List(
+            'import pathlib',
+            f'''print(pathlib.Path('{file}').read_text())''',
+        )
         @do(NvimIO[List[Buffer]])
         def run() -> Do:
-            yield self.json_cmd_sync('MyoLine', pane=pane, lines=List(f'cat {file}'), langs=List('python'))
+            yield self.json_cmd('MyoAddSystemCommand', ident='python', line='python', target=pane)
+            yield self.json_cmd('MyoLine', shell='python', lines=statements, langs=List('python'))
             self._wait(1)
-            yield self.json_cmd_sync('MyoParse')
+            yield self.json_cmd('MyoParse')
             self._wait(1)
             lines = yield current_buffer_content()
             yield send_input('q')

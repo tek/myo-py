@@ -20,7 +20,7 @@ from ribosome.process import Subprocess, SubprocessResult
 from myo.util import Ident
 from myo.config.handler import find_handler
 from myo.data.command import Command, Interpreter, SystemInterpreter, ShellInterpreter, VimInterpreter
-from myo.components.ui.trans.pane import ui_pane_by_ident, render_pane
+from myo.components.ui.trans.pane import ui_pane_by_ident
 from myo.command.run_task import (RunTaskDetails, UiSystemTaskDetails, UiShellTaskDetails, VimTaskDetails,
                                   SystemTaskDetails)
 from myo.components.command.trans.history import push_history
@@ -95,10 +95,11 @@ def ui_system_task_details(target: Ident) -> Do:
 @do(Trans[RunTaskDetails])
 def ui_shell_task_details(cmd_ident: Ident, target: Ident) -> Do:
     shell = yield State.inspect_f(__.comp.command_by_ident(target)).trans
+    yield run_command_1(shell)
     target = yield Trans.from_maybe(shell.interpreter.target,
                                     f'shell `{shell.ident}` for command `{cmd_ident}` has no pane')
     pane = yield ui_pane_by_ident(target)
-    yield render_pane(pane.ident)
+    yield open_pane(pane.ident, OpenPaneOptions())
     return UiShellTaskDetails(shell, pane)
 
 
@@ -150,7 +151,7 @@ def run_command_1(cmd: Command) -> Do:
     task = RunTask(cmd, log, task_details)
     handler = yield find_handler(__.run(task), str(task))
     yield handler(task)
-    yield push_history(cmd, cmd.interpreter_target)
+    yield push_history(cmd, cmd.interpreter)
 
 
 @trans.free.do()
@@ -163,8 +164,9 @@ def run_command(ident_spec: IdentSpec, options: RunCommandOptions) -> Do:
 
 class RunLineOptions(Dat['RunLineOptions']):
 
-    def __init__(self, pane: Maybe[Ident], lines: List[str], langs: List[str]) -> None:
+    def __init__(self, pane: Maybe[Ident], shell: Maybe[Ident], lines: List[str], langs: List[str]) -> None:
         self.pane = pane
+        self.shell = shell
         self.lines = lines
         self.langs = langs
 
@@ -172,7 +174,8 @@ class RunLineOptions(Dat['RunLineOptions']):
 @trans.free.do()
 @do(Trans[None])
 def run_line(options: RunLineOptions) -> Do:
-    cmd = Command.cons(Ident.generate(), SystemInterpreter(options.pane), lines=options.lines, langs=options.langs)
+    interpreter = options.shell.cata(ShellInterpreter, lambda: SystemInterpreter(options.pane))
+    cmd = Command.cons(Ident.generate(), interpreter, lines=options.lines, langs=options.langs)
     yield run_command_1(cmd)
 
 

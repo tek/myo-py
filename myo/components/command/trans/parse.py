@@ -4,8 +4,9 @@ from ribosome.trans.api import trans
 from ribosome.nvim.io.state import NS
 from ribosome.config.config import Resources
 from ribosome.dispatch.component import ComponentData
+from ribosome import ribo_log
 
-from chiasma.util.id import Ident
+from chiasma.util.id import Ident, IdentSpec
 
 from amino import do, Do, List, Dat, __, Either, _, Maybe, IO, Lists, Just
 from amino.lenses.lens import lens
@@ -55,10 +56,14 @@ def cmd_output(ident: Ident) -> Do:
 
 
 def most_recent_command() -> NS[CommandData, Either[str, HistoryEntry]]:
-    return NS.inspect(lambda s: s.history.head.to_either(f'history is empty') / _.cmd)
+    return NS.inspect(lambda s: s.history.last.to_either(f'history is empty') / _.cmd)
 
 
 class ParseOptions(Dat['ParseOptions']):
+
+    @staticmethod
+    def cons(pane: IdentSpec=None, command: IdentSpec=None, langs: List[str]=None) -> 'ParseOptions':
+        return ParseOptions(Maybe.optional(pane), Maybe.optional(command), Maybe.optional(langs))
 
     def __init__(self, pane: Maybe[Ident], command: Maybe[Ident], langs: Maybe[List[str]]) -> None:
         self.pane = pane
