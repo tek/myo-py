@@ -7,7 +7,7 @@ from chiasma.test.tmux_spec import tmux_spec_socket
 from chiasma.io.compute import TmuxIO
 from chiasma.commands.pane import send_keys
 
-from amino import List, do, Do, Path
+from amino import List, do, Do, Path, env
 
 from ribosome.nvim.api.variable import variable_set_prefixed
 from ribosome.nvim.io.compute import NvimIO
@@ -27,7 +27,8 @@ class VimPaneSpec(TmuxDefaultSpec):
     def start_neovim(self) -> None:
         env_args = self.vim_proc_env.map2(lambda k, v: f'{k}={v}').cons('env')
         cmd = env_args + self.nvim_cmdline
-        send_keys(0, List(f'source $VIRTUAL_ENV/bin/activate')).unsafe(self.tmux)
+        if 'VIRTUAL_ENV' in env:
+            send_keys(0, List(f'source $VIRTUAL_ENV/bin/activate')).unsafe(self.tmux)
         send_keys(0, List(cmd.join_tokens)).unsafe(self.tmux)
         wait_for(Path(self.nvim_socket).is_socket)
         self.neovim = neovim.attach('socket', path=self.nvim_socket)
