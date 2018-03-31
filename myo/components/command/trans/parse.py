@@ -60,7 +60,7 @@ def most_recent_command() -> NS[CommandData, Either[str, HistoryEntry]]:
 
 class ParseOptions(Dat['ParseOptions']):
 
-    def __init__(self, pane: Maybe[Ident], command: Maybe[Ident], langs: List[str]) -> None:
+    def __init__(self, pane: Maybe[Ident], command: Maybe[Ident], langs: Maybe[List[str]]) -> None:
         self.pane = pane
         self.command = command
         self.langs = langs
@@ -81,7 +81,7 @@ def parse_most_recent() -> Do:
 
 @trans.free.unit(trans.st, internal=true)
 @do(NS[Resources[ComponentData[MyoPluginState, CommandData], MyoSettings, MyoComponent], None])
-def parse() -> Do:
+def parse(options: ParseOptions) -> Do:
     parse_result = yield parse_most_recent()
     yield NS.modify(__.set.parse_result(Just(parse_result))).zoom(lens.data.comp)
     display_result = yield setting(_.display_parse_result)

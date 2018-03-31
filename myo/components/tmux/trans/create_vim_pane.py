@@ -1,6 +1,6 @@
 from psutil import Process
 
-from amino import do, Do, _, Either, IO, Boolean, Lists
+from amino import do, Do, _, Either, IO, Boolean, Lists, List
 from amino.lenses.lens import lens
 
 from ribosome.trans.api import trans
@@ -22,11 +22,16 @@ from myo.config.component import MyoComponent
 from myo.settings import MyoSettings
 
 
+@do(IO[List[int]])
+def child_pids(pid: int) -> Do:
+    proc = yield IO.delay(Process, pid)
+    children = yield IO.delay(proc.children, recursive=True)
+    yield IO.delay(Lists.wrap(children).map, lambda a: a.pid)
+
+
 @do(IO[Boolean])
 def contains_child_pid(vim_pid: int, pane_data: PaneData) -> Do:
-    proc = yield IO.delay(Process, pane_data.pid)
-    children = yield IO.delay(proc.children, recursive=True)
-    pids = yield IO.delay(Lists.wrap(children).map, lambda a: a.pid)
+    pids = yield child_pids(pane_data.pid)
     return pids.contains(vim_pid)
 
 

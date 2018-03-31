@@ -9,7 +9,6 @@ from chiasma.io.state import TmuxIOState
 
 from ribosome.nvim.io.state import ToNvimIOState, NS
 from ribosome.nvim.io.compute import NvimIO
-from ribosome import NvimApi
 from ribosome.nvim.api.variable import variable_prefixed_str
 from ribosome.nvim.io.api import N
 
@@ -23,14 +22,16 @@ def tmux_from_vim() -> Do:
     return Tmux.cons(socket=socket | None)
 
 
+@do(NvimIO[A])
+def tmux_to_nvim(tm: TmuxIO[A]) -> Do:
+    tmux = yield tmux_from_vim()
+    yield N.from_either(tm.either(tmux))
+
+
 class TmuxStateToNvimIOState(ToNvimIOState, tpe=TmuxIOState):
 
     @tc_prop
     def nvim(self, fa: TmuxIOState[S, A]) -> NS:
-        @do(NvimIO[A])
-        def tmux_to_nvim(tm: TmuxIO[A]) -> Do:
-            tmux = yield tmux_from_vim()
-            yield N.from_either(tm.either(tmux))
         return fa.transform_f(NS, tmux_to_nvim)
 
 
