@@ -24,6 +24,7 @@ class MyoComponent(Dat['MyoComponent']):
             info: Trans[InfoWidget]=None,
             ui: Ui=None,
             init: Trans[None]=None,
+            quit: Trans[None]=None,
     ) -> 'MyoComponent':
         return MyoComponent(
             run or no_handler,
@@ -31,6 +32,7 @@ class MyoComponent(Dat['MyoComponent']):
             Maybe.optional(info),
             Maybe.optional(ui),
             Maybe.optional(init),
+            Maybe.optional(quit),
         )
 
     def __init__(
@@ -40,12 +42,14 @@ class MyoComponent(Dat['MyoComponent']):
             info: Maybe[Trans[InfoWidget]],
             ui: Maybe[Ui],
             init: Maybe[Trans[None]],
+            quit: Maybe[Trans[None]],
     ) -> None:
         self.run = run
         self.create_vim_pane = create_vim_pane
         self.info = info
         self.ui = ui
         self.init = init
+        self.quit = quit
 
 
 Comp = Component[Env, ComponentData, MyoComponent]

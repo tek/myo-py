@@ -30,4 +30,19 @@ class TmuxDefaultSpec(TmuxSpec, DefaultSpec):
         DefaultSpec.teardown(self)
 
 
-__all__ = ('DefaultSpec', 'ExternalSpec', 'TmuxDefaultSpec')
+class TmuxExternalSpec(TmuxSpec, ExternalSpec):
+
+    def __init__(self) -> None:
+        TmuxSpec.__init__(self)
+        ExternalSpec.__init__(self)
+
+    def setup(self) -> None:
+        TmuxSpec.setup(self)
+        ExternalSpec.setup(self)
+
+    def teardown(self) -> None:
+        TmuxSpec.teardown(self)
+        ExternalSpec.teardown(self)
+
+
+__all__ = ('DefaultSpec', 'ExternalSpec', 'TmuxDefaultSpec', 'TmuxExternalSpec')

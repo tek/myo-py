@@ -1,6 +1,6 @@
 from psutil import Process
 
-from amino import do, Do, _, Either, IO, Boolean, Lists, List
+from amino import do, Do, _, Either, IO, Boolean, Lists, List, Just
 from amino.lenses.lens import lens
 
 from ribosome.trans.api import trans
@@ -50,12 +50,14 @@ def insert_vim_pane(
         vim_pid: int,
 ) -> Do:
     pane_data = yield TS.lift(override_id.cata(lambda err: discover_pane(vim_pid), pane))
+    vim_pane = Pane.cons(ident, id=pane_data.id)
     yield TS.modify(
         lambda s:
         s
-        .append1.panes(Pane.cons(ident, id=pane_data.id))
+        .append1.panes(vim_pane)
         .append1.windows(Window.cons(ident, id=pane_data.window_id))
         .append1.sessions(Session.cons(ident, id=pane_data.session_id))
+        .set.vim_pane(Just(vim_pane.ident))
     )
 
 

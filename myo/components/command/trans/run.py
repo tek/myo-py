@@ -174,7 +174,7 @@ class RunLineOptions(Dat['RunLineOptions']):
 @trans.free.do()
 @do(Trans[None])
 def run_line(options: RunLineOptions) -> Do:
-    interpreter = options.shell.cata(ShellInterpreter, lambda: SystemInterpreter(options.pane))
+    interpreter = options.shell.cata_f(ShellInterpreter, lambda: SystemInterpreter(options.pane))
     cmd = Command.cons(Ident.generate(), interpreter, lines=options.lines, langs=options.langs | Nil)
     yield run_command_1(cmd)
 
