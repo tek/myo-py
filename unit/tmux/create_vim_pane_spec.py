@@ -8,13 +8,13 @@ from chiasma.data.session import Session
 from chiasma.data.window import Window
 from chiasma.data.pane import Pane
 
-from amino import do, Do, Map, List
+from amino import do, Do, Map, List, Just
 
-from ribosome.test.integration.run import DispatchHelper
+from ribosome.test.integration.run import RequestHelper
 from ribosome.nvim.io.compute import NvimIO
 from ribosome.nvim.io.api import N
 
-from myo.components.tmux.trans.create_vim_pane import create_vim_pane, child_pids
+from myo.components.tmux.compute.create_vim_pane import create_vim_pane, child_pids
 from myo import myo_config
 from myo.tmux.io import tmux_to_nvim
 
@@ -26,7 +26,7 @@ class CreateVimPaneSpec(TmuxSpec):
 
     def discover(self) -> Expectation:
         ident = StrIdent('p')
-        helper = DispatchHelper.strict(myo_config, 'tmux', vars=Map(myo_tmux_socket=tmux_spec_socket))
+        helper = RequestHelper.strict(myo_config, 'tmux', vars=Map(myo_tmux_socket=tmux_spec_socket))
         @do(NvimIO[None])
         def run() -> Do:
             yield tmux_to_nvim(send_keys(0, List('tail')))
@@ -34,12 +34,13 @@ class CreateVimPaneSpec(TmuxSpec):
             pane = yield N.from_maybe(ps.head, 'no panes')
             pids = yield N.from_io(child_pids(pane.pid))
             pid = yield N.from_maybe(pids.head, 'no pids')
-            yield create_vim_pane.fun(ident, pid).run(helper.component_res_for('tmux'))
+            yield create_vim_pane.code.code(ident, pid).run(helper.component_res_for('tmux'))
         (res, a) = run().unsafe(helper.vim)
         return k(res.data.comp) == TmuxData.cons(
             List(Session.cons(ident, 0)),
             List(Window.cons(ident, 0)),
             List(Pane.cons(ident, 0)),
+            ident,
         )
 
 

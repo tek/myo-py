@@ -1,4 +1,4 @@
-from kallikrein import Expectation, kf
+from kallikrein import Expectation, kf, k
 from kallikrein.matchers import contain
 
 from chiasma.test.tmux_spec import TmuxSpec
@@ -10,6 +10,7 @@ from amino import List, Lists, Nil
 from ribosome.test.integration.klk import later
 
 from myo.data.command import Command, SystemInterpreter, ShellInterpreter
+from myo.components.command.data import CommandData
 
 from unit._support.tmux import two_panes
 
@@ -53,7 +54,7 @@ class RunCommandSpec(TmuxSpec):
         cmd = Command.cons(name, SystemInterpreter.cons('one'), cmds, Nil)
         helper = two_panes(List('command')).update_component('command', commands=List(cmd))
         s = helper.unsafe_run_s('command:run_command', args=(name, '{}'))
-        path = s.component_data['command'].logs[StrIdent('commo')]
+        path = s.component_data[CommandData].logs[StrIdent('commo')]
         read = lambda: Lists.lines(path.read_text())
         return later(kf(read).must(contain(text)))
 

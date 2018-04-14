@@ -1,13 +1,9 @@
-from typing import TypeVar, Callable
+from typing import TypeVar
 from amino import Right
 from amino.boolean import true
 
 from ribosome.config.settings import (state_dir_help_default, float_setting, str_setting, Settings, int_setting,
                                       bool_setting)
-from ribosome.config.setting import Setting
-from ribosome.nvim.io.state import NS
-from ribosome.config.config import Resources
-from ribosome.trans.handler import Trans
 
 state_dir_help = f'''{state_dir_help_default}
 Stored data consists of:
@@ -57,14 +53,6 @@ class MyoSettings(Settings):
 A = TypeVar('A')
 D = TypeVar('D')
 CC = TypeVar('CC')
-
-
-def setting(attr: Callable[[MyoSettings], Setting[A]]) -> NS[Resources[D, MyoSettings, CC], A]:
-    return NS.inspect_f(lambda a: attr(a.settings).value_or_default)
-
-
-def setting_trans(attr: Callable[[MyoSettings], Setting[A]]) -> Trans[A]:
-    return setting(attr).trans_with(resources=true)
 
 
 __all__ = ('MyoSettings', 'setting')

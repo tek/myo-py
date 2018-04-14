@@ -1,34 +1,40 @@
 from typing import Callable
 
-from amino.state import EitherState
 from amino import Maybe, do, Do, List, _, Either, Left, Right
-from amino.boolean import false
 
 from myo.config.plugin_state import MyoPluginState
 from myo.config.component import MyoComponent
 
-from ribosome.trans.handler import Trans
-from ribosome.trans.api import trans
+from ribosome.compute.prog import Program, Prog
+from ribosome.compute.api import prog
+from ribosome.nvim.io.state import NS
+from ribosome.nvim.io.api import N
 
 
-@trans.free.result(trans.st, component=false)
-@do(EitherState[MyoPluginState, List[Trans]])
-def find_handlers(pred: Callable[[MyoComponent], Maybe[Trans]]) -> Do:
-    components = yield EitherState.inspect(_.components.all)
+@prog
+@do(NS[MyoPluginState, List[Program]])
+def find_handlers(pred: Callable[[MyoComponent], Maybe[Program]]) -> Do:
+    components = yield NS.inspect(_.components.all)
     return components.flat_map(_.config).flat_map(pred)
 
 
-@trans.free.result(trans.st, component=false)
-@do(EitherState[MyoPluginState, Trans])
-def find_handler(pred: Callable[[MyoComponent], Maybe[Trans]], desc: str) -> Do:
-    eligible = yield find_handlers.fun(pred)
-    def select(h: Trans, t: List[Trans]) -> Either[str, Trans]:
+@prog
+@do(NS[MyoPluginState, Program])
+def select_handler(eligible: List[Program], desc: str) -> Do:
+    def select(h: Program, t: List[Program]) -> Either[str, Program]:
         return (
             Right(h)
             if t.empty else
             Left(f'multiple handlers for {desc}: {eligible}')
         )
-    yield EitherState.lift(eligible.detach_head.map2(select) | Left(f'no handler for {desc}'))
+    yield NS.lift(eligible.detach_head.map2(select) | N.error(f'no handler for {desc}'))
+
+
+@prog.do
+@do(Prog[Program])
+def find_handler(pred: Callable[[MyoComponent], Maybe[Program]], desc: str) -> Do:
+    eligible = yield find_handlers(pred)
+    yield select_handler(eligible, desc)
 
 
 __all__ = ('find_handler', 'find_handlers')

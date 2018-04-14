@@ -14,6 +14,7 @@ from ribosome.nvim.api.ui import current_buffer_content, send_input, buffers
 from ribosome.nvim.api.variable import variable_set_prefixed
 from ribosome.nvim.io.compute import NvimIO
 from ribosome.nvim.api.data import Buffer
+from ribosome.test.integration.spec import json_cmd
 
 from integration._support.python_parse import events
 from integration._support.spec import TmuxDefaultSpec
@@ -42,10 +43,10 @@ class PythonParseSpec(TmuxDefaultSpec):
         )
         @do(NvimIO[List[Buffer]])
         def run() -> Do:
-            yield self.json_cmd('MyoAddSystemCommand', ident='python', line='python', target=pane)
-            yield self.json_cmd('MyoLine', shell='python', lines=statements, langs=List('python'))
+            yield json_cmd('MyoAddSystemCommand', ident='python', line='python', target=pane)
+            yield json_cmd('MyoLine', shell='python', lines=statements, langs=List('python'))
             self._wait(1)
-            yield self.json_cmd('MyoParse')
+            yield json_cmd('MyoParse')
             self._wait(1)
             lines = yield current_buffer_content()
             yield send_input('q')

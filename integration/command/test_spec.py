@@ -16,13 +16,13 @@ from ribosome.test.klk import kn
 from ribosome.nvim.io.api import N
 from ribosome.nvim.api.function import define_function
 from ribosome.nvim.api.ui import buffers, buffer_content
-from ribosome.dispatch.execute import eval_trans
-from ribosome.dispatch.run import DispatchState
 from ribosome.nvim.api.variable import variable_set_prefixed
 from ribosome.nvim.api.command import nvim_command
+from ribosome.compute.run import eval_prog, run_prog
+from ribosome.test.integration.spec import json_cmd
 
-from myo.components.command.trans.test import vim_test, vim_test_command, test_ident
-from myo.components.command.trans.run import RunCommandOptions
+from myo.components.command.compute.test import vim_test, vim_test_command, test_ident
+from myo.components.command.compute.run import RunCommandOptions
 
 
 file = fixture_path('command', 'test', 'code.py')
@@ -46,21 +46,21 @@ class TestSpec(ExternalSpec):
     def create_cmd(self) -> Expectation:
         @do(NvimIO[Ident])
         def run() -> Do:
-            helper, aff, data = yield command_spec_data()
+            helper = yield command_spec_data()
             yield mock_test_functions()
-            (s1, ig) = yield vim_test_command.fun().run(helper.component_res(data))
-            comp = yield N.e(s1.data.comp.commands.head.to_either('no commands'))
+            (s1, ignore) = yield run_prog(vim_test_command, List()).run(helper.state)
+            cmd = yield N.e(s1.data_by_name('command'))
+            comp = yield N.e(cmd.commands.head.to_either('no commands'))
             return comp.ident
         return kn(self.vim, run).must(contain(test_ident))
 
     def run(self) -> Expectation:
         @do(NvimIO[None])
         def run() -> Do:
-            helper, aff, data = yield command_spec_data()
-            ds = DispatchState(helper.state, aff)
+            helper = yield command_spec_data()
             yield mock_test_functions()
-            (s1, ignore) = yield eval_trans.match(vim_test(RunCommandOptions.cons())).run(ds)
-            cmd = yield N.e(s1.state.data_by_name('command'))
+            (s1, ignore) = yield run_prog(vim_test, List(RunCommandOptions.cons())).run(helper.state)
+            cmd = yield N.e(s1.data_by_name('command'))
             log = yield N.e(cmd.log_by_ident(test_ident))
             return Lists.lines(log.read_text())
         return kn(self.vim, run).must(contain(end_with(target)))
@@ -80,8 +80,9 @@ class TestISpec(DefaultSpec):
         @do(NvimIO[List[str]])
         def run() -> Do:
             yield mock_test_functions()
-            yield self.json_cmd_sync('MyoVimTest')
-            yield nvim_command('MyoParse')
+            yield json_cmd('MyoVimTest')
+            self._wait(.5)
+            yield json_cmd('MyoParse')
             self._wait(.5)
             bufs = yield buffers()
             buf = yield N.from_maybe(bufs.lift(1), 'scratch buffer wasn\'t opened')

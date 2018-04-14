@@ -22,7 +22,7 @@ from myo.ui.data.view import Layout, Pane, ViewGeometry
 from myo.ui.data.window import Window
 from myo.ui.data.space import Space
 from myo.ui.data.view_path import pane_path
-from myo.components.ui.trans.open_pane import ui_open_pane
+from myo.components.ui.compute.open_pane import ui_open_pane
 
 D = TypeVar('D')
 

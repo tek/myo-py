@@ -1,30 +1,30 @@
 from amino import List, Map, Maybe, Just, Nothing
 from amino.boolean import true
 
-from ribosome.dispatch.component import Component
+from ribosome.config.component import Component
 from ribosome.request.handler.handler import RequestHandler
-from ribosome.dispatch.mapping import Mappings
-from ribosome.trans.handler import Trans
+from ribosome.compute.prog import Program
+from ribosome.data.mapping import Mappings
 
-from myo.components.command.trans.add import add_system_command, add_vim_command, add_shell_command
-from myo.components.command.trans.run import run_command, run_line, internal_can_run, run_internal_command
+from myo.components.command.compute.add import add_system_command, add_vim_command, add_shell_command
+from myo.components.command.compute.run import run_command, run_line, internal_can_run, run_internal_command
 from myo.config.component import MyoComponent
 from myo.components.command.data import CommandData
-from myo.components.command.trans.parse import parse
-from myo.components.command.trans.output import (current_entry_jump, jump_mapping, quit_mapping, quit_output,
+from myo.components.command.compute.parse import parse
+from myo.components.command.compute.output import (current_entry_jump, jump_mapping, quit_mapping, quit_output,
                                                  prev_mapping, prev_entry, next_mapping, next_entry)
 from myo.command.run_task import RunTask
-from myo.components.command.trans.test import vim_test
-from myo.components.command.trans.init import init
+from myo.components.command.compute.test import vim_test
+from myo.components.command.compute.init import init
 
 
-def run_handler_for(task: RunTask) -> Maybe[Trans]:
+def run_handler_for(task: RunTask) -> Maybe[Program]:
     return Just(run_internal_command) if internal_can_run(task) else Nothing
 
 
 command = Component.cons(
     'command',
-    state_ctor=CommandData.cons,
+    state_type=CommandData,
     request_handlers=List(
         RequestHandler.trans_cmd(add_vim_command)(json=true),
         RequestHandler.trans_cmd(add_system_command)(json=true),

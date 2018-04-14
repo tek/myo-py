@@ -3,7 +3,7 @@ from kallikrein import k, Expectation, pending
 from amino.test.spec import SpecBase
 from amino import List, Map
 
-from ribosome.test.integration.run import DispatchHelper
+from ribosome.test.integration.run import RequestHelper
 from ribosome.config.config import Config
 
 
@@ -22,7 +22,7 @@ class HistorySpec(SpecBase):
 
     @pending
     def test(self) -> Expectation:
-        helper = DispatchHelper.strict(config, 'command')
+        helper = RequestHelper.strict(config, 'command')
         r = helper.unsafe_run('command:load_history', args=(5,))
         return k(1) == 1
 

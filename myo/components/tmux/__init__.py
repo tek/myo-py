@@ -1,3 +1,3 @@
-import myo.tmux.trans  # noqa
+from myo.tmux.io import TmuxStateToNvimIOState
 
-__all__ = ()
+__all__ = ('TmuxStateToNvimIOState',)

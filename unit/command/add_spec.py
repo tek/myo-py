@@ -1,31 +1,23 @@
-from kallikrein import k, Expectation
-from kallikrein.matchers.either import be_right
+from kallikrein import Expectation
 from kallikrein.matchers import contain
 
 from chiasma.util.id import StrIdent
 
 from amino.test.spec import SpecBase
-from amino import List, Map, _, __, do, Do, Nothing, Nil
+from amino import List, _, __, do, Do, Nothing, Nil
 from amino.json import dump_json
 
-from ribosome.test.integration.run import DispatchHelper
-from ribosome.config.config import Config
+from ribosome.test.integration.run import RequestHelper
 from ribosome.nvim.io.compute import NvimIO
 from ribosome.test.klk import kn
 from ribosome.nvim.io.api import N
 
-from myo.components.command.config import command
 from myo.data.command import Command, SystemInterpreter, VimInterpreter, ShellInterpreter
-
-
-config = Config.cons(
-    name='myo',
-    components=Map(command=command),
-)
+from myo import myo_config
 
 
 def add_cmd(cmd_type: str, args: dict, goal: Command) -> Expectation[Command]:
-    helper = DispatchHelper.strict(config, 'command')
+    helper = RequestHelper.strict(myo_config, 'command')
     @do(NvimIO[Command])
     def run() -> Do:
         args_json = yield N.e(dump_json(args))

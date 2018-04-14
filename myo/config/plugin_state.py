@@ -1,4 +1,4 @@
-from ribosome.plugin_state import PluginState
+from ribosome.data.plugin_state import PluginState
 
 from myo.settings import MyoSettings
 from myo.env import Env

@@ -3,11 +3,11 @@ from amino.boolean import false
 
 from chiasma.util.id import Ident
 
-from ribosome.trans.handler import Trans
-from ribosome.trans.api import trans
+from ribosome.compute.prog import Program
+from ribosome.compute.api import prog
 
 
-@trans.free.result()
+@prog.strict
 def owns_no_pane(ident: Ident) -> Boolean:
     return false
 
@@ -16,11 +16,11 @@ class Ui(Dat['Ui']):
 
     @staticmethod
     def cons(
-            owns_pane: Trans=owns_no_pane,
-            render: Trans=None,
-            open_pane: Trans=None,
-            open_window: Trans=None,
-            open_space: Trans=None,
+            owns_pane: Program=owns_no_pane,
+            render: Program=None,
+            open_pane: Program=None,
+            open_window: Program=None,
+            open_space: Program=None,
     ) -> 'Ui':
         return Ui(
             owns_pane,
@@ -32,11 +32,11 @@ class Ui(Dat['Ui']):
 
     def __init__(
             self,
-            owns_pane: Trans,
-            render: Maybe[Trans],
-            open_pane: Maybe[Trans],
-            open_window: Maybe[Trans],
-            open_space: Maybe[Trans],
+            owns_pane: Program,
+            render: Maybe[Program],
+            open_pane: Maybe[Program],
+            open_window: Maybe[Program],
+            open_space: Maybe[Program],
     ) -> None:
         self.owns_pane = owns_pane
         self.render = render

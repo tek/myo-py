@@ -1,4 +1,4 @@
-from ribosome.test.integration.run import DispatchHelper
+from ribosome.test.integration.run import RequestHelper
 from ribosome.config.config import Config
 
 from chiasma.data.view_tree import ViewTree
@@ -32,13 +32,12 @@ tmux_spec_config = Config.cons(
     prefix='myo',
     state_ctor=Env.cons,
     components=Map(core=core, ui=ui, tmux=tmux, command=command),
-    component_config_type=MyoComponent,
     core_components=List('core'),
 )
 
 
-def tmux_spec_helper(extra: List[str]) -> DispatchHelper:
-    return DispatchHelper.strict(
+def tmux_spec_helper(extra: List[str]) -> RequestHelper:
+    return RequestHelper.strict(
         tmux_spec_config,
         'ui',
         'tmux',
@@ -50,7 +49,7 @@ def tmux_spec_helper(extra: List[str]) -> DispatchHelper:
     )
 
 
-def init_tmux_data(layout: ViewTree[Layout, Pane], extra: List[str]=Nil) -> DispatchHelper:
+def init_tmux_data(layout: ViewTree[Layout, Pane], extra: List[str]=Nil) -> RequestHelper:
     window = Window.cons('win', layout=layout)
     space = Space.cons('spc', List(window))
     return (
@@ -70,7 +69,7 @@ def init_tmux_data(layout: ViewTree[Layout, Pane], extra: List[str]=Nil) -> Disp
     )
 
 
-def two_panes(extra: List[str]=Nil) -> DispatchHelper[MyoSettings, Env, MyoComponent]:
+def two_panes(extra: List[str]=Nil) -> RequestHelper[MyoSettings, Env, MyoComponent]:
     layout = ViewTree.layout(
         Layout.cons('root', vertical=true),
         List(
@@ -92,7 +91,7 @@ def two_panes(extra: List[str]=Nil) -> DispatchHelper[MyoSettings, Env, MyoCompo
     )
 
 
-@do(TmuxIO[DispatchHelper[MyoSettings, Env, MyoComponent]])
+@do(TmuxIO[RequestHelper[MyoSettings, Env, MyoComponent]])
 def two_open_panes() -> Do:
     yield TmuxIO.write('split-window')
     yield TmuxIO.pure(two_panes())

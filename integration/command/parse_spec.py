@@ -9,12 +9,14 @@ from amino.test import fixture_path
 
 from ribosome.nvim.io.compute import NvimIO
 from ribosome.test.klk import kn
-from ribosome.dispatch.component import ComponentData
+from ribosome.config.component import ComponentData
 from ribosome.nvim.api.ui import current_buffer_content, current_buffer_name, current_cursor
+from ribosome.compute.run import run_prog
+from ribosome.compute.api import prog
 
 from myo.data.command import Command, HistoryEntry
-from myo.components.command.trans.parse import parse, ParseOptions
-from myo.components.command.trans.output import display_parse_result, current_entry_jump, next_entry, prev_entry
+from myo.components.command.compute.parse import parse, ParseOptions
+from myo.components.command.compute.output import display_parse_result, current_entry_jump, next_entry, prev_entry
 from myo.output.data import ParseResult, CodeEntry, OutputEvent
 from myo.output.parser.python import FileEntry, PyErrorEntry, ColEntry
 
@@ -72,18 +74,18 @@ class ParseSpec(ExternalSpec):
         logs = Map({cmd_ident: trace_file})
         @do(NvimIO[List[str]])
         def run() -> Do:
-            helper, aff, data = yield command_spec_data(commands=List(cmd), history=List(hist), logs=logs)
+            helper = yield command_spec_data(commands=List(cmd), history=List(hist), logs=logs)
             yield helper.settings.auto_jump.update(False)
-            yield parse.fun(ParseOptions.cons()).run(helper.state.resources_with(ComponentData(helper.state, data)))
+            yield run_prog(parse, List(ParseOptions.cons())).run(helper.state)
             yield current_buffer_content()
         return kn(self.vim, run).must(contain(have_lines(events)))
 
     def jump(self) -> Expectation:
         @do(NvimIO[List[str]])
         def run() -> Do:
-            helper, aff, data = yield command_spec_data()
-            (s1, ignore) = yield display_parse_result(parse_result).run(ComponentData(helper.state, data))
-            (s2, ignore) = yield current_entry_jump.fun().run(s1)
+            helper = yield command_spec_data()
+            (s1, ignore) = yield run_prog(prog.result(display_parse_result), List(parse_result)).run(helper.state)
+            (s2, ignore) = yield run_prog(current_entry_jump, Nil).run(s1)
             name = yield current_buffer_name()
             cursor = yield current_cursor()
             return name, cursor
@@ -92,15 +94,13 @@ class ParseSpec(ExternalSpec):
     def next(self) -> Expectation:
         @do(NvimIO[List[str]])
         def run() -> Do:
-            helper, aff, data = yield command_spec_data()
+            helper = yield command_spec_data()
             yield helper.settings.auto_jump.update(False)
-            data = ComponentData(helper.state, data)
-            (s1, ignore) = yield display_parse_result(parse_result).run(data)
+            (s1, ignore) = yield run_prog(prog.result(display_parse_result), List(parse_result)).run(helper.state)
             cursor1 = yield current_cursor()
-            (s2, ignore) = yield next_entry.fun().run(helper.state.resources_with(s1))
+            (s2, ignore) = yield run_prog(next_entry, Nil).run(s1)
             cursor2 = yield current_cursor()
-            data = ComponentData(helper.state, data)
-            yield prev_entry.fun().run(s2)
+            (s2, ignore) = yield run_prog(prev_entry, Nil).run(s2)
             cursor3 = yield current_cursor()
             return cursor1, cursor2, cursor3
         return kn(self.vim, run).must(contain(((1, 0), (3, 0), (1, 0))))
