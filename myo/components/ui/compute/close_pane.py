@@ -29,7 +29,6 @@ def ui_close_pane_trans(ident_spec: IdentSpec) -> Do:
 
 
 @prog.do
-@do(Prog[None])
 def close_pane(ident_spec: IdentSpec) -> Do:
     ident = ensure_ident(ident_spec)
     yield ui_close_pane_trans(ident)

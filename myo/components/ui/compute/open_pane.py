@@ -7,7 +7,8 @@ from amino.lenses.lens import lens
 
 from ribosome.compute.api import prog
 from ribosome.config.component import ComponentData
-from ribosome.compute.prog import Program, Prog
+from ribosome.compute.program import Program
+from ribosome.compute.prog import Prog
 
 from myo.util import Ident
 from myo.ui.data.ui_data import UiData
@@ -38,7 +39,6 @@ def ui_open_pane_trans(ident_spec: IdentSpec) -> Do:
 
 
 @prog.do
-@do(Prog[None])
 def open_pane(ident_spec: IdentSpec, options: OpenPaneOptions) -> Do:
     ident = ensure_ident(ident_spec)
     yield ui_open_pane_trans(ident)

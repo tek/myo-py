@@ -10,11 +10,12 @@ from amino.dat import Dat
 from amino.case import Case
 
 from ribosome.compute.api import prog
-from ribosome.compute.prog import Program, Prog
+from ribosome.compute.program import Program
 from ribosome.nvim.io.state import NS
 from ribosome.process import Subprocess, SubprocessResult
 from ribosome.compute.ribosome_api import Ribo
 from ribosome.compute.ribosome import Ribosome
+from ribosome.compute.prog import Prog
 
 from myo.util import Ident
 from myo.config.handler import find_handler
@@ -46,7 +47,7 @@ class run_task(Case, alg=RunTaskDetails):
     @do(NS[D, None])
     def system_task_details(self, details: SystemTaskDetails) -> Do:
         def popen(exe: str, args: List[str]) -> IO[SubprocessResult[None]]:
-            return Subprocess(Path(exe), args, None).execute(None, stderr=subprocess.STDOUT)
+            return Subprocess(Path(exe), args, None, None).execute(stderr=subprocess.STDOUT)
         parts = yield NS.from_either(
             self.task.command.lines
             .map(Lists.tokens)
@@ -164,7 +165,6 @@ def command_by_ident(ident: Ident) -> NS[Ribosome[MyoSettings, Env, MyoComponent
 
 
 @prog.do
-@do(Prog[None])
 def run_command(ident_spec: IdentSpec, options: RunCommandOptions) -> Do:
     ident = ensure_ident(ident_spec)
     cmd = yield command_by_ident(ident)
@@ -181,7 +181,6 @@ class RunLineOptions(Dat['RunLineOptions']):
 
 
 @prog.do
-@do(Prog[None])
 def run_line(options: RunLineOptions) -> Do:
     interpreter = options.shell.cata_f(ShellInterpreter, lambda: SystemInterpreter(options.pane))
     cmd = Command.cons(Ident.generate(), interpreter, lines=options.lines, langs=options.langs | Nil)

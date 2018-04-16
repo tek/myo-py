@@ -9,8 +9,9 @@ from chiasma.commands.pane import send_keys, pipe_pane
 
 from ribosome.compute.api import prog
 from ribosome.config.component import ComponentData
-from ribosome.compute.prog import Program, Prog
+from ribosome.compute.program import Program
 from ribosome.nvim.io.state import NS
+from ribosome.compute.prog import Prog
 
 from myo.env import Env
 from myo.command.run_task import RunTaskDetails, UiSystemTaskDetails, UiShellTaskDetails, RunTask
@@ -51,7 +52,6 @@ def run_in_pane(task: RunTask) -> Do:
 
 
 @prog.do
-@do(Prog)
 def run_command(task: RunTask) -> Do:
     yield run_in_pane(task)
 

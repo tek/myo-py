@@ -3,7 +3,7 @@ from amino.boolean import false
 
 from chiasma.util.id import Ident
 
-from ribosome.compute.prog import Program
+from ribosome.compute.program import Program
 from ribosome.compute.api import prog
 
 

@@ -2,7 +2,7 @@ from amino import List, Just, Nothing, Maybe
 
 from ribosome.config.component import Component
 from ribosome.request.handler.handler import RequestHandler
-from ribosome.compute.prog import Program
+from ribosome.compute.program import Program
 
 from chiasma.data.tmux import TmuxData
 

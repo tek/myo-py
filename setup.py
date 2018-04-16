@@ -13,8 +13,8 @@ setup(
     url='https://github.com/tek/myo',
     packages=find_packages(exclude=['unit', 'unit.*', 'integration', 'integration.*']),
     install_requires=[
-        'ribosome~=13.0.0a36',
-        'chiasma~=0.1.0.a18',
+        'ribosome~=13.0.0a41',
+        'chiasma~=0.1.0.a19',
         'psutil==5.3.1',
         'networkx==2.0',
     ],

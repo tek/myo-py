@@ -3,7 +3,7 @@ from amino.boolean import true
 
 from ribosome.config.component import Component
 from ribosome.request.handler.handler import RequestHandler
-from ribosome.compute.prog import Program
+from ribosome.compute.program import Program
 from ribosome.data.mapping import Mappings
 
 from myo.components.command.compute.add import add_system_command, add_vim_command, add_shell_command

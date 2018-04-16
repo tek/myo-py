@@ -45,7 +45,6 @@ def vim_test_command() -> Do:
 
 
 @prog.do
-@do(Prog)
 def vim_test(run_options: RunCommandOptions) -> Do:
     yield vim_test_command()
     yield run_command(test_ident, run_options)

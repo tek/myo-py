@@ -5,10 +5,11 @@ from amino import Maybe, do, Do, List, _, Either, Left, Right
 from myo.config.plugin_state import MyoPluginState
 from myo.config.component import MyoComponent
 
-from ribosome.compute.prog import Program, Prog
+from ribosome.compute.program import Program
 from ribosome.compute.api import prog
 from ribosome.nvim.io.state import NS
 from ribosome.nvim.io.api import N
+from ribosome.compute.prog import Prog
 
 
 @prog
@@ -31,7 +32,6 @@ def select_handler(eligible: List[Program], desc: str) -> Do:
 
 
 @prog.do
-@do(Prog[Program])
 def find_handler(pred: Callable[[MyoComponent], Maybe[Program]], desc: str) -> Do:
     eligible = yield find_handlers(pred)
     yield select_handler(eligible, desc)

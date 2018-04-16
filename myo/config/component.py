@@ -2,8 +2,8 @@ from typing import Callable, Any
 
 from amino import Dat, Maybe, Nothing
 
-from ribosome.compute.prog import Program
 from ribosome.config.component import Component, ComponentData
+from ribosome.compute.program import Program
 
 from myo.env import Env
 from myo.ui.ui import Ui

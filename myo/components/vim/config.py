@@ -1,7 +1,7 @@
 from amino import List, Dat, Maybe, Just, Nothing
 
 from ribosome.config.component import Component
-from ribosome.compute.prog import Program
+from ribosome.compute.program import Program
 
 from myo.components.vim.compute.run import run_command, vim_can_run
 from myo.config.component import MyoComponent

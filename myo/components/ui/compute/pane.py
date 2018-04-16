@@ -9,12 +9,13 @@ from amino.boolean import false
 from amino.util.tuple import lift_tuple
 
 from ribosome.compute.api import prog
-from ribosome.compute.prog import Program, Prog
+from ribosome.compute.program import Program
 from ribosome.config.component import ComponentData
 from ribosome.data.plugin_state import PluginState
-from ribosome.compute.prog import Program, Prog
+from ribosome.compute.program import Program
 from ribosome.compute.ribosome_api import Ribo
 from ribosome.nvim.io.state import NS
+from ribosome.compute.prog import Prog
 
 from myo.util import Ident
 from myo.ui.data.window import Window
@@ -51,7 +52,6 @@ def config_uis() -> Do:
 
 
 @prog.do
-@do(Prog[Tuple[Space, Window, Ui]])
 def pane_owners(ident: Ident) -> Do:
     pane_path_m = yield Ribo.lift_comp(pane_path_by_ident(ident).nvim, UiData)
     space, window, pane = yield Prog.from_maybe(pane_path_m, f'no pane with ident `{ident}`')
@@ -68,7 +68,6 @@ def pane_owners(ident: Ident) -> Do:
 
 
 @prog.do
-@do(Prog[None])
 def render_pane(ident: Ident) -> Do:
     space, window, owner = yield pane_owners(ident)
     renderer = yield Prog.from_maybe(owner.render, f'no renderer for {owner}')

@@ -31,7 +31,6 @@ def ui_minimize_pane_trans(ident: Ident) -> Do:
 
 
 @prog.do
-@do(Prog[None])
 def minimize_pane(ident_spec: Union[str, Ident]) -> Do:
     ident = ensure_ident(ident_spec)
     yield ui_minimize_pane_trans(ident)

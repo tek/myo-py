@@ -2,7 +2,8 @@ from amino import do, Do, _, List
 from amino.state import State
 
 from ribosome.compute.api import prog
-from ribosome.compute.prog import Program, Prog, bind_nullary_program
+from ribosome.compute.prog import Prog
+from ribosome.compute.program import Program, bind_nullary_program
 
 from myo.config.handler import find_handlers
 from myo.config.plugin_state import MyoPluginState
@@ -15,7 +16,6 @@ def init_handlers() -> Do:
 
 
 @prog.do
-@do(Prog[None])
 def init() -> Do:
     handlers = yield find_handlers(_.init)
     yield handlers.traverse(bind_nullary_program, Prog)

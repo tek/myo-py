@@ -33,7 +33,6 @@ def insert_default_ui(ident: Ident, layout_ident: Ident, make_ident: Ident) -> D
 
 
 @prog.do
-@do(Prog)
 def init() -> Do:
     allow_init = yield Ribo.setting_prog(_.init_default_ui)
     if allow_init:
