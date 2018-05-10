@@ -15,7 +15,7 @@ from ribosome.nvim.io.api import N
 
 from myo.data.command import Command, SystemInterpreter, ShellInterpreter
 from myo.components.command.data import CommandData
-from myo.config.plugin_state import MyoPluginState
+from myo.config.plugin_state import MyoState
 
 from test.command import update_command_data
 from test.klk.tmux import tmux_await_k
@@ -29,7 +29,7 @@ text2 = Lists.random_alpha()
 conf = tmux_default_test_config(List('command'))
 
 
-@do(NS[MyoPluginState, Expectation])
+@do(NS[MyoState, Expectation])
 def run_command_spec() -> Do:
     cmds = List(f'echo {text1}', f'echo {text2}')
     cmd = Command.cons(name, SystemInterpreter.cons('one'), cmds, Nil)
@@ -39,7 +39,7 @@ def run_command_spec() -> Do:
     yield NS.lift(tmux_await_k(contain(text1) & contain(text2), capture_pane, 0))
 
 
-@do(NS[MyoPluginState, Expectation])
+@do(NS[MyoState, Expectation])
 def run_shell_spec() -> Do:
     shell_cmd = 'python'
     cmds = List(f'print("{text1}")', f'print("{text2}")')
@@ -52,7 +52,7 @@ def run_shell_spec() -> Do:
     yield NS.lift(tmux_await_k(contain(text1) & contain(text2), capture_pane, 0))
 
 
-@do(NS[MyoPluginState, Expectation])
+@do(NS[MyoState, Expectation])
 def pipe_pane_spec() -> Do:
     cmds = List(f'echo {text1}')
     cmd = Command.cons(name, SystemInterpreter.cons('one'), cmds, Nil)

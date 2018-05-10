@@ -27,7 +27,7 @@ from myo.components.ui.config import ui
 from myo.ui.pane import map_panes_in_spaces
 from myo.components.command.config import command
 from myo.components.core.config import core
-from myo.config.plugin_state import MyoPluginState
+from myo.config.plugin_state import MyoState
 from myo.tmux.io import tmux_to_nvim
 
 
@@ -53,7 +53,7 @@ def tmux_default_test_config(components: List[str]=Nil, extra_vars: Map[str, Any
     return tmux_test_config(tmux_spec_config, components, extra_vars, **kw)
 
 
-@do(NS[MyoPluginState, Tuple[Window, Space]])
+@do(NS[MyoState, Tuple[Window, Space]])
 def init_tmux_data(layout: ViewTree[Layout, Pane]) -> Do:
     window = Window.cons('win', layout=layout)
     space = Space.cons('spc', List(window))
@@ -70,7 +70,7 @@ def init_tmux_data(layout: ViewTree[Layout, Pane]) -> Do:
     return window, space
 
 
-@do(NS[MyoPluginState, Tuple[Window, Space]])
+@do(NS[MyoState, Tuple[Window, Space]])
 def two_panes() -> Do:
     layout = ViewTree.layout(
         Layout.cons('root', vertical=true),
@@ -94,7 +94,7 @@ def two_panes() -> Do:
     return window, space
 
 
-@do(NS[MyoPluginState, Tuple[Window, Space]])
+@do(NS[MyoState, Tuple[Window, Space]])
 def two_open_panes() -> Do:
     yield NS.lift(tmux_to_nvim(TmuxIO.write('split-window')))
     yield two_panes()

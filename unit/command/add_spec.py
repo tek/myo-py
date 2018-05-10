@@ -14,13 +14,13 @@ from ribosome.test.unit import unit_test
 
 from myo.data.command import Command, SystemInterpreter, VimInterpreter, ShellInterpreter
 from myo import myo_config
-from myo.config.plugin_state import MyoPluginState
+from myo.config.plugin_state import MyoState
 
 test_config = TestConfig.cons(myo_config, components=List('command'))
 
 
 def add_cmd(cmd_type: str, args: dict, goal: Command) -> Expectation[Command]:
-    @do(NS[MyoPluginState, Command])
+    @do(NS[MyoState, Command])
     def run() -> Do:
         args_json = yield NS.e(dump_json(args))
         yield request(f'add_{cmd_type}_command', args_json)

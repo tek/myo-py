@@ -2,7 +2,7 @@ from typing import Callable
 
 from amino import Maybe, do, Do, List, _, Either, Left, Right
 
-from myo.config.plugin_state import MyoPluginState
+from myo.config.plugin_state import MyoState
 from myo.config.component import MyoComponent
 
 from ribosome.compute.program import Program
@@ -13,14 +13,14 @@ from ribosome.compute.prog import Prog
 
 
 @prog
-@do(NS[MyoPluginState, List[Program]])
+@do(NS[MyoState, List[Program]])
 def find_handlers(pred: Callable[[MyoComponent], Maybe[Program]]) -> Do:
     components = yield NS.inspect(_.components.all)
     return components.flat_map(_.config).flat_map(pred)
 
 
 @prog
-@do(NS[MyoPluginState, Program])
+@do(NS[MyoState, Program])
 def select_handler(eligible: List[Program], desc: str) -> Do:
     def select(h: Program, t: List[Program]) -> Either[str, Program]:
         return (

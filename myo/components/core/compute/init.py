@@ -7,13 +7,13 @@ from ribosome.compute.prog import Prog
 from ribosome.compute.program import Program, bind_nullary_program
 
 from myo.config.handler import find_handlers
-from myo.config.plugin_state import MyoPluginState
+from myo.config.plugin_state import MyoState
 
 log = module_log()
 
 
 @prog
-@do(State[MyoPluginState, List[Program[None]]])
+@do(State[MyoState, List[Program[None]]])
 def init_handlers() -> Do:
     yield find_handlers(_.init)
 

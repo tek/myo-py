@@ -13,7 +13,7 @@ from ribosome.nvim.io.state import NS
 from ribosome.test.prog import request
 from ribosome.test.unit import unit_test
 
-from myo.config.plugin_state import MyoPluginState
+from myo.config.plugin_state import MyoState
 
 from test.klk.tmux import tmux_await_k
 
@@ -26,7 +26,7 @@ def pane_height(id: int) -> Do:
     return p.height
 
 
-@do(NS[MyoPluginState, Expectation])
+@do(NS[MyoState, Expectation])
 def minimize_pane_spec() -> Do:
     yield two_open_panes()
     yield request('minimize_pane', 'one')

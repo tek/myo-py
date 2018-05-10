@@ -14,7 +14,7 @@ from myo.components.command.config import command
 from myo.data.command import Command, VimInterpreter
 from myo.env import Env
 from myo.components.command.compute.parse import parse_output
-from myo.config.plugin_state import MyoPluginState
+from myo.config.plugin_state import MyoState
 
 from test.command import update_command_data
 
@@ -28,7 +28,7 @@ test_config = TestConfig.cons(config)
 trace_file = fixture_path('tmux', 'parse', 'trace')
 
 
-@do(NS[MyoPluginState, Expectation])
+@do(NS[MyoState, Expectation])
 def text_spec() -> Do:
     name = 'test'
     cmds = List('let g:key = 7', 'let g:value = 13')

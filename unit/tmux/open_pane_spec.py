@@ -14,12 +14,12 @@ from ribosome.test.unit import unit_test
 from ribosome.nvim.io.state import NS
 from ribosome.test.prog import request
 
-from myo.config.plugin_state import MyoPluginState
+from myo.config.plugin_state import MyoState
 
 from unit._support.tmux import two_panes, tmux_default_test_config
 
 
-@do(NS[MyoPluginState, Expectation])
+@do(NS[MyoState, Expectation])
 def open_pane_spec() -> Do:
     yield two_panes()
     yield request('open_pane', 'one', '{}')

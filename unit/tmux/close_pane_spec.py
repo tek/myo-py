@@ -10,14 +10,14 @@ from ribosome.nvim.io.state import NS
 from ribosome.test.prog import request
 from ribosome.test.unit import unit_test
 
-from myo.config.plugin_state import MyoPluginState
+from myo.config.plugin_state import MyoState
 
 from test.klk.tmux import tmux_await_k
 
 from unit._support.tmux import two_open_panes, tmux_default_test_config
 
 
-@do(NS[MyoPluginState, Expectation])
+@do(NS[MyoState, Expectation])
 def close_pane_spec() -> Do:
     yield two_open_panes()
     yield request('close_pane', 'one')
