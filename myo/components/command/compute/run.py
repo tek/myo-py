@@ -27,7 +27,6 @@ from myo.components.command.compute.history import push_history
 from myo.command.run_task import RunTask
 from myo.components.command.data import CommandData
 from myo.components.ui.compute.open_pane import open_pane, OpenPaneOptions
-from myo.settings import MyoSettings
 from myo.config.component import MyoComponent
 from myo.env import Env
 from myo.components.command.compute.tpe import CommandRibosome
@@ -160,7 +159,7 @@ def run_command_1(cmd: Command) -> Do:
 
 # TODO allow prog to reuse previous Ribosome component affiliation
 @prog
-def command_by_ident(ident: Ident) -> NS[Ribosome[MyoSettings, Env, MyoComponent, CommandData], Command]:
+def command_by_ident(ident: Ident) -> NS[Ribosome[Env, MyoComponent, CommandData], Command]:
     return Ribo.inspect_comp_e(__.command_by_ident(ident))
 
 

@@ -1,12 +1,12 @@
 from typing import TypeVar
 
 from amino import do, Do, __, List
+from amino.logging import module_log
 
 from chiasma.util.id import StrIdent
 
 from ribosome.nvim.io.state import NS
 from ribosome.compute.api import prog
-from ribosome.compute.prog import Prog
 from ribosome.compute.ribosome_api import Ribo
 
 from myo.components.command.data import CommandData
@@ -15,6 +15,7 @@ from myo.data.command import Command, SystemInterpreter
 from myo.components.command.compute.vim_test import vim_test_line
 from myo.components.command.compute.tpe import CommandRibosome
 
+log = module_log()
 D = TypeVar('D')
 test_ident = StrIdent('<test>')
 

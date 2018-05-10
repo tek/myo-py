@@ -13,12 +13,11 @@ from ribosome.compute.ribosome_api import Ribo
 from myo.util import Ident
 from myo.data.command import Command, SystemInterpreter, VimInterpreter, ShellInterpreter
 from myo.env import Env
-from myo.settings import MyoSettings
 from myo.config.component import MyoComponent
 from myo.components.command.data import CommandData
 
 A = TypeVar('A')
-CommandRiboState = NS[Ribosome[MyoSettings, Env, MyoComponent, CommandData], A]
+CommandRiboState = NS[Ribosome[Env, MyoComponent, CommandData], A]
 
 
 class AddVimCommandOptions(Dat['AddVimCommandOptions']):
@@ -102,21 +101,21 @@ def cons_shell_command(options: AddShellCommandOptions) -> Either[str, Command]:
 
 
 @prog.unit
-@do(NS[Ribosome[MyoSettings, Env, MyoComponent, CommandData], None])
+@do(NS[Ribosome[Env, MyoComponent, CommandData], None])
 def add_vim_command(options: AddVimCommandOptions) -> Do:
     cmd = cons_vim_command(options)
     yield Ribo.modify_comp(lens.commands.modify(__.cat(cmd)))
 
 
 @prog.unit
-@do(NS[Ribosome[MyoSettings, Env, MyoComponent, CommandData], None])
+@do(NS[Ribosome[Env, MyoComponent, CommandData], None])
 def add_system_command(options: AddSystemCommandOptions) -> Do:
     cmd = cons_system_command(options)
     yield Ribo.modify_comp(lens.commands.modify(__.cat(cmd)))
 
 
 @prog.unit
-@do(NS[Ribosome[MyoSettings, Env, MyoComponent, CommandData], None])
+@do(NS[Ribosome[Env, MyoComponent, CommandData], None])
 def add_shell_command(options: AddShellCommandOptions) -> Do:
     cmd = cons_shell_command(options)
     yield Ribo.modify_comp(lens.commands.modify(__.cat(cmd)))

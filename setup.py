@@ -11,14 +11,14 @@ setup(
     author_email='torstenschmits@gmail.com',
     license='MIT',
     url='https://github.com/tek/myo',
-    packages=find_packages(exclude=['unit', 'unit.*', 'integration', 'integration.*']),
+    packages=find_packages(exclude=['unit', 'unit.*', 'integration', 'integration.*', 'test', 'test.*']),
     install_requires=[
-        'ribosome~=13.0.0a41',
-        'chiasma~=0.1.0.a19',
+        'ribosome~=13.0.0a48',
+        'chiasma~=0.1.0.a20',
         'psutil==5.3.1',
         'networkx==2.0',
     ],
     tests_require=[
-        'kallikrein',
+        'kallikrein~=0.22.a15',
     ],
 )

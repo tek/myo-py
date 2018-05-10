@@ -2,8 +2,8 @@ from amino import List
 from amino.boolean import true
 
 from ribosome.config.component import Component
-from ribosome.request.handler.handler import RequestHandler
-from ribosome.request.handler.prefix import Full
+from ribosome.rpc.data.prefix_style import Full
+from ribosome.rpc.api import rpc
 
 from myo.config.component import MyoComponent
 from myo.ui.data.ui_data import UiData
@@ -19,16 +19,16 @@ from myo.components.ui.compute.info import ui_info
 ui = Component.cons(
     'ui',
     state_type=UiData,
-    request_handlers=List(
-        RequestHandler.trans_cmd(create_pane)(json=true),
-        RequestHandler.trans_cmd(open_pane)(json=true),
-        RequestHandler.trans_cmd(close_pane)(),
-        RequestHandler.trans_cmd(minimize_pane)(),
-        RequestHandler.trans_function(ui_pane_by_ident)(),
-        RequestHandler.trans_function(render_pane)(),
-        RequestHandler.trans_function(pane_owners)(),
-        RequestHandler.trans_cmd(init)(prefix=Full()),
-        RequestHandler.trans_function(ui_info)(),
+    rpc=List(
+        rpc.write(create_pane).conf(json=true),
+        rpc.write(open_pane).conf(json=true),
+        rpc.write(close_pane),
+        rpc.write(minimize_pane),
+        rpc.write(ui_pane_by_ident),
+        rpc.write(render_pane),
+        rpc.write(pane_owners),
+        rpc.write(init).conf(prefix=Full()),
+        rpc.write(ui_info),
     ),
     config=MyoComponent.cons(info=ui_info, init=init),
 )

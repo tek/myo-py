@@ -2,7 +2,7 @@ from amino import List, Map, Maybe, Just, Nothing
 from amino.boolean import true
 
 from ribosome.config.component import Component
-from ribosome.request.handler.handler import RequestHandler
+from ribosome.rpc.api import rpc
 from ribosome.compute.program import Program
 from ribosome.data.mapping import Mappings
 
@@ -16,36 +16,37 @@ from myo.components.command.compute.output import (current_entry_jump, jump_mapp
 from myo.command.run_task import RunTask
 from myo.components.command.compute.test import vim_test
 from myo.components.command.compute.init import init
+from myo.env import Env
 
 
 def run_handler_for(task: RunTask) -> Maybe[Program]:
     return Just(run_internal_command) if internal_can_run(task) else Nothing
 
 
-command = Component.cons(
+command: Component[Env, CommandData, MyoComponent] = Component.cons(
     'command',
     state_type=CommandData,
-    request_handlers=List(
-        RequestHandler.trans_cmd(add_vim_command)(json=true),
-        RequestHandler.trans_cmd(add_system_command)(json=true),
-        RequestHandler.trans_cmd(add_shell_command)(json=true),
-        RequestHandler.trans_cmd(run_command)(json=true),
-        RequestHandler.trans_cmd(run_line)(name='line', json=true),
-        RequestHandler.trans_cmd(parse)(json=true),
-        RequestHandler.trans_cmd(current_entry_jump)(),
-        RequestHandler.trans_cmd(quit_output)(),
-        RequestHandler.trans_cmd(prev_entry)(),
-        RequestHandler.trans_cmd(next_entry)(),
-        RequestHandler.trans_cmd(vim_test)(),
-        RequestHandler.trans_function(init)(),
+    rpc=List(
+        rpc.write(add_vim_command).conf(json=true),
+        rpc.write(add_system_command).conf(json=true),
+        rpc.write(add_shell_command).conf(json=true),
+        rpc.write(run_command).conf(json=true),
+        rpc.write(run_line).conf(name=Just('line'), json=true),
+        rpc.write(parse).conf(json=true),
+        rpc.write(current_entry_jump),
+        rpc.write(quit_output),
+        rpc.write(prev_entry),
+        rpc.write(next_entry),
+        rpc.write(vim_test),
+        rpc.write(init),
     ),
     config=MyoComponent.cons(run=run_handler_for, init=init),
-    mappings=Mappings.cons(Map({
-        jump_mapping: current_entry_jump,
-        quit_mapping: quit_output,
-        prev_mapping: prev_entry,
-        next_mapping: next_entry,
-    })),
+    mappings=Mappings.cons(
+        (jump_mapping, current_entry_jump),
+        (quit_mapping, quit_output),
+        (prev_mapping, prev_entry),
+        (next_mapping, next_entry),
+    ),
 )
 
 __all__ = ('command',)

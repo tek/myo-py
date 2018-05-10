@@ -1,5 +1,4 @@
-from ribosome.test.integration.run import RequestHelper
-from ribosome.config.config import Config
+from typing import Tuple, Any
 
 from chiasma.data.view_tree import ViewTree
 from chiasma.data.session import Session
@@ -14,17 +13,22 @@ from amino.boolean import true
 from amino.lenses.lens import lens
 from amino.test import temp_dir
 
+from ribosome.test.integration.run import RequestHelper
+from ribosome.config.config import Config
+from ribosome.nvim.io.state import NS
+from ribosome.test.config import TestConfig
+
 from myo.ui.data.view import Layout, Pane
 from myo.ui.data.window import Window
 from myo.ui.data.space import Space
 from myo.env import Env
-from myo.config.component import MyoComponent
 from myo.components.tmux.config import tmux
 from myo.components.ui.config import ui
-from myo.settings import MyoSettings
 from myo.ui.pane import map_panes_in_spaces
 from myo.components.command.config import command
 from myo.components.core.config import core
+from myo.config.plugin_state import MyoPluginState
+from myo.tmux.io import tmux_to_nvim
 
 
 tmux_spec_config = Config.cons(
@@ -34,42 +38,40 @@ tmux_spec_config = Config.cons(
     components=Map(core=core, ui=ui, tmux=tmux, command=command),
     core_components=List('core'),
 )
+vars = Map(
+    myo_tmux_socket=tmux_spec_socket,
+    myo_state_dir=str(temp_dir('history', 'state')),
+)
 
 
-def tmux_spec_helper(extra: List[str]) -> RequestHelper:
-    return RequestHelper.strict(
-        tmux_spec_config,
-        'ui',
-        'tmux',
-        *extra,
-        vars=Map(
-            myo_tmux_socket=tmux_spec_socket,
-            myo_state_dir=str(temp_dir('history', 'state')),
-        ),
-    )
+def tmux_test_config(config: Config, components: List[str]=Nil, extra_vars: Map[str, Any]=Map(), **kw: Any
+                     ) -> TestConfig:
+    return TestConfig.cons(config, vars=vars ** extra_vars, components=List('ui', 'tmux') + components, **kw)
 
 
-def init_tmux_data(layout: ViewTree[Layout, Pane], extra: List[str]=Nil) -> RequestHelper:
+def tmux_default_test_config(components: List[str]=Nil, extra_vars: Map[str, Any]=Map(), **kw: Any) -> TestConfig:
+    return tmux_test_config(tmux_spec_config, components, extra_vars, **kw)
+
+
+@do(NS[MyoPluginState, Tuple[Window, Space]])
+def init_tmux_data(layout: ViewTree[Layout, Pane]) -> Do:
     window = Window.cons('win', layout=layout)
     space = Space.cons('spc', List(window))
-    return (
-        window,
-        space,
-        tmux_spec_helper(extra)
-        .mod.state(
+    yield NS.modify(
+        __
+        .modify_component_data('ui', __.append1.spaces(space))
+        .modify_component_data(
+            'tmux',
             __
-            .modify_component_data('ui', __.append1.spaces(space))
-            .modify_component_data(
-                'tmux',
-                __
-                .append1.sessions(Session.cons(space.ident, id=0))
-                .append1.windows(TWindow.cons(window.ident, id=0))
-            )
+            .append1.sessions(Session.cons(space.ident, id=0))
+            .append1.windows(TWindow.cons(window.ident, id=0))
         )
     )
+    return window, space
 
 
-def two_panes(extra: List[str]=Nil) -> RequestHelper[MyoSettings, Env, MyoComponent]:
+@do(NS[MyoPluginState, Tuple[Window, Space]])
+def two_panes() -> Do:
     layout = ViewTree.layout(
         Layout.cons('root', vertical=true),
         List(
@@ -77,8 +79,8 @@ def two_panes(extra: List[str]=Nil) -> RequestHelper[MyoSettings, Env, MyoCompon
             ViewTree.pane(Pane.cons('two', geometry=ViewGeometry.cons(weight=0.5, position=12))),
         )
     )
-    window, space, helper = init_tmux_data(layout, extra)
-    return helper.mod.state(
+    window, space = yield init_tmux_data(layout)
+    yield NS.modify(
         __
         .modify_component_data(
             'tmux',
@@ -89,12 +91,14 @@ def two_panes(extra: List[str]=Nil) -> RequestHelper[MyoSettings, Env, MyoCompon
             __.mod.spaces(L(map_panes_in_spaces)(lambda a: True, lens.open.set(true), _))
         )
     )
+    return window, space
 
 
-@do(TmuxIO[RequestHelper[MyoSettings, Env, MyoComponent]])
+@do(NS[MyoPluginState, Tuple[Window, Space]])
 def two_open_panes() -> Do:
-    yield TmuxIO.write('split-window')
-    yield TmuxIO.pure(two_panes())
+    yield NS.lift(tmux_to_nvim(TmuxIO.write('split-window')))
+    yield two_panes()
 
 
-__all__ = ('tmux_spec_config', 'init_tmux_data', 'tmux_spec_helper')
+__all__ = ('tmux_spec_config', 'init_tmux_data', 'tmux_default_test_config', 'two_panes', 'two_open_panes',
+           'tmux_test_config',)

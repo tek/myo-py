@@ -27,7 +27,7 @@ class VimData(Dat['VimData']):
 vim = Component.cons(
     'vim',
     state_type=VimData,
-    request_handlers=List(
+    rpc=List(
     ),
     config=MyoComponent.cons(run_handler_for),
 )

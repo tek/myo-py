@@ -1,11 +1,9 @@
-from typing import TypeVar
 from amino import Right
 from amino.boolean import true
 
-from ribosome.config.settings import (state_dir_help_default, float_setting, str_setting, Settings, int_setting,
-                                      bool_setting)
+from ribosome.config.setting import float_setting, str_setting, int_setting, bool_setting
 
-state_dir_help = f'''{state_dir_help_default}
+state_dir_help = f'''
 Stored data consists of:
 * command history
 * last test command line
@@ -32,27 +30,18 @@ The default target pane will be positioned to the right of vim.
 '''
 
 
-class MyoSettings(Settings):
-
-    def __init__(self) -> None:
-        super().__init__('myo', state_dir_help)
-        self.tmux_watcher_interval = float_setting('tmux_watcher_interval', 'tmux process polling interval',
-                                                   tmux_watcher_interval_help, True, Right(1.0))
-        self.tmux_socket = str_setting('tmux_socket', 'tmux socket path', tmux_socket_help, True)
-        self.vim_tmux_pane = int_setting('vim_tmux_pane', 'vim tmux pane id', vim_tmux_pane_help, True)
-        self.display_parse_result = bool_setting('display_parse_result', 'display parse result',
-                                                 display_parse_result_help, True, Right(true))
-        self.auto_jump = bool_setting('auto_jump', 'jump when changing output events', auto_jump_help, True,
-                                      Right(true))
-        self.vim_test_filename_modifier = str_setting('test#filename_modifier', 'vim-test filename modifier',
-                                                      vim_test_filename_modifier_help, False, Right(':.'))
-        self.init_default_ui = bool_setting('init_default_ui', 'initialize vim and make panes', init_default_ui_help,
-                                            True, Right(true))
+tmux_watcher_interval = float_setting('tmux_watcher_interval', 'tmux process polling interval',
+                                      tmux_watcher_interval_help, True, Right(1.0))
+tmux_socket = str_setting('tmux_socket', 'tmux socket path', tmux_socket_help, True)
+vim_tmux_pane = int_setting('vim_tmux_pane', 'vim tmux pane id', vim_tmux_pane_help, True)
+display_parse_result = bool_setting('display_parse_result', 'display parse result', display_parse_result_help, True,
+                                    Right(true))
+auto_jump = bool_setting('auto_jump', 'jump when changing output events', auto_jump_help, True, Right(true))
+vim_test_filename_modifier = str_setting('test#filename_modifier', 'vim-test filename modifier',
+                                         vim_test_filename_modifier_help, False, Right(':.'))
+init_default_ui = bool_setting('init_default_ui', 'initialize vim and make panes', init_default_ui_help, True,
+                               Right(true))
 
 
-A = TypeVar('A')
-D = TypeVar('D')
-CC = TypeVar('CC')
-
-
-__all__ = ('MyoSettings', 'setting')
+__all__ = ('tmux_watcher_interval', 'tmux_socket', 'vim_tmux_pane', 'display_parse_result', 'auto_jump',
+           'vim_test_filename_modifier', 'init_default_ui',)

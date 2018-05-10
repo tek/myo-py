@@ -3,7 +3,6 @@ from amino import List, Map
 from ribosome.config.config import Config
 
 from myo.env import Env
-from myo.settings import MyoSettings
 from myo.components.core.config import core
 from myo.components.command.config import command
 from myo.components.tmux.config import tmux
@@ -15,7 +14,6 @@ myo_config: Config = Config.cons(
     prefix='myo',
     state_ctor=Env.cons,
     components=Map(core=core, command=command, ui=ui, tmux=tmux),
-    settings=MyoSettings(),
     core_components=List('core'),
     default_components=List('command', 'ui', 'tmux'),
     init=init,

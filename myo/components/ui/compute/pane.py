@@ -23,7 +23,6 @@ from myo.ui.data.space import Space
 from myo.ui.ui import Ui
 from myo.ui.data.view import Pane, Layout
 from myo.ui.pane import find_in_spaces
-from myo.settings import MyoSettings
 from myo.env import Env
 from myo.config.component import MyoComponent
 from myo.ui.data.ui_data import UiData
@@ -45,7 +44,7 @@ def pane_path_by_ident(ident: Ident) -> Do:
 
 
 @prog
-@do(State[PluginState[MyoSettings, Env, MyoComponent], Program])
+@do(State[PluginState[Env, MyoComponent], Program])
 def config_uis() -> Do:
     components = yield State.inspect(_.components.all)
     yield State.pure(components // _.config // _.ui)

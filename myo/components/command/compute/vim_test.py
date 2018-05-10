@@ -2,22 +2,17 @@ from typing import Callable, Any, TypeVar
 
 from ribosome.nvim.io.compute import NvimIO
 from ribosome.nvim.io.state import NS
-from ribosome.config.resources import Resources
-from ribosome.config.component import ComponentData
 from ribosome.nvim.api.function import nvim_call_cons
 from ribosome.nvim.api.ui import current_cursor
 from ribosome.nvim.api.util import cons_decode_str, cons_decode_str_list
 from ribosome.nvim.io.api import N
-from ribosome.compute.ribosome import Ribosome
 from ribosome.compute.ribosome_api import Ribo
 
 from amino import _, Either, do, Do, Dat
 from amino.json import encode_json
 
-from myo.components.command.data import CommandData
-from myo.settings import MyoSettings
-from myo.config.component import MyoComponent
 from myo.components.command.compute.tpe import CommandRibosome
+from myo.settings import vim_test_filename_modifier
 
 A = TypeVar('A')
 D = TypeVar('D')
@@ -41,7 +36,7 @@ class VimTestPosition(Dat['VimTestPosition']):
 
 @do(NS[CommandRibosome, VimTestPosition])
 def vim_test_position() -> Do:
-    fn_mod = yield Ribo.setting(_.vim_test_filename_modifier)
+    fn_mod = yield Ribo.setting(vim_test_filename_modifier)
     file = yield NS.lift(nvim_call_cons(cons_decode_str, 'expand', f'%{fn_mod}'))
     line, col = yield NS.lift(current_cursor())
     return VimTestPosition(file, line, col)

@@ -1,18 +1,67 @@
-from kallikrein import Expectation, kf, k
+from kallikrein import Expectation, k
 from kallikrein.matchers import contain
 
 from chiasma.test.tmux_spec import TmuxSpec
 from chiasma.commands.pane import capture_pane
 from chiasma.util.id import StrIdent
 
-from amino import List, Lists, Nil
+from amino import List, Lists, Nil, do, Do, IO
 
-from ribosome.test.integration.klk import later
+from ribosome.nvim.io.state import NS
+from ribosome.test.unit import unit_test
+from ribosome.test.prog import request
+from ribosome.test.klk.expectation import await_k
+from ribosome.nvim.io.api import N
 
 from myo.data.command import Command, SystemInterpreter, ShellInterpreter
 from myo.components.command.data import CommandData
+from myo.config.plugin_state import MyoPluginState
 
-from unit._support.tmux import two_panes
+from test.command import update_command_data
+from test.klk.tmux import tmux_await_k
+
+from unit._support.tmux import two_panes, tmux_default_test_config
+
+name = 'commo'
+text1 = Lists.random_alpha()
+text2 = Lists.random_alpha()
+
+conf = tmux_default_test_config(List('command'))
+
+
+@do(NS[MyoPluginState, Expectation])
+def run_command_spec() -> Do:
+    cmds = List(f'echo {text1}', f'echo {text2}')
+    cmd = Command.cons(name, SystemInterpreter.cons('one'), cmds, Nil)
+    yield two_panes()
+    yield update_command_data(commands=List(cmd))
+    yield request('run_command', name, '{}')
+    yield NS.lift(tmux_await_k(contain(text1) & contain(text2), capture_pane, 0))
+
+
+@do(NS[MyoPluginState, Expectation])
+def run_shell_spec() -> Do:
+    shell_cmd = 'python'
+    cmds = List(f'print("{text1}")', f'print("{text2}")')
+    shell = Command.cons(shell_cmd, SystemInterpreter.cons('one'), List(shell_cmd), Nil)
+    cmd = Command.cons(name, ShellInterpreter.cons(shell_cmd), cmds, Nil)
+    yield two_panes()
+    yield update_command_data(commands=List(shell, cmd))
+    yield request('run_command', shell_cmd, '{}')
+    yield request('run_command', name, '{}')
+    yield NS.lift(tmux_await_k(contain(text1) & contain(text2), capture_pane, 0))
+
+
+@do(NS[MyoPluginState, Expectation])
+def pipe_pane_spec() -> Do:
+    cmds = List(f'echo {text1}')
+    cmd = Command.cons(name, SystemInterpreter.cons('one'), cmds, Nil)
+    yield two_panes()
+    yield update_command_data(commands=List(cmd))
+    yield request('run_command', name, '{}')
+    path = yield NS.inspect(lambda a: a.component_data[CommandData].logs[StrIdent('commo')])
+    read = lambda: N.from_io(IO.delay(path.read_text)).map(lambda a: k(Lists.lines(a)).must(contain(text1)))
+    yield NS.lift(await_k(read))
 
 
 class RunCommandSpec(TmuxSpec):
@@ -23,40 +72,13 @@ class RunCommandSpec(TmuxSpec):
     '''
 
     def run_command(self) -> Expectation:
-        name = 'commo'
-        text1 = Lists.random_alpha()
-        text2 = Lists.random_alpha()
-        cmds = List(f'echo {text1}', f'echo {text2}')
-        cmd = Command.cons(name, SystemInterpreter.cons('one'), cmds, Nil)
-        helper = two_panes(List('command')).update_component('command', commands=List(cmd))
-        helper.unsafe_run('command:run_command', args=(name, '{}'))
-        output = lambda: capture_pane(0).unsafe(self.tmux)
-        return later(kf(output).must(contain(text1) & contain(text2)))
+        return unit_test(conf, run_command_spec)
 
     def run_shell(self) -> Expectation:
-        name = 'commo'
-        text1 = Lists.random_alpha()
-        text2 = Lists.random_alpha()
-        shell_cmd = 'python'
-        cmds = List(f'print("{text1}")', f'print("{text2}")')
-        shell = Command.cons(shell_cmd, SystemInterpreter.cons('one'), List(shell_cmd), Nil)
-        cmd = Command.cons(name, ShellInterpreter.cons(shell_cmd), cmds, Nil)
-        helper = two_panes(List('command')).update_component('command', commands=List(shell, cmd))
-        helper.unsafe_run('command:run_command', args=(shell_cmd, '{}'))
-        helper.unsafe_run('command:run_command', args=(name, '{}'))
-        output = lambda: capture_pane(0).unsafe(self.tmux)
-        return later(kf(output).must(contain(text1) & contain(text2)))
+        return unit_test(conf, run_shell_spec)
 
     def pipe_pane(self) -> Expectation:
-        name = 'commo'
-        text = Lists.random_alpha()
-        cmds = List(f'echo {text}')
-        cmd = Command.cons(name, SystemInterpreter.cons('one'), cmds, Nil)
-        helper = two_panes(List('command')).update_component('command', commands=List(cmd))
-        s = helper.unsafe_run_s('command:run_command', args=(name, '{}'))
-        path = s.component_data[CommandData].logs[StrIdent('commo')]
-        read = lambda: Lists.lines(path.read_text())
-        return later(kf(read).must(contain(text)))
+        return unit_test(conf, pipe_pane_spec)
 
 
 __all__ = ('RunCommandSpec',)

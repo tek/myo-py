@@ -3,9 +3,8 @@ from typing import Tuple, Callable, TypeVar
 from amino import do, Do, Either, Right, Maybe, _, curried, L, List, Nothing, Just
 from amino.state import EitherState, State
 from amino.case import Case
+from amino.logging import module_log
 from chiasma.data.view_tree import map_panes, ViewTree, find_in_view_tree, LayoutNode
-
-from ribosome import ribo_log
 
 from myo.util import Ident
 from myo.ui.data.ui_data import UiData
@@ -14,6 +13,7 @@ from myo.ui.data.space import Space
 from myo.ui.data.view import Layout, Pane
 
 A = TypeVar('A')
+log = module_log()
 
 
 def find_in_window(

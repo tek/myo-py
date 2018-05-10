@@ -1,5 +1,5 @@
-from amino import do, Do, __, List, _
-from amino.lenses.lens import lens
+from amino import do, Do, __, List
+from amino.logging import module_log
 
 from chiasma.util.id import StrIdent, Ident
 from chiasma.data.view_tree import ViewTree
@@ -7,15 +7,18 @@ from chiasma.data.view_tree import ViewTree
 from ribosome.compute.api import prog
 from ribosome.nvim.io.state import NS
 from ribosome.nvim.io.compute import NvimIO
-from ribosome.compute.prog import Prog
 from ribosome.nvim.api.function import nvim_call_tpe
 from ribosome.compute.ribosome_api import Ribo
+from ribosome.compute.prog import Prog
 
 from myo.ui.data.ui_data import UiData
 from myo.ui.data.space import Space
 from myo.config.handler import find_handler
 from myo.ui.data.view import Pane, Layout
 from myo.ui.data.window import Window
+from myo.settings import init_default_ui
+
+log = module_log()
 
 
 def vim_pid() -> NvimIO[int]:
@@ -33,16 +36,20 @@ def insert_default_ui(ident: Ident, layout_ident: Ident, make_ident: Ident) -> D
 
 
 @prog.do
+def run_init() -> Do:
+    handler = yield find_handler(__.create_vim_pane(), 'insert_vim_pane')
+    pid = yield Ribo.lift_nvimio(vim_pid())
+    ident = StrIdent('vim')
+    layout_ident = StrIdent('root')
+    make_ident = StrIdent('make')
+    yield Ribo.lift_comp(insert_default_ui(ident, layout_ident, make_ident), UiData)
+    yield handler(ident, pid)
+
+
+@prog.do
 def init() -> Do:
-    allow_init = yield Ribo.setting_prog(_.init_default_ui)
-    if allow_init:
-        handler = yield find_handler(__.create_vim_pane(), 'insert_vim_pane')
-        pid = yield Ribo.lift_nvimio(vim_pid())
-        ident = StrIdent('vim')
-        layout_ident = StrIdent('root')
-        make_ident = StrIdent('make')
-        yield Ribo.lift_comp(insert_default_ui(ident, layout_ident, make_ident), UiData)
-        yield handler(ident, pid)
+    allow_init = yield Ribo.setting_prog(init_default_ui)
+    yield run_init() if allow_init else Prog.unit
 
 
 __all__ = ('init',)

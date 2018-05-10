@@ -1,12 +1,30 @@
-from kallikrein import Expectation, kf
+from typing import TypeVar
+
+from kallikrein import Expectation
 from kallikrein.matchers.length import have_length
 
 from chiasma.test.tmux_spec import TmuxSpec
 from chiasma.io.compute import TmuxIO
 
-from ribosome.test.integration.klk import later
+from test.klk.tmux import tmux_await_k
 
-from unit._support.tmux import two_panes
+from amino import do, Do
+
+from ribosome.test.unit import unit_test
+from ribosome.nvim.io.state import NS
+from ribosome.test.prog import request
+
+from myo.config.plugin_state import MyoPluginState
+
+from unit._support.tmux import two_panes, tmux_default_test_config
+
+
+@do(NS[MyoPluginState, Expectation])
+def open_pane_spec() -> Do:
+    yield two_panes()
+    yield request('open_pane', 'one', '{}')
+    yield request('open_pane', 'two', '{}')
+    yield NS.lift(tmux_await_k(have_length(2), TmuxIO.read, 'list-panes'))
 
 
 class OpenPaneSpec(TmuxSpec):
@@ -15,11 +33,7 @@ class OpenPaneSpec(TmuxSpec):
     '''
 
     def open_pane(self) -> Expectation:
-        helper = two_panes()
-        state = helper.unsafe_run_s('command:open_pane', args=('one', '{}'))
-        helper1 = helper.set.state(state)
-        helper1.unsafe_run('command:open_pane', args=('two', '{}'))
-        return later(kf(TmuxIO.read('list-panes').unsafe, self.tmux).must(have_length(2)))
+        return unit_test(tmux_default_test_config(), open_pane_spec)
 
 
 __all__ = ('OpenPaneSpec',)

@@ -1,5 +1,6 @@
 from amino import do, Do, _, List
 from amino.state import State
+from amino.logging import module_log
 
 from ribosome.compute.api import prog
 from ribosome.compute.prog import Prog
@@ -7,6 +8,8 @@ from ribosome.compute.program import Program, bind_nullary_program
 
 from myo.config.handler import find_handlers
 from myo.config.plugin_state import MyoPluginState
+
+log = module_log()
 
 
 @prog

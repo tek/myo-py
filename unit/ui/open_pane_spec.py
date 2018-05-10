@@ -10,7 +10,7 @@ from chiasma.data.window import Window as TWindow
 from chiasma.render import render
 from chiasma.data.session import Session
 from chiasma.io.state import TS
-from chiasma.commands.pane import all_panes, PaneData
+from chiasma.commands.pane import all_panes
 from chiasma.util.id import IdentSpec, ensure_ident, StrIdent
 
 from amino import List, do, Do, Dat

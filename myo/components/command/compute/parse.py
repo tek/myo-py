@@ -2,24 +2,22 @@ from typing import TypeVar
 
 from ribosome.compute.api import prog
 from ribosome.nvim.io.state import NS
-from ribosome.config.resources import Resources
-from ribosome.config.component import ComponentData
-from ribosome.util.setting import setting
 from ribosome.compute.ribosome_api import Ribo
 
 from chiasma.util.id import Ident, IdentSpec
 
 from amino import do, Do, List, Dat, __, Either, _, Maybe, IO, Lists, Just
-from amino.lenses.lens import lens
+from amino.logging import module_log
 
-from myo.settings import MyoSettings
 from myo.output import Parsing
 from myo.output.data import ParseResult
 from myo.components.command.data import CommandData
 from myo.data.command import HistoryEntry
-from myo.components.command.compute.output import display_parse_result
+from myo.components.command.compute.output import render_parse_result
 from myo.components.command.compute.tpe import CommandRibosome
+from myo.settings import display_parse_result
 
+log = module_log()
 D = TypeVar('D')
 
 
@@ -87,8 +85,8 @@ def parse_most_recent() -> Do:
 def parse(options: ParseOptions) -> Do:
     parse_result = yield parse_most_recent()
     yield Ribo.modify_comp(__.set.parse_result(Just(parse_result)))
-    display_result = yield Ribo.setting(_.display_parse_result)
-    yield display_parse_result(parse_result) if display_result else NS.unit
+    display_result = yield Ribo.setting(display_parse_result)
+    yield render_parse_result(parse_result) if display_result else NS.unit
 
 
 __all__ = ('parse',)

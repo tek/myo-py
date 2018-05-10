@@ -1,8 +1,8 @@
 from amino import List, Just, Nothing, Maybe
 
 from ribosome.config.component import Component
-from ribosome.request.handler.handler import RequestHandler
 from ribosome.compute.program import Program
+from ribosome.rpc.api import rpc
 
 from chiasma.data.tmux import TmuxData
 
@@ -22,20 +22,22 @@ def run_handler_for(task: RunTask) -> Maybe[Program]:
     return Just(run_command) if tmux_can_run(task) else Nothing
 
 
+def create_vim_pane_handler() -> Maybe[Program]:
+    return Just(create_vim_pane)
+
+
 tmux_ui = Ui.cons(tmux_owns_pane, tmux_render)
 tmux: Component[Env, TmuxData, MyoComponent] = Component.cons(
     'tmux',
     state_type=TmuxData,
-    request_handlers=List(
-        RequestHandler.trans_function(tmux_render)(),
-        RequestHandler.trans_function(run_command)(),
-        RequestHandler.trans_function(create_vim_pane)(),
-        RequestHandler.trans_function(tmux_info)(),
-        RequestHandler.trans_function(tmux_quit)(),
+    rpc=List(
+        rpc.write(tmux_render),
+        rpc.write(tmux_info),
+        rpc.write(tmux_quit),
     ),
     config=MyoComponent.cons(
         run_handler_for,
-        lambda: Just(create_vim_pane),
+        create_vim_pane_handler,
         info=tmux_info,
         ui=tmux_ui,
         quit=tmux_quit,

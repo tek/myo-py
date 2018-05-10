@@ -1,5 +1,5 @@
-from kallikrein import Expectation
-from kallikrein.matchers import contain
+from kallikrein import Expectation, k
+from kallikrein.matchers.either import be_right
 
 from chiasma.util.id import StrIdent
 
@@ -7,23 +7,27 @@ from amino.test.spec import SpecBase
 from amino import List, _, __, do, Do, Nothing, Nil
 from amino.json import dump_json
 
-from ribosome.test.integration.run import RequestHelper
-from ribosome.nvim.io.compute import NvimIO
-from ribosome.test.klk import kn
-from ribosome.nvim.io.api import N
+from ribosome.test.config import TestConfig
+from ribosome.nvim.io.state import NS
+from ribosome.test.prog import request
+from ribosome.test.unit import unit_test
 
 from myo.data.command import Command, SystemInterpreter, VimInterpreter, ShellInterpreter
 from myo import myo_config
+from myo.config.plugin_state import MyoPluginState
+
+test_config = TestConfig.cons(myo_config, components=List('command'))
 
 
 def add_cmd(cmd_type: str, args: dict, goal: Command) -> Expectation[Command]:
-    helper = RequestHelper.strict(myo_config, 'command')
-    @do(NvimIO[Command])
+    @do(NS[MyoPluginState, Command])
     def run() -> Do:
-        args_json = yield N.e(dump_json(args))
-        r = yield helper.run_s(f'command:add_{cmd_type}_command', args=(args_json,))
-        yield N.e(r.data_by_name('command') / _.commands // __.head.to_either('commands empty'))
-    return kn(helper.vim, run).must(contain(goal))
+        args_json = yield NS.e(dump_json(args))
+        yield request(f'add_{cmd_type}_command', args_json)
+        data = yield NS.inspect_either(lambda s: s.data_by_name('command'))
+        cmd = data.commands.head.to_either('commands empty')
+        return k(cmd).must(be_right(goal))
+    return unit_test(test_config, run)
 
 
 class AddSpec(SpecBase):

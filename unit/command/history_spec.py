@@ -23,7 +23,7 @@ class HistorySpec(SpecBase):
     @pending
     def test(self) -> Expectation:
         helper = RequestHelper.strict(config, 'command')
-        r = helper.unsafe_run('command:load_history', args=(5,))
+        r = helper.unsafe_run('load_history', args=(5,))
         return k(1) == 1
 
 

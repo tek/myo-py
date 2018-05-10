@@ -1,59 +1,56 @@
-from kallikrein import Expectation
+from kallikrein import Expectation, k
 from kallikrein.matchers.lines import have_lines
 from kallikrein.matchers.length import have_length
-from kallikrein.matchers.tuple import tupled
-from kallikrein.matchers import contain
-
-from chiasma.test.tmux_spec import tmux_spec_socket
 
 from amino.test import fixture_path
-from amino import List, do, Do
+from amino import List, Map, do, Do
+from amino.test.spec import SpecBase
 
-from ribosome.test.klk import kn
 from ribosome.nvim.api.ui import current_buffer_content, send_input, buffers
-from ribosome.nvim.api.variable import variable_set_prefixed
 from ribosome.nvim.io.compute import NvimIO
-from ribosome.nvim.api.data import Buffer
-from ribosome.test.integration.spec import json_cmd
+from ribosome.test.rpc import json_cmd
+from ribosome.test.config import TestConfig
+from ribosome.nvim.io.api import N
+from ribosome.test.integration.tmux import tmux_plugin_test
+
+from myo import myo_config
 
 from integration._support.python_parse import events
-from integration._support.spec import TmuxDefaultSpec
+
+vars = Map(
+    myo_auto_jump=0,
+)
+test_config = TestConfig.cons(myo_config, vars=vars)
 
 
-class PythonParseSpec(TmuxDefaultSpec):
+pane = 'make'
+file = fixture_path('tmux', 'python_parse', 'trace')
+statements = List(
+    'import pathlib',
+    f'''print(pathlib.Path('{file}').read_text())''',
+)
+
+
+@do(NvimIO[Expectation])
+def parse_spec() -> Do:
+    yield json_cmd('MyoAddSystemCommand', ident='python', line='python', target=pane)
+    yield json_cmd('MyoLine', shell='python', lines=statements, langs=List('python'))
+    yield json_cmd('MyoParse')
+    yield N.sleep(1)
+    lines = yield current_buffer_content()
+    yield send_input('q')
+    yield N.sleep(1)
+    bufs = yield buffers()
+    return k(lines).must(have_lines(events)) & k(bufs).must(have_length(1))
+
+
+class PythonParseSpec(SpecBase):
     '''
     parse a python traceback $parse
     '''
 
-    def _pre_start(self) -> None:
-        @do(NvimIO[None])
-        def run() -> Do:
-            yield variable_set_prefixed('vim_tmux_pane', 0)
-            yield variable_set_prefixed('tmux_socket', tmux_spec_socket)
-            yield variable_set_prefixed('auto_jump', 0)
-        run().unsafe(self.vim)
-        super()._pre_start()
-
     def parse(self) -> Expectation:
-        pane = 'make'
-        file = fixture_path('tmux', 'python_parse', 'trace')
-        statements = List(
-            'import pathlib',
-            f'''print(pathlib.Path('{file}').read_text())''',
-        )
-        @do(NvimIO[List[Buffer]])
-        def run() -> Do:
-            yield json_cmd('MyoAddSystemCommand', ident='python', line='python', target=pane)
-            yield json_cmd('MyoLine', shell='python', lines=statements, langs=List('python'))
-            self._wait(1)
-            yield json_cmd('MyoParse')
-            self._wait(1)
-            lines = yield current_buffer_content()
-            yield send_input('q')
-            self._wait(.5)
-            bufs = yield buffers()
-            return lines, bufs
-        return kn(self.vim, run).must(contain(tupled(2)((have_lines(events), have_length(1)))))
+        return tmux_plugin_test(test_config, parse_spec)
 
 
 __all__ = ('PythonParseSpec',)

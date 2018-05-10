@@ -2,27 +2,27 @@ from amino import do, Do, Dat
 from amino.boolean import true
 
 from chiasma.util.id import IdentSpec, ensure_ident
-from amino.state import EitherState
 from amino.lenses.lens import lens
+from amino.logging import module_log
+from amino.state import EitherState
 
 from ribosome.compute.api import prog
-from ribosome.config.component import ComponentData
-from ribosome.compute.program import Program
-from ribosome.compute.prog import Prog
+from ribosome.nvim.io.state import NS
+from ribosome.compute.ribosome_api import Ribo
 
 from myo.util import Ident
 from myo.ui.data.ui_data import UiData
 from myo.ui.data.window import Window
-from myo.env import Env
 from myo.ui.pane import ui_modify_pane
 from myo.components.ui.compute.pane import render_pane
+from myo.components.ui.compute.tpe import UiRibosome
+
+log = module_log()
 
 
 class OpenPaneOptions(Dat['OpenPaneOptions']):
 
-    def __init__(
-            self,
-    ) -> None:
+    def __init__(self) -> None:
         pass
 
 
@@ -32,10 +32,10 @@ def ui_open_pane(ident: Ident) -> Do:
 
 
 @prog
-@do(EitherState[ComponentData[Env, UiData], Window])
+@do(NS[UiRibosome, Window])
 def ui_open_pane_trans(ident_spec: IdentSpec) -> Do:
     ident = ensure_ident(ident_spec)
-    yield ui_open_pane(ident).transform_s_lens(lens.comp)
+    yield Ribo.zoom_comp(ui_open_pane(ident).nvim)
 
 
 @prog.do

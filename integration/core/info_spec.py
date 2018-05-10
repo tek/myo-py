@@ -1,41 +1,41 @@
-from kallikrein import Expectation
+from kallikrein import Expectation, k
 from kallikrein.matchers import contain
 from kallikrein.matchers.length import have_length
 
-from integration._support.spec import TmuxDefaultSpec
+from amino import List, do, Do, Map
+from amino.test.spec import SpecBase
 
-from chiasma.test.tmux_spec import tmux_spec_socket
-
-from amino import List, do, Do
-
-from ribosome.test.klk import kn
 from ribosome.nvim.api.ui import current_buffer_content
-from ribosome.nvim.api.variable import variable_set_prefixed
 from ribosome.nvim.io.compute import NvimIO
 from ribosome.nvim.api.command import nvim_command
+from ribosome.nvim.io.api import N
+from ribosome.test.integration.tmux import tmux_plugin_test
+
+from myo import myo_config
+
+from unit._support.tmux import tmux_test_config
+
+vars = Map(
+    myo_vim_tmux_pane=0,
+    myo_auto_jump=0,
+)
+test_config = tmux_test_config(myo_config, components=List('command'), extra_vars=vars)
 
 
-class InfoSpec(TmuxDefaultSpec):
+@do(NvimIO[Expectation])
+def info_spec() -> Do:
+    yield nvim_command('MyoInfo')
+    yield N.sleep(1)
+    lines = yield current_buffer_content()
+    return k(lines).must(contain(have_length(12)))
+
+
+class InfoSpec(SpecBase):
     '''show information $info
     '''
 
-    def _pre_start(self) -> None:
-        @do(NvimIO[None])
-        def run() -> Do:
-            yield variable_set_prefixed('components', List('command', 'ui', 'tmux'))
-            yield variable_set_prefixed('vim_tmux_pane', 0)
-            yield variable_set_prefixed('tmux_socket', tmux_spec_socket)
-            yield variable_set_prefixed('auto_jump', 0)
-        run().unsafe(self.vim)
-        super()._pre_start()
-
     def info(self) -> Expectation:
-        @do(NvimIO[List[str]])
-        def run() -> Do:
-            yield nvim_command('MyoInfo')
-            self._wait(1)
-            yield current_buffer_content()
-        return kn(self.vim, run).must(contain(have_length(12)))
+        return tmux_plugin_test(test_config, info_spec)
 
 
 __all__ = ('InfoSpec',)

@@ -15,7 +15,6 @@ from myo.env import Env
 from myo.components.tmux.config import tmux
 from myo.components.ui.config import ui
 from myo.components.core.compute.init import init
-from myo.settings import MyoSettings
 from myo.components.command.config import command
 from myo.components.core.config import core
 
@@ -25,7 +24,6 @@ config: Config = Config.cons(
     prefix='myo',
     state_ctor=Env.cons,
     components=Map(core=core, ui=ui, tmux=tmux, command=command),
-    settings=MyoSettings(),
 )
 
 
