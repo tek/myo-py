@@ -13,7 +13,6 @@ from amino.boolean import true
 from amino.lenses.lens import lens
 from amino.test import temp_dir
 
-from ribosome.test.integration.run import RequestHelper
 from ribosome.config.config import Config
 from ribosome.nvim.io.state import NS
 from ribosome.test.config import TestConfig
