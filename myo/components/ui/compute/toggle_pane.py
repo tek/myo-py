@@ -13,13 +13,22 @@ from myo.ui.data.ui_data import UiData
 from myo.ui.data.window import Window
 from myo.ui.pane import ui_modify_pane
 from myo.components.ui.compute.pane import render_pane
+from myo.ui.data.view import Pane
 
 log = module_log()
 
 
+def open_or_toggle_minimized(pane: Pane) -> Pane:
+    return (
+        pane.set.open(True)
+        if not pane.open else
+        lens.state.minimized.modify(lambda a: ~a)(pane)
+    )
+
+
 @do(EitherState[UiData, Window])
 def ui_toggle_pane(ident: Ident) -> Do:
-    yield ui_modify_pane(ident, lens.state.minimized.modify(lambda a: ~a))
+    yield ui_modify_pane(ident, open_or_toggle_minimized)
 
 
 @prog.do
