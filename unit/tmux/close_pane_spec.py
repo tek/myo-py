@@ -3,6 +3,7 @@ from kallikrein.matchers.length import have_length
 
 from chiasma.test.tmux_spec import TmuxSpec
 from chiasma.io.compute import TmuxIO
+from chiasma.commands.pane import all_panes
 
 from amino import do, Do
 
@@ -21,7 +22,7 @@ from unit._support.tmux import two_open_panes, tmux_default_test_config
 def close_pane_spec() -> Do:
     yield two_open_panes()
     yield request('close_pane', 'one')
-    yield NS.lift(tmux_await_k(have_length(1), TmuxIO.read, 'list-panes'))
+    yield NS.lift(tmux_await_k(have_length(1), all_panes))
 
 
 class ClosePaneSpec(TmuxSpec):

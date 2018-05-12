@@ -4,7 +4,7 @@ from kallikrein.matchers.either import be_right
 from chiasma.util.id import StrIdent
 
 from amino.test.spec import SpecBase
-from amino import List, _, __, do, Do, Nothing, Nil
+from amino import List, do, Do, Nothing, Nil
 from amino.json import dump_json
 
 from ribosome.test.config import TestConfig

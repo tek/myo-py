@@ -2,6 +2,7 @@ from kallikrein import Expectation
 from kallikrein.matchers.length import have_length
 
 from chiasma.io.compute import TmuxIO
+from chiasma.commands.pane import all_panes
 
 from amino import do, Do
 from amino.test.spec import SpecBase
@@ -21,7 +22,7 @@ from unit._support.tmux import tmux_test_config
 @do(NvimIO[Expectation])
 def open_make_spec() -> Do:
     yield nvim_command('MyoOpenPane', 'make')
-    yield tmux_await_k(have_length(2), TmuxIO.read, 'list-panes')
+    yield tmux_await_k(have_length(2), all_panes)
 
 
 test_config = tmux_test_config(myo_config)

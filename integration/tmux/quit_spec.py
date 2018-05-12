@@ -2,6 +2,7 @@ from kallikrein import Expectation, kf
 from kallikrein.matchers.length import have_length
 
 from chiasma.io.compute import TmuxIO
+from chiasma.commands.pane import all_panes
 
 from amino import do, Do
 from amino.test.spec import SpecBase
@@ -22,10 +23,10 @@ test_config = tmux_default_test_config()
 def vim_leave_spec() -> Do:
     yield nvim_command('MyoOpenPane', 'make')
     yield N.sleep(1)
-    yield tmux_await_k(have_length(2), TmuxIO.read, 'list-panes')
+    yield tmux_await_k(have_length(2), all_panes)
     yield doautocmd('VimLeave')
     yield N.sleep(1)
-    yield tmux_await_k(have_length(1), TmuxIO.read, 'list-panes')
+    yield tmux_await_k(have_length(1), all_panes)
 
 
 class QuitSpec(SpecBase):
