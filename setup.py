@@ -14,11 +14,11 @@ setup(
     packages=find_packages(exclude=['unit', 'unit.*', 'integration', 'integration.*', 'test', 'test.*']),
     install_requires=[
         'ribosome~=13.0.0a48',
-        'chiasma~=0.1.0.a20',
+        'chiasma~=0.1.0.a21',
         'psutil==5.3.1',
         'networkx==2.0',
     ],
     tests_require=[
-        'kallikrein~=0.22.a15',
+        'kallikrein~=0.22.a16',
     ],
 )

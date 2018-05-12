@@ -14,6 +14,7 @@ from myo.components.ui.compute.pane import ui_pane_by_ident, render_pane, pane_o
 from myo.components.ui.compute.create_pane import create_pane
 from myo.components.ui.compute.init import init
 from myo.components.ui.compute.info import ui_info
+from myo.components.ui.compute.toggle_pane import toggle_pane
 
 
 ui = Component.cons(
@@ -23,6 +24,7 @@ ui = Component.cons(
         rpc.write(create_pane).conf(json=true),
         rpc.write(open_pane).conf(json=true),
         rpc.write(close_pane),
+        rpc.write(toggle_pane),
         rpc.write(minimize_pane),
         rpc.write(ui_pane_by_ident),
         rpc.write(render_pane),

@@ -1,5 +1,4 @@
-from amino import do, Do, Dat
-from amino.boolean import true
+from amino import do, Do
 
 from chiasma.util.id import IdentSpec, ensure_ident
 from amino.lenses.lens import lens
@@ -18,22 +17,16 @@ from myo.components.ui.compute.pane import render_pane
 log = module_log()
 
 
-class OpenPaneOptions(Dat['OpenPaneOptions']):
-
-    def __init__(self) -> None:
-        pass
-
-
 @do(EitherState[UiData, Window])
-def ui_open_pane(ident: Ident) -> Do:
-    yield ui_modify_pane(ident, lens.open.set(true))
+def ui_toggle_pane(ident: Ident) -> Do:
+    yield ui_modify_pane(ident, lens.state.minimized.modify(lambda a: ~a))
 
 
 @prog.do
-def open_pane(ident_spec: IdentSpec, options: OpenPaneOptions) -> Do:
+def toggle_pane(ident_spec: IdentSpec) -> Do:
     ident = ensure_ident(ident_spec)
-    yield Ribo.lift_comp(ui_open_pane(ident).nvim, UiData)
+    yield Ribo.lift_comp(ui_toggle_pane(ident).nvim, UiData)
     yield render_pane(ident)
 
 
-__all__ = ('open_pane',)
+__all__ = ('toggle_pane',)
