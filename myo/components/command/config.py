@@ -23,7 +23,7 @@ def run_handler_for(task: RunTask) -> Maybe[Program]:
     return Just(run_internal_command) if internal_can_run(task) else Nothing
 
 
-command: Component[Env, CommandData, MyoComponent] = Component.cons(
+command: Component[CommandData, MyoComponent] = Component.cons(
     'command',
     state_type=CommandData,
     rpc=List(

@@ -27,7 +27,7 @@ def create_vim_pane_handler() -> Maybe[Program]:
 
 
 tmux_ui = Ui.cons(tmux_owns_pane, tmux_render)
-tmux: Component[Env, TmuxData, MyoComponent] = Component.cons(
+tmux: Component[TmuxData, MyoComponent] = Component.cons(
     'tmux',
     state_type=TmuxData,
     rpc=List(

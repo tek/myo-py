@@ -3,16 +3,14 @@ from typing import Tuple
 from amino import do, Do, curried, Boolean, Maybe, Just, Nothing, _
 
 from chiasma.data.view_tree import PaneNode, ViewTree
-from amino.state import State, EitherState
+from amino.state import State
 from amino.lenses.lens import lens
-from amino.boolean import false
 from amino.util.tuple import lift_tuple
 
 from ribosome.compute.api import prog
 from ribosome.compute.program import Program
 from ribosome.config.component import ComponentData
 from ribosome.data.plugin_state import PluginState
-from ribosome.compute.program import Program
 from ribosome.compute.ribosome_api import Ribo
 from ribosome.nvim.io.state import NS
 from ribosome.compute.prog import Prog
@@ -20,7 +18,6 @@ from ribosome.compute.prog import Prog
 from myo.util import Ident
 from myo.ui.data.window import Window
 from myo.ui.data.space import Space
-from myo.ui.ui import Ui
 from myo.ui.data.view import Pane, Layout
 from myo.ui.pane import find_in_spaces
 from myo.env import Env

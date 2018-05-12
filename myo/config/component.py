@@ -52,6 +52,6 @@ class MyoComponent(Dat['MyoComponent']):
         self.quit = quit
 
 
-Comp = Component[Env, ComponentData, MyoComponent]
+Comp = Component[ComponentData, MyoComponent]
 
 __all__ = ('MyoComponent',)
