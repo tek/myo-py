@@ -2,7 +2,6 @@ from amino import List
 
 from ribosome.config.component import Component
 from ribosome.rpc.api import rpc
-from ribosome.rpc.data.prefix_style import Plain
 
 from myo.components.core.compute.init import init
 from myo.components.core.data import CoreData
@@ -16,7 +15,7 @@ core = Component.cons(
     rpc=List(
         rpc.write(init),
         rpc.write(info),
-        rpc.autocmd(vim_leave).conf(prefix=Plain()),
+        rpc.autocmd(vim_leave, sync=True),
     ),
 )
 
