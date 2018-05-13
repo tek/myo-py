@@ -7,7 +7,7 @@ from chiasma.data.view_tree import ViewTree, LayoutNode, PaneNode, SubUiNode
 from chiasma.util.id import IdentSpec, ensure_ident
 
 from myo.util import Ident
-from myo.ui.data.view import Pane
+from myo.ui.data.view import Pane, Layout
 
 
 class Window(Dat['Window']):
@@ -15,14 +15,14 @@ class Window(Dat['Window']):
     @staticmethod
     def cons(
             ident: IdentSpec=None,
-            layout: LayoutNode=None,
+            layout: LayoutNode[Layout, Pane]=None,
     ) -> 'Window':
         return Window(
             ensure_ident(ident),
             layout or ViewTree.layout(),
         )
 
-    def __init__(self, ident: Ident, layout: LayoutNode) -> None:
+    def __init__(self, ident: Ident, layout: LayoutNode[Layout, Pane]) -> None:
         self.ident = ident
         self.layout = layout
 

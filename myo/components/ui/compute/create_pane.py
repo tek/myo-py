@@ -7,11 +7,14 @@ from chiasma.ui.view_geometry import ViewGeometry
 
 from ribosome.compute.api import prog
 from ribosome.config.component import ComponentData
+from ribosome.nvim.io.state import NS
+from ribosome.compute.ribosome_api import Ribo
 
 from myo.env import Env
 from myo.ui.data.ui_data import UiData
 from myo.ui.data.view import Pane
 from myo.ui.pane import insert_pane_into_ui
+from myo.components.ui.compute.tpe import UiRibosome
 
 
 class CreatePaneOptions(Dat['CreatePaneOptions']):
@@ -73,11 +76,17 @@ def pane_from_options(options: CreatePaneOptions) -> Pane:
     )
 
 
+@do(NS[UiData, None])
+def insert_pane(pane: Pane, layout: Ident) -> Do:
+    updated = yield NS.inspect_either(insert_pane_into_ui(pane, layout))
+    yield NS.set(updated)
+
+
 @prog.unit
-@do(EitherState[ComponentData[Env, UiData], None])
+@do(NS[UiRibosome, None])
 def create_pane(options: CreatePaneOptions) -> Do:
     pane = pane_from_options(options)
-    yield EitherState.modify_f(insert_pane_into_ui(pane, options.layout)).zoom(lens.comp)
+    yield Ribo.zoom_comp(insert_pane(pane, options.layout))
 
 
 __all__ = ('create_pane',)
