@@ -3,7 +3,7 @@ from chiasma.ui.state import ViewState
 from chiasma.ui.view_geometry import ViewGeometry
 from chiasma.util.id import ensure_ident, IdentSpec
 
-from amino import Boolean, ADT
+from amino import Boolean, ADT, Maybe, Path
 from amino.tc.base import tc_prop
 
 from myo.util import Ident
@@ -61,6 +61,7 @@ class Pane(View):
             geometry: ViewGeometry=None,
             ui: str='tmux',
             open: bool=False,
+            cwd: Path=None,
     ) -> 'Pane':
         return Pane(
             ensure_ident(ident),
@@ -68,6 +69,7 @@ class Pane(View):
             geometry or ViewGeometry.cons(),
             ui,
             Boolean(open),
+            Maybe.optional(cwd),
         )
 
     def __init__(
@@ -77,9 +79,11 @@ class Pane(View):
             geometry: ViewGeometry,
             ui: str,
             open: Boolean,
+            cwd: Maybe[Path],
     ) -> None:
         super().__init__(ident, state, geometry, ui)
         self.open = open
+        self.cwd = cwd
 
 
 class MyoUiPane(UiPane, tpe=Pane):
@@ -92,9 +96,15 @@ class MyoUiPane(UiPane, tpe=Pane):
     def open(self, a: Pane) -> Ident:
         return a.open
 
+    def cwd(self, a: Pane) -> Maybe[Path]:
+        return a.cwd
+
 
 class MyoUiLayout(UiLayout, tpe=Layout):
-    pass
+
+    @tc_prop
+    def ident(self, a: Pane) -> Ident:
+        return a.ident
 
 
 class MyoPaneUiView(UiView, tpe=Pane):
