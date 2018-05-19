@@ -91,7 +91,7 @@ def cons_system_command(options: AddSystemCommandOptions) -> Either[str, Command
     )
 
 
-def cons_shell_command(options: AddShellCommandOptions) -> Either[str, Command]:
+def cons_shell_command(options: AddShellCommandOptions) -> Command:
     return Command(
         options.ident | Ident.generate,
         ShellInterpreter(options.target),
