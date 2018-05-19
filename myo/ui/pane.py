@@ -41,7 +41,7 @@ def find_in_spaces(pred: Callable[[ViewTree[Layout, Pane]], Maybe[A]]) -> Do:
 def ui_modify_pane(ident: Ident, mod: Callable[[Pane], Pane]) -> Do:
     @do(Either[str, Window])
     def find_pane(window: Window) -> Do:
-        new = map_panes(P=Pane)(lambda a: a.ident == ident, mod)(window.layout)
+        new = map_panes(lambda a: a.ident == ident, mod)(window.layout)
         yield Right(window.copy(layout=new))
     @do(Either[str, Tuple[Space, Window]])
     def find_window(space: Space) -> Do:
