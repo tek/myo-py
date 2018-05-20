@@ -2,7 +2,6 @@ from kallikrein import Expectation
 from kallikrein.matchers.length import have_length
 
 from chiasma.test.tmux_spec import TmuxSpec
-from chiasma.io.compute import TmuxIO
 from chiasma.commands.pane import all_panes
 
 from amino import do, Do

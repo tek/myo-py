@@ -1,4 +1,4 @@
-from typing import Tuple, Any
+from typing import Tuple, Any, Callable
 
 from chiasma.data.view_tree import ViewTree
 from chiasma.data.session import Session
@@ -7,6 +7,7 @@ from chiasma.test.tmux_spec import tmux_spec_socket
 from chiasma.io.compute import TmuxIO
 from chiasma.ui.view_geometry import ViewGeometry
 from chiasma.data.pane import Pane as TPane
+from chiasma.data.tmux import TmuxData
 
 from amino import List, __, Map, do, Do, L, _, Nil
 from amino.boolean import true
@@ -28,6 +29,7 @@ from myo.components.command.config import command
 from myo.components.core.config import core
 from myo.config.plugin_state import MyoState
 from myo.tmux.io import tmux_to_nvim
+from myo.ui.data.ui_data import UiData
 
 
 tmux_spec_config = Config.cons(
@@ -69,6 +71,22 @@ def init_tmux_data(layout: ViewTree[Layout, Pane]) -> Do:
     return window, space
 
 
+def update_data(name: str, update: Callable[[Any], Any]) -> NS[MyoState, None]:
+    return NS.modify(lambda a: a.modify_component_data(name, update))
+
+
+def update_ui_data(update: Callable[[UiData], UiData]) -> NS[MyoState, None]:
+    return update_data('ui', update)
+
+
+def update_tmux_data(update: Callable[[TmuxData], TmuxData]) -> NS[MyoState, None]:
+    return update_data('tmux', update)
+
+
+def set_panes(panes: List[TPane]) -> NS[MyoState, None]:
+    return update_tmux_data(lambda a: a.set.panes(panes))
+
+
 @do(NS[MyoState, Tuple[Window, Space]])
 def two_panes() -> Do:
     layout = ViewTree.layout(
@@ -87,7 +105,7 @@ def two_panes() -> Do:
         )
         .modify_component_data(
             'ui',
-            __.mod.spaces(L(map_panes_in_spaces)(lambda a: True, lens.open.set(true), _))
+            __.mod.spaces(map_panes_in_spaces(lambda a: True, lens.open.set(true)))
         )
     )
     return window, space
@@ -99,5 +117,53 @@ def two_open_panes() -> Do:
     yield two_panes()
 
 
+pane_left_vertical_right_layout: ViewTree[Layout, Pane] = ViewTree.layout(
+    Layout.cons('root', vertical=False),
+    List(
+        ViewTree.pane(Pane.cons('one', open=True)),
+        ViewTree.layout(
+            Layout.cons('make', vertical=True),
+            List(
+                ViewTree.pane(Pane.cons('two')),
+                ViewTree.pane(Pane.cons('three')),
+            ),
+        )
+    )
+)
+
+
+@do(NS[MyoState, Tuple[Window, Space]])
+def pane_left_vertical_right() -> Do:
+    window, space = yield init_tmux_data(pane_left_vertical_right_layout)
+    yield set_panes(List(TPane.cons('one', id=0)))
+    return window, space
+
+
+vertical_left_vertical_right_layout: ViewTree[Layout, Pane] = ViewTree.layout(
+    Layout.cons('root', vertical=False),
+    List(
+        ViewTree.layout(
+            Layout.cons('left', vertical=True),
+            List(
+                ViewTree.pane(Pane.cons('one', open=True)),
+            ),
+        ),
+        ViewTree.layout(
+            Layout.cons('right', vertical=True),
+            List(
+                ViewTree.pane(Pane.cons('two')),
+            ),
+        )
+    )
+)
+
+
+@do(NS[MyoState, Tuple[Window, Space]])
+def vertical_left_vertical_right() -> Do:
+    window, space = yield init_tmux_data(vertical_left_vertical_right_layout)
+    yield set_panes(List(TPane.cons('one', id=0)))
+    return window, space
+
+
 __all__ = ('tmux_spec_config', 'init_tmux_data', 'tmux_default_test_config', 'two_panes', 'two_open_panes',
-           'tmux_test_config',)
+           'tmux_test_config', 'pane_left_vertical_right', 'vertical_left_vertical_right',)
