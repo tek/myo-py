@@ -6,7 +6,7 @@ from ribosome.config.component import ComponentData
 from ribosome.nvim.io.state import NS
 
 from chiasma.render import render
-from chiasma.data.tmux import TmuxData
+from myo.components.tmux.data import TmuxData
 from chiasma.util.id import Ident
 from chiasma.data.view_tree import ViewTree
 
@@ -17,7 +17,7 @@ from myo.env import Env
 @prog
 @do(NS[ComponentData[Env, TmuxData], None])
 def tmux_render(session: Ident, window: Ident, layout: ViewTree[Pane, Layout]) -> Do:
-    yield render(P=Pane, L=Layout)(session, window, layout).transform_s_lens(lens.comp).nvim
+    yield render(P=Pane, L=Layout)(session, window, layout).zoom(lens.comp.views).nvim
 
 
 __all__ = ('tmux_render',)

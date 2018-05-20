@@ -1,6 +1,6 @@
 from typing import Callable
 
-from chiasma.data.tmux import TmuxData
+from myo.components.tmux.data import TmuxData
 from chiasma.data.session import Session
 from chiasma.commands.session import session_id
 from chiasma.data.window import Window
@@ -38,9 +38,10 @@ def format_session(session: Session) -> List[str]:
 @do(NS[ComponentData[Env, TmuxData], InfoWidget])
 def tmux_info() -> Do:
     s = yield comp_data()
-    sessions = (s.sessions // format_session).indent(1)
-    windows = (s.windows // format_window).indent(1)
-    panes = (s.panes // format_pane).indent(1)
+    views = s.views
+    sessions = (views.sessions // format_session).indent(1)
+    windows = (views.windows // format_window).indent(1)
+    panes = (views.panes // format_pane).indent(1)
     yield NS.pure(InfoWidget.cons(List('Tmux:') + sessions + windows + panes))
 
 __all__ = ('tmux_info',)

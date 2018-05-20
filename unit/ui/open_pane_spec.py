@@ -5,13 +5,14 @@ from kallikrein.matchers.length import have_length
 
 from chiasma.data.view_tree import ViewTree
 from chiasma.test.tmux_spec import TmuxSpec
-from chiasma.data.tmux import TmuxData
+from myo.components.tmux.data import TmuxData
 from chiasma.data.window import Window as TWindow
 from chiasma.render import render
 from chiasma.data.session import Session
 from chiasma.io.state import TS
 from chiasma.commands.pane import all_panes
 from chiasma.util.id import IdentSpec, ensure_ident, StrIdent
+from chiasma.data.tmux import Views
 
 from amino import List, do, Do, Dat
 from amino.lenses.lens import lens
@@ -34,8 +35,8 @@ class OPData(Dat['OPData']):
         ws = List(Window.cons('main', layout=layout))
         spaces = List(Space.cons('main', ws))
         ui = UiData(spaces)
-        tm = TmuxData.cons(sessions=List(Session.cons('main', id=0)), windows=List(TWindow.cons('main', id=0)))
-        return OPData(ui, tm)
+        views = Views.cons(sessions=List(Session.cons('main', id=0)), windows=List(TWindow.cons('main', id=0)))
+        return OPData(ui, TmuxData.cons(views=views))
 
     def __init__(self, ui: UiData, tmux: TmuxData) -> None:
         self.ui = ui
@@ -47,7 +48,7 @@ def open_pane(ident_spec: IdentSpec) -> Do:
     ident = ensure_ident(ident_spec)
     yield ui_open_pane(ident).transform_s_lens(lens.ui).tmux
     a = yield pane_path(ident).transform_s_lens(lens.ui).tmux
-    yield render(P=Pane, L=Layout)(a.space.ident, a.window.ident, a.window.layout).transform_s_lens(lens.tmux)
+    yield render(P=Pane, L=Layout)(a.space.ident, a.window.ident, a.window.layout).transform_s_lens(lens.tmux.views)
 
 
 class OpenPaneSpec(TmuxSpec):

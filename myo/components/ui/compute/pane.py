@@ -69,7 +69,7 @@ def render_view(ident: Ident) -> Do:
 @prog
 @do(NS[ComponentData[Env, UiData], Pane])
 def ui_pane_by_ident(ident: Ident) -> Do:
-    result = yield pane_path_by_ident(ident).nvim.zoom(lens.comp)
+    result = yield view_path_by_ident(ident).nvim.zoom(lens.comp)
     pane = (
         result
         .to_either(f'no pane for `{ident}`')

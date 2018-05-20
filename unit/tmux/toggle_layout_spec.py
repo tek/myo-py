@@ -6,7 +6,7 @@ from ribosome.test.unit import unit_test
 
 from chiasma.test.tmux_spec import TmuxSpec
 from chiasma.data.view_tree import ViewTree
-from chiasma.data.tmux import TmuxData
+from myo.components.tmux.data import TmuxData
 from chiasma.data.pane import Pane as TPane
 from chiasma.commands.pane import pane_width
 
@@ -24,7 +24,12 @@ from unit._support.tmux import tmux_default_test_config, init_tmux_data
 layout: ViewTree[Layout, Pane] = ViewTree.layout(
     Layout.cons('root', vertical=False),
     List(
-        ViewTree.pane(Pane.cons('one', open=True)),
+        ViewTree.layout(
+            Layout.cons('vim', vertical=True),
+            List(
+                ViewTree.pane(Pane.cons('one', open=True)),
+            ),
+        ),
         ViewTree.layout(
             Layout.cons('make', vertical=True),
             List(

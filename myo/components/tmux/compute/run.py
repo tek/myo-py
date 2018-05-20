@@ -3,15 +3,13 @@ from amino.lenses.lens import lens
 from amino.case import Case
 
 from chiasma.io.state import TS
-from chiasma.data.tmux import TmuxData
+from myo.components.tmux.data import TmuxData
 from chiasma.pane import pane_by_ident
 from chiasma.commands.pane import send_keys, pipe_pane
 
 from ribosome.compute.api import prog
 from ribosome.config.component import ComponentData
-from ribosome.compute.program import Program
 from ribosome.nvim.io.state import NS
-from ribosome.compute.prog import Prog
 
 from myo.env import Env
 from myo.command.run_task import RunTaskDetails, UiSystemTaskDetails, UiShellTaskDetails, RunTask
@@ -21,7 +19,7 @@ from myo.ui.data.view import Pane
 
 @do(TS[ComponentData[Env, TmuxData], None])
 def run_system_task(cmd: Command, pane: Pane, log_path: Maybe[Path]) -> Do:
-    tpane = yield pane_by_ident(pane.ident).zoom(lens.comp)
+    tpane = yield pane_by_ident(pane.ident).zoom(lens.comp.views)
     id = yield TS.from_maybe(tpane.id, f'no tmux id for pane {pane.ident}')
     yield log_path / L(pipe_pane)(id, _) / TS.lift | TS.unit
     yield TS.lift(send_keys(id, cmd.lines))
@@ -52,7 +50,7 @@ def run_in_pane(task: RunTask) -> Do:
 
 
 @prog.do
-def run_command(task: RunTask) -> Do:
+def tmux_run_command(task: RunTask) -> Do:
     yield run_in_pane(task)
 
 
@@ -60,4 +58,4 @@ def tmux_can_run(task: RunTask) -> Boolean:
     return isinstance(task.details, (UiSystemTaskDetails, UiShellTaskDetails))
 
 
-__all__ = ('run_command', 'tmux_can_run')
+__all__ = ('tmux_run_command', 'tmux_can_run')

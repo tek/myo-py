@@ -7,7 +7,8 @@ from chiasma.test.tmux_spec import tmux_spec_socket
 from chiasma.io.compute import TmuxIO
 from chiasma.ui.view_geometry import ViewGeometry
 from chiasma.data.pane import Pane as TPane
-from chiasma.data.tmux import TmuxData
+from chiasma.data.tmux import Views
+from myo.components.tmux.data import TmuxData
 
 from amino import List, __, Map, do, Do, L, _, Nil
 from amino.boolean import true
@@ -54,23 +55,6 @@ def tmux_default_test_config(components: List[str]=Nil, extra_vars: Map[str, Any
     return tmux_test_config(tmux_spec_config, components, extra_vars, **kw)
 
 
-@do(NS[MyoState, Tuple[Window, Space]])
-def init_tmux_data(layout: ViewTree[Layout, Pane]) -> Do:
-    window = Window.cons('win', layout=layout)
-    space = Space.cons('spc', List(window))
-    yield NS.modify(
-        __
-        .modify_component_data('ui', __.append1.spaces(space))
-        .modify_component_data(
-            'tmux',
-            __
-            .append1.sessions(Session.cons(space.ident, id=0))
-            .append1.windows(TWindow.cons(window.ident, id=0))
-        )
-    )
-    return window, space
-
-
 def update_data(name: str, update: Callable[[Any], Any]) -> NS[MyoState, None]:
     return NS.modify(lambda a: a.modify_component_data(name, update))
 
@@ -83,8 +67,25 @@ def update_tmux_data(update: Callable[[TmuxData], TmuxData]) -> NS[MyoState, Non
     return update_data('tmux', update)
 
 
+def update_views(update: Callable[[Views], Views]) -> NS[MyoState, None]:
+    return update_tmux_data(lens.views.modify(update))
+
+
 def set_panes(panes: List[TPane]) -> NS[MyoState, None]:
     return update_tmux_data(lambda a: a.set.panes(panes))
+
+
+@do(NS[MyoState, Tuple[Window, Space]])
+def init_tmux_data(layout: ViewTree[Layout, Pane]) -> Do:
+    window = Window.cons('win', layout=layout)
+    space = Space.cons('spc', List(window))
+    yield update_ui_data(__.append1.spaces(space))
+    yield update_views(
+        __
+        .append1.sessions(Session.cons(space.ident, id=0))
+        .append1.windows(TWindow.cons(window.ident, id=0))
+    )
+    return window, space
 
 
 @do(NS[MyoState, Tuple[Window, Space]])
@@ -97,17 +98,8 @@ def two_panes() -> Do:
         )
     )
     window, space = yield init_tmux_data(layout)
-    yield NS.modify(
-        __
-        .modify_component_data(
-            'tmux',
-            __.set.panes(List(TPane.cons('one', id=0), TPane.cons('two', id=1)))
-        )
-        .modify_component_data(
-            'ui',
-            __.mod.spaces(map_panes_in_spaces(lambda a: True, lens.open.set(true)))
-        )
-    )
+    yield update_views(lens.panes.set(List(TPane.cons('one', id=0), TPane.cons('two', id=1))))
+    yield update_ui_data(lens.spaces.modify(map_panes_in_spaces(lambda a: True, lens.open.set(true))))
     return window, space
 
 

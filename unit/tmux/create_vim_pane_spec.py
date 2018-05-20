@@ -3,11 +3,12 @@ from kallikrein import Expectation, k
 from chiasma.test.tmux_spec import TmuxSpec
 from chiasma.commands.pane import all_panes, send_keys
 from chiasma.util.id import StrIdent
-from chiasma.data.tmux import TmuxData
+from myo.components.tmux.data import TmuxData
 from chiasma.data.session import Session
 from chiasma.data.window import Window
 from chiasma.data.pane import Pane
 from chiasma.util.pid import child_pids
+from chiasma.data.tmux import Views
 
 from amino import do, Do, List
 
@@ -34,13 +35,16 @@ def discover_spec() -> Do:
         pane = yield N.from_maybe(ps.head, 'no panes')
         pids = yield N.from_io(child_pids(pane.pid))
         yield N.from_maybe(pids.head, 'no pids')
+    yield NS.sleep(.5)
     pid = yield NS.lift(run())
     yield run_prog(create_vim_pane, List(ident, pid))
     state = yield NS.inspect(lambda s: s.data_by_type(TmuxData))
     return k(state) == TmuxData.cons(
-        List(Session.cons(ident, 0)),
-        List(Window.cons(ident, 0)),
-        List(Pane.cons(ident, 0)),
+        Views.cons(
+            List(Session.cons(ident, 0)),
+            List(Window.cons(ident, 0)),
+            List(Pane.cons(ident, 0)),
+        ),
         ident,
     )
 

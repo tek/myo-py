@@ -1,12 +1,13 @@
 from amino import do, Do, Either, Just
 from amino.logging import module_log
+from amino.lenses.lens import lens
 
 from ribosome.compute.api import prog
 from ribosome.nvim.io.state import NS
 from ribosome.compute.ribosome_api import Ribo
 
 from chiasma.io.state import TS
-from chiasma.data.tmux import TmuxData
+from myo.components.tmux.data import TmuxData
 from chiasma.util.id import Ident
 from chiasma.commands.pane import pane
 from chiasma.data.pane import Pane
@@ -34,8 +35,8 @@ def insert_vim_pane(
         .append1.panes(vim_pane)
         .append1.windows(Window.cons(ident, id=pane_data.window_id))
         .append1.sessions(Session.cons(ident, id=pane_data.session_id))
-        .set.vim_pane(Just(vim_pane.ident))
-    )
+    ).zoom(lens.views)
+    yield TS.modify(lambda s: s.set.vim_pane(Just(vim_pane.ident)))
 
 
 @prog

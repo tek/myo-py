@@ -4,9 +4,9 @@ from ribosome.config.component import Component
 from ribosome.compute.program import Program
 from ribosome.rpc.api import rpc
 
-from chiasma.data.tmux import TmuxData
+from myo.components.tmux.data import TmuxData
 
-from myo.components.tmux.compute.run import run_command, tmux_can_run
+from myo.components.tmux.compute.run import tmux_run_command, tmux_can_run
 from myo.config.component import MyoComponent
 from myo.ui.ui import Ui
 from myo.components.tmux.compute.owns_pane import tmux_owns_view
@@ -19,7 +19,7 @@ from myo.env import Env
 
 
 def run_handler_for(task: RunTask) -> Maybe[Program]:
-    return Just(run_command) if tmux_can_run(task) else Nothing
+    return Just(tmux_run_command) if tmux_can_run(task) else Nothing
 
 
 def create_vim_pane_handler() -> Maybe[Program]:

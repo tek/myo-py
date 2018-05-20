@@ -7,7 +7,7 @@ from chiasma.io.compute import TmuxIO
 from chiasma.commands.pane import all_panes
 from chiasma.test.tmux_spec import TmuxSpec
 from chiasma.data.view_tree import ViewTree
-from chiasma.data.tmux import TmuxData
+from myo.components.tmux.data import TmuxData
 from chiasma.data.pane import Pane as TPane
 
 from amino import do, Do, List
