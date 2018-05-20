@@ -23,7 +23,7 @@ vars = Map(
 test_config = TestConfig.cons(myo_config, vars=vars)
 
 
-pane = 'make'
+pane_ident = 'make'
 file = fixture_path('tmux', 'python_parse', 'trace')
 statements = List(
     'import pathlib',
@@ -33,7 +33,7 @@ statements = List(
 
 @do(NvimIO[Expectation])
 def parse_spec() -> Do:
-    yield json_cmd('MyoAddSystemCommand', ident='python', line='python', target=pane)
+    yield json_cmd('MyoAddSystemCommand', ident='python', line='python', target=pane_ident)
     yield json_cmd('MyoLine', shell='python', lines=statements, langs=List('python'))
     yield json_cmd('MyoParse')
     yield N.sleep(1)

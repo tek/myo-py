@@ -13,7 +13,7 @@ from myo.util import Ident
 from myo.ui.data.ui_data import UiData
 from myo.ui.data.window import Window
 from myo.ui.pane import ui_modify_pane
-from myo.components.ui.compute.pane import render_pane
+from myo.components.ui.compute.pane import render_view
 
 log = module_log()
 
@@ -33,7 +33,7 @@ def ui_open_pane(ident: Ident) -> Do:
 def open_pane(ident_spec: IdentSpec, options: OpenPaneOptions) -> Do:
     ident = ensure_ident(ident_spec)
     yield Ribo.lift_comp(ui_open_pane(ident).nvim, UiData)
-    yield render_pane(ident)
+    yield render_view(ident)
 
 
 __all__ = ('open_pane',)

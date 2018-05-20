@@ -7,13 +7,12 @@ from chiasma.util.id import Ident, IdentSpec, ensure_ident
 
 from ribosome.compute.api import prog
 from ribosome.config.component import ComponentData
-from ribosome.compute.prog import Prog
 
 from myo.ui.data.ui_data import UiData
 from myo.ui.data.window import Window
 from myo.ui.pane import ui_modify_pane
 from myo.env import Env
-from myo.components.ui.compute.pane import render_pane
+from myo.components.ui.compute.pane import render_view
 
 
 @do(EitherState[UiData, Window])
@@ -32,7 +31,7 @@ def ui_close_pane_trans(ident_spec: IdentSpec) -> Do:
 def close_pane(ident_spec: IdentSpec) -> Do:
     ident = ensure_ident(ident_spec)
     yield ui_close_pane_trans(ident)
-    yield render_pane(ident)
+    yield render_view(ident)
 
 
 __all__ = ('close_pane',)

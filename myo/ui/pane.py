@@ -1,75 +1,104 @@
 from typing import Tuple, Callable, TypeVar
 
-from amino import do, Do, Either, Right, Maybe, _, curried, L, List, Nothing, Just
+from amino import do, Do, Either, Maybe, _, curried, L, List, Nothing, Just
 from amino.state import EitherState, State
 from amino.case import Case
 from amino.logging import module_log
-from chiasma.data.view_tree import map_panes, ViewTree, find_in_view_tree, LayoutNode
+from amino.lenses.lens import lens
+from chiasma.data.view_tree import (map_panes, ViewTree, find_in_view_tree, LayoutNode, map_layouts, map_layout_nodes,
+                                    map_pane_nodes)
 
 from myo.util import Ident
 from myo.ui.data.ui_data import UiData
 from myo.ui.data.window import Window
 from myo.ui.data.space import Space
-from myo.ui.data.view import Layout, Pane
+from myo.ui.data.view import Layout, Pane, has_ident
+from myo.ui.data.view_tree import MyoViewTree, MyoLayoutNode, MyoPaneNode
 
 A = TypeVar('A')
 log = module_log()
 
 
 def find_in_window(
-        pred: Callable[[ViewTree[Layout, Pane]], Maybe[A]],
+        pred: Callable[[MyoViewTree], Maybe[A]],
         window: Window,
-) -> Maybe[Tuple[Window, ViewTree[Layout, Pane]]]:
-    return find_in_view_tree(pane=pred)(window.layout).map(lambda pane: (window, pane))
+) -> Maybe[Tuple[Window, MyoViewTree]]:
+    return find_in_view_tree(pane=pred, layout=pred)(window.layout).map(lambda pane: (window, pane))
 
 
 def find_in_windows(
-        pred: Callable[[ViewTree[Layout, Pane]], Maybe[A]],
+        pred: Callable[[MyoViewTree], Maybe[A]],
         space: Space,
-) -> Maybe[Tuple[Space, Window, ViewTree[Layout, Pane]]]:
+) -> Maybe[Tuple[Space, Window, MyoViewTree]]:
     a = space.windows.find_map(L(find_in_window)(pred, _))
     return a.map2(lambda w, p: (space, w, p))
 
 
-@do(State[UiData, Maybe[Tuple[Space, Window, ViewTree[Layout, Pane]]]])
-def find_in_spaces(pred: Callable[[ViewTree[Layout, Pane]], Maybe[A]]) -> Do:
+def find_in_spaces(pred: Callable[[MyoViewTree], Maybe[A]], spaces: List[Space]) -> None:
+    return spaces.find_map(lambda a: find_in_windows(pred, a))
+
+
+@do(State[UiData, Maybe[Tuple[Space, Window, MyoViewTree]]])
+def find_in_ui(pred: Callable[[MyoViewTree], Maybe[A]]) -> Do:
     spaces = yield State.inspect(_.spaces)
-    yield State.pure(spaces.find_map(curried(find_in_windows)(pred)))
+    return find_in_spaces(pred, spaces)
+
+
+spaces_layout_lens = lens.Each().windows.Each().layout
+uidata_layout_lens = lens.spaces & spaces_layout_lens
+
+
+def map_window_trees(mod: Callable[[MyoViewTree], MyoViewTree]) -> EitherState[UiData, None]:
+    yield EitherState.modify(uidata_layout_lens.modify(mod))
+
+
+def ui_modify_layout_nodes(
+        pred: Callable[[MyoLayoutNode], bool],
+        mod: Callable[[MyoLayoutNode], MyoLayoutNode],
+) -> EitherState[UiData, None]:
+    return map_window_trees(map_layout_nodes(pred, mod))
+
+
+def ui_modify_pane_nodes(
+        pred: Callable[[Pane], bool],
+        mod: Callable[[MyoPaneNode], MyoPaneNode],
+) -> EitherState[UiData, None]:
+    return map_window_trees(map_pane_nodes(pred, mod))
+
+
+@do(EitherState[UiData, Window])
+def ui_modify_layout_node(ident: Ident, mod: Callable[[MyoLayoutNode], MyoLayoutNode]) -> Do:
+    return ui_modify_layout_nodes(lambda a: has_ident(ident)(a.data), mod)
+
+
+@do(EitherState[UiData, Window])
+def ui_modify_pane_node(ident: Ident, mod: Callable[[MyoPaneNode], MyoPaneNode]) -> Do:
+    return ui_modify_pane_nodes(lambda a: has_ident(ident)(a.data), mod)
+
+
+def ui_modify_layouts(pred: Callable[[Layout], bool], mod: Callable[[Layout], Layout]) -> EitherState[UiData, None]:
+    return map_window_trees(map_layouts(pred, mod))
+
+
+def ui_modify_panes(pred: Callable[[Pane], bool], mod: Callable[[Pane], Pane]) -> EitherState[UiData, None]:
+    return map_window_trees(map_panes(pred, mod))
+
+
+@do(EitherState[UiData, Window])
+def ui_modify_layout(ident: Ident, mod: Callable[[Layout], Layout]) -> Do:
+    return ui_modify_layouts(has_ident(ident), mod)
 
 
 @do(EitherState[UiData, Window])
 def ui_modify_pane(ident: Ident, mod: Callable[[Pane], Pane]) -> Do:
-    @do(Either[str, Window])
-    def find_pane(window: Window) -> Do:
-        new = map_panes(lambda a: a.ident == ident, mod)(window.layout)
-        yield Right(window.copy(layout=new))
-    @do(Either[str, Tuple[Space, Window]])
-    def find_window(space: Space) -> Do:
-        win = yield space.windows.find_map_e(find_pane)
-        yield Right((space.replace_window(win), win))
-    @do(Either[str, Tuple[UiData, Window]])
-    def find_space(ui: UiData) -> Do:
-        new, window = yield ui.spaces.find_map_e(find_window).lmap(lambda err: f'pane not found: {ident}')
-        yield Right((ui.replace_space(new), window))
-    data, window = yield EitherState.inspect_f(find_space)
-    yield EitherState.set(data)
-    yield EitherState.pure(window)
-
-
-def map_panes_in_windows(
-        pred: Callable[[Pane], bool],
-        update: Callable[[Pane], Pane],
-        windows: List[Window],
-) -> List[Window]:
-    return windows.map(lambda w: w.mod.layout(map_panes(P=Pane)(pred, update)))
+    return ui_modify_panes(has_ident(ident), mod)
 
 
 def map_panes_in_spaces(
         pred: Callable[[Pane], bool],
         update: Callable[[Pane], Pane],
-        spaces: List[Space],
 ) -> List[Space]:
-    return spaces.map(lambda s: s.mod.windows(L(map_panes_in_windows)(pred, update, _)))
+    return spaces_layout_lens.modify(map_panes(pred, update))
 
 
 class insert_pane(Case, alg=ViewTree):
@@ -108,4 +137,5 @@ def insert_pane_into_ui(pane: Pane, layout: Ident, ui: UiData) -> Either[str, Ui
     )
 
 
-__all__ = ('find_in_window', 'find_in_windows', 'find_in_spaces', 'ui_modify_pane', 'insert_pane_into_ui')
+__all__ = ('find_in_window', 'find_in_windows', 'find_in_ui', 'ui_modify_pane', 'insert_pane_into_ui',
+           'ui_modify_layout',)

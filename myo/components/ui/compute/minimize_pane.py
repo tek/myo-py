@@ -16,7 +16,7 @@ from myo.ui.data.ui_data import UiData
 from myo.ui.data.window import Window
 from myo.env import Env
 from myo.ui.pane import ui_modify_pane
-from myo.components.ui.compute.pane import render_pane
+from myo.components.ui.compute.pane import render_view
 
 
 @do(EitherState[UiData, Window])
@@ -34,7 +34,7 @@ def ui_minimize_pane_trans(ident: Ident) -> Do:
 def minimize_pane(ident_spec: Union[str, Ident]) -> Do:
     ident = ensure_ident(ident_spec)
     yield ui_minimize_pane_trans(ident)
-    yield render_pane(ident)
+    yield render_view(ident)
 
 
 __all__ = ('minimize_pane',)

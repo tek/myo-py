@@ -8,7 +8,7 @@ from ribosome.compute.api import prog
 
 
 @prog.strict
-def owns_no_pane(ident: Ident) -> Boolean:
+def owns_no_view(ident: Ident) -> Boolean:
     return false
 
 
@@ -16,14 +16,14 @@ class Ui(Dat['Ui']):
 
     @staticmethod
     def cons(
-            owns_pane: Program=owns_no_pane,
+            owns_view: Program[bool]=owns_no_view,
             render: Program=None,
             open_pane: Program=None,
             open_window: Program=None,
             open_space: Program=None,
     ) -> 'Ui':
         return Ui(
-            owns_pane,
+            owns_view,
             Maybe.optional(render),
             Maybe.optional(open_pane),
             Maybe.optional(open_window),
@@ -32,13 +32,13 @@ class Ui(Dat['Ui']):
 
     def __init__(
             self,
-            owns_pane: Program,
+            owns_view: Program[bool],
             render: Maybe[Program],
             open_pane: Maybe[Program],
             open_window: Maybe[Program],
             open_space: Maybe[Program],
     ) -> None:
-        self.owns_pane = owns_pane
+        self.owns_view = owns_view
         self.render = render
         self.open_pane = open_pane
         self.open_window = open_window

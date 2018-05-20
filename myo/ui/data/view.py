@@ -1,3 +1,5 @@
+from typing import Callable
+
 from chiasma.ui.view import UiPane, UiLayout, UiView
 from chiasma.ui.state import ViewState
 from chiasma.ui.view_geometry import ViewGeometry
@@ -101,10 +103,7 @@ class MyoUiPane(UiPane, tpe=Pane):
 
 
 class MyoUiLayout(UiLayout, tpe=Layout):
-
-    @tc_prop
-    def ident(self, a: Pane) -> Ident:
-        return a.ident
+    pass
 
 
 class MyoPaneUiView(UiView, tpe=Pane):
@@ -115,6 +114,9 @@ class MyoPaneUiView(UiView, tpe=Pane):
     def geometry(self, a: Pane) -> ViewGeometry:
         return a.geometry
 
+    def ident(self, a: Pane) -> Ident:
+        return a.ident
+
 
 class MyoLayoutUiView(UiView, tpe=Layout):
 
@@ -124,5 +126,15 @@ class MyoLayoutUiView(UiView, tpe=Layout):
     def geometry(self, a: Layout) -> ViewGeometry:
         return a.geometry
 
+    def ident(self, a: Layout) -> Ident:
+        return a.ident
 
-__all__ = ('View', 'Layout', 'Pane', 'ViewGeometry')
+
+def has_ident(ident_spec: IdentSpec) -> Callable[[View], bool]:
+    ident = ensure_ident(ident_spec)
+    def has_ident(view: View) -> bool:
+        return view.ident == ident
+    return has_ident
+
+
+__all__ = ('View', 'Layout', 'Pane', 'ViewGeometry', 'has_ident',)

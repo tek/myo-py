@@ -18,26 +18,22 @@ from ribosome.compute.prog import Prog
 from myo.util import Ident
 from myo.ui.data.window import Window
 from myo.ui.data.space import Space
-from myo.ui.data.view import Pane, Layout
-from myo.ui.pane import find_in_spaces
+from myo.ui.data.view import Pane, Layout, has_ident
+from myo.ui.pane import find_in_ui
 from myo.env import Env
 from myo.config.component import MyoComponent
 from myo.ui.data.ui_data import UiData
+from myo.ui.data.view_tree import MyoViewTree
 
 
 @curried
-def has_ident(ident: Ident, node: PaneNode[Layout, Pane]) -> Boolean:
-    return node.data.ident == ident
-
-
-@curried
-def match_ident(ident: Ident, node: PaneNode[Layout, Pane]) -> Maybe[PaneNode[Layout, Pane]]:
-    return Just(node) if node.data.ident == ident else Nothing
+def match_ident(ident: Ident, node: MyoViewTree) -> Maybe[MyoViewTree]:
+    return Just(node) if has_ident(ident)(node.data) else Nothing
 
 
 @do(State[UiData, Maybe[Tuple[Space, Window, ViewTree[Layout, Pane]]]])
-def pane_path_by_ident(ident: Ident) -> Do:
-    yield find_in_spaces(match_ident(ident))
+def view_path_by_ident(ident: Ident) -> Do:
+    yield find_in_ui(match_ident(ident))
 
 
 @prog
@@ -48,24 +44,24 @@ def config_uis() -> Do:
 
 
 @prog.do
-def pane_owners(ident: Ident) -> Do:
-    pane_path_m = yield Ribo.lift_comp(pane_path_by_ident(ident).nvim, UiData)
-    space, window, pane = yield Prog.from_maybe(pane_path_m, f'no pane with ident `{ident}`')
+def view_owners(ident: Ident) -> Do:
+    view_path_m = yield Ribo.lift_comp(view_path_by_ident(ident).nvim, UiData)
+    space, window, view = yield Prog.from_maybe(view_path_m, f'no view with ident `{ident}`')
     uis = yield config_uis()
-    owns_handlers = uis / _.owns_pane
-    owns = yield owns_handlers.traverse(lambda a: a(pane.data), Prog)
+    owns_handlers = uis / _.owns_view
+    owns = yield owns_handlers.traverse(lambda a: a(view.data), Prog)
     owners = uis.zip(owns).filter2(lambda a, b: b).flat_map(lift_tuple(0))
     owner = yield (
-        Prog.from_maybe(owners.head, f'no owner for pane {ident}')
+        Prog.from_maybe(owners.head, f'no owner for view {ident}')
         if owners.length <= 1
-        else Prog.error('multiple owners for pane {ident}')
+        else Prog.error('multiple owners for view {ident}')
     )
     yield Prog.pure((space, window, owner))
 
 
 @prog.do
-def render_pane(ident: Ident) -> Do:
-    space, window, owner = yield pane_owners(ident)
+def render_view(ident: Ident) -> Do:
+    space, window, owner = yield view_owners(ident)
     renderer = yield Prog.from_maybe(owner.render, f'no renderer for {owner}')
     yield renderer(space.ident, window.ident, window.layout)
 
