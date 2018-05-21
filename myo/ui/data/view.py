@@ -64,6 +64,7 @@ class Pane(View):
             ui: str='tmux',
             open: bool=False,
             cwd: Path=None,
+            pin: bool=False,
     ) -> 'Pane':
         return Pane(
             ensure_ident(ident),
@@ -72,6 +73,7 @@ class Pane(View):
             ui,
             Boolean(open),
             Maybe.optional(cwd),
+            Boolean(pin),
         )
 
     def __init__(
@@ -82,10 +84,12 @@ class Pane(View):
             ui: str,
             open: Boolean,
             cwd: Maybe[Path],
+            pin: Boolean,
     ) -> None:
         super().__init__(ident, state, geometry, ui)
         self.open = open
         self.cwd = cwd
+        self.pin = pin
 
 
 class MyoUiPane(UiPane, tpe=Pane):
@@ -100,6 +104,12 @@ class MyoUiPane(UiPane, tpe=Pane):
 
     def cwd(self, a: Pane) -> Maybe[Path]:
         return a.cwd
+
+    def pin(self, a: Pane) -> bool:
+        return a.pin
+
+    def set_open(self, a: Pane, state: Boolean) -> Pane:
+        return a.set.open(state)
 
 
 class MyoUiLayout(UiLayout, tpe=Layout):

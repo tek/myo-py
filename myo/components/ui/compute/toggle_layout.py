@@ -54,7 +54,7 @@ def open_layout(node: MyoLayoutNode) -> MyoLayoutNode:
     return new
 
 
-def open_or_toggle_minimized(node: MyoLayoutNode) -> Layout:
+def open_or_toggle_minimized(node: MyoLayoutNode) -> MyoLayoutNode:
     return (
         lens.data.state.minimized.modify(lambda a: ~a)(node)
         if layout_open(node) else
@@ -65,6 +65,7 @@ def open_or_toggle_minimized(node: MyoLayoutNode) -> Layout:
 @do(EitherState[UiData, Window])
 def ui_toggle_layout(ident: Ident) -> Do:
     yield ui_modify_layout_node(ident, open_or_toggle_minimized)
+    # yield map_window_trees(lambda a: open_or_toggle_layout(ident)(a).get_or_strict(a)).nvim
 
 
 @prog.do

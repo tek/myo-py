@@ -29,7 +29,7 @@ def vim_pid() -> NvimIO[int]:
 def insert_default_ui(ident: Ident, layout_ident: Ident, make_ident: Ident) -> Do:
     pane: ViewTree[Layout, Pane] = ViewTree.pane(Pane.cons(ident=ident, open=True))
     vim_layout = ViewTree.layout(Layout.cons(ident, vertical=True), sub=List(pane))
-    make = ViewTree.pane(Pane.cons(ident=make_ident))
+    make = ViewTree.pane(Pane.cons(ident=make_ident, pin=True))
     make_layout = ViewTree.layout(Layout.cons(make_ident, vertical=True), sub=List(make))
     layout = ViewTree.layout(Layout.cons(layout_ident, vertical=False), sub=List(vim_layout, make_layout))
     yield NS.modify(__.append1.spaces(Space.cons(ident, List(Window.cons(ident, layout=layout)))))

@@ -5,8 +5,12 @@ from amino.state import EitherState, State
 from amino.case import Case
 from amino.logging import module_log
 from amino.lenses.lens import lens
+from amino.boolean import true
 from chiasma.data.view_tree import (map_panes, ViewTree, find_in_view_tree, LayoutNode, map_layouts, map_layout_nodes,
                                     map_pane_nodes)
+from chiasma.util.id import IdentSpec
+from chiasma.open_pane import pane_open_layout_hook, mod_pane_open, pane_node_open
+from chiasma.mod_pane import mod_pane
 
 from myo.util import Ident
 from myo.ui.data.ui_data import UiData
@@ -49,7 +53,7 @@ uidata_layout_lens = lens.spaces & spaces_layout_lens
 
 
 def map_window_trees(mod: Callable[[MyoViewTree], MyoViewTree]) -> EitherState[UiData, None]:
-    yield EitherState.modify(uidata_layout_lens.modify(mod))
+    return EitherState.modify(uidata_layout_lens.modify(mod))
 
 
 def ui_modify_layout_nodes(
@@ -66,13 +70,11 @@ def ui_modify_pane_nodes(
     return map_window_trees(map_pane_nodes(pred, mod))
 
 
-@do(EitherState[UiData, Window])
-def ui_modify_layout_node(ident: Ident, mod: Callable[[MyoLayoutNode], MyoLayoutNode]) -> Do:
+def ui_modify_layout_node(ident: Ident, mod: Callable[[MyoLayoutNode], MyoLayoutNode]) -> EitherState[UiData, Window]:
     return ui_modify_layout_nodes(lambda a: has_ident(ident)(a.data), mod)
 
 
-@do(EitherState[UiData, Window])
-def ui_modify_pane_node(ident: Ident, mod: Callable[[MyoPaneNode], MyoPaneNode]) -> Do:
+def ui_modify_pane_node(ident: Ident, mod: Callable[[MyoPaneNode], MyoPaneNode]) -> EitherState[UiData, Window]:
     return ui_modify_pane_nodes(lambda a: has_ident(ident)(a.data), mod)
 
 
@@ -135,6 +137,19 @@ def insert_pane_into_ui(pane: Pane, layout: Ident, ui: UiData) -> Either[str, Ui
         .map(ui.replace_space)
         .to_either(lambda: f'no layout with ident {layout}')
     )
+
+
+def open_or_toggle_minimized(node: MyoPaneNode) -> MyoPaneNode:
+    l = (
+        lens.data.state.minimized.modify(lambda a: ~a)
+        if node.data.open else
+        pane_node_open.set(true)
+    )
+    return l(node)
+
+
+def open_or_toggle_pane(spec: IdentSpec) -> Callable[[MyoViewTree], Either[str, MyoViewTree]]:
+    return mod_pane(mod_pane_open(spec, open_or_toggle_minimized), pane_open_layout_hook)
 
 
 __all__ = ('find_in_window', 'find_in_windows', 'find_in_ui', 'ui_modify_pane', 'insert_pane_into_ui',
