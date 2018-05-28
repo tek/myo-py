@@ -14,7 +14,7 @@ from ribosome.nvim.io.api import N
 
 from test.klk.tmux import tmux_await_k
 
-from unit._support.tmux import tmux_default_test_config
+from test.tmux import tmux_default_test_config
 
 test_config = tmux_default_test_config()
 

@@ -4,7 +4,7 @@ from amino import Dat, Nil, Map, Path, List, Either, _, Maybe
 from amino.list import replace_one
 
 from myo.data.command import Command, HistoryEntry
-from myo.output.data import OutputLine, Location
+from myo.output.data.report import ParseReport
 
 from chiasma.util.id import Ident
 
@@ -15,27 +15,23 @@ class OutputData(Dat['OutputData']):
 
     @staticmethod
     def cons(
-            lines: List[OutputLine]=Nil,
-            locations: List[Location]=Nil,
+            report: ParseReport=None,
             scratch: ScratchBuffer=None,
             current: int=0,
     ) -> 'OutputData':
         return OutputData(
-            lines,
-            locations,
+            Maybe.optional(report),
             Maybe.optional(scratch),
             current,
         )
 
     def __init__(
             self,
-            lines: List[OutputLine],
-            locations: List[Location],
+            report: Maybe[ParseReport],
             scratch: Maybe[ScratchBuffer],
             current: int,
     ) -> None:
-        self.lines = lines
-        self.locations = locations
+        self.report = report
         self.scratch = scratch
         self.current = current
 

@@ -86,13 +86,11 @@ def ui_modify_panes(pred: Callable[[Pane], bool], mod: Callable[[Pane], Pane]) -
     return map_window_trees(map_panes(pred, mod))
 
 
-@do(EitherState[UiData, Window])
-def ui_modify_layout(ident: Ident, mod: Callable[[Layout], Layout]) -> Do:
+def ui_modify_layout(ident: Ident, mod: Callable[[Layout], Layout]) -> EitherState[UiData, Window]:
     return ui_modify_layouts(has_ident(ident), mod)
 
 
-@do(EitherState[UiData, Window])
-def ui_modify_pane(ident: Ident, mod: Callable[[Pane], Pane]) -> Do:
+def ui_modify_pane(ident: Ident, mod: Callable[[Pane], Pane]) -> EitherState[UiData, Window]:
     return ui_modify_panes(has_ident(ident), mod)
 
 

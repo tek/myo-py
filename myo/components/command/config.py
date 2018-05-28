@@ -11,8 +11,8 @@ from myo.components.command.compute.run import run_command, run_line, internal_c
 from myo.config.component import MyoComponent
 from myo.components.command.data import CommandData
 from myo.components.command.compute.parse import parse
-from myo.components.command.compute.output import (current_entry_jump, jump_mapping, quit_mapping, quit_output,
-                                                 prev_mapping, prev_entry, next_mapping, next_entry)
+from myo.components.command.compute.output import (current_event_jump, jump_mapping, quit_mapping, quit_output,
+                                                 prev_mapping, prev_event, next_mapping, next_event)
 from myo.command.run_task import RunTask
 from myo.components.command.compute.test import vim_test
 from myo.components.command.compute.init import init
@@ -33,19 +33,19 @@ command: Component[CommandData, MyoComponent] = Component.cons(
         rpc.write(run_command).conf(json=true),
         rpc.write(run_line).conf(name=Just('line'), json=true),
         rpc.write(parse).conf(json=true),
-        rpc.write(current_entry_jump),
+        rpc.write(current_event_jump),
         rpc.write(quit_output),
-        rpc.write(prev_entry),
-        rpc.write(next_entry),
-        rpc.write(vim_test),
+        rpc.write(prev_event),
+        rpc.write(next_event),
+        rpc.write(vim_test).conf(json=true),
         rpc.write(init),
     ),
     config=MyoComponent.cons(run=run_handler_for, init=init),
     mappings=Mappings.cons(
-        (jump_mapping, current_entry_jump),
+        (jump_mapping, current_event_jump),
         (quit_mapping, quit_output),
-        (prev_mapping, prev_entry),
-        (next_mapping, next_entry),
+        (prev_mapping, prev_event),
+        (next_mapping, next_event),
     ),
 )
 

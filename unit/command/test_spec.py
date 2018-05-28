@@ -1,7 +1,7 @@
 from kallikrein import Expectation, k
 from kallikrein.matchers.end_with import end_with
 
-from amino import do, Do, List, Lists, Nil
+from amino import do, Do, List, Lists
 from amino.test import fixture_path
 from amino.test.spec import SpecBase
 
@@ -24,7 +24,7 @@ target = List('  File "<string>", line 1, in <module>', 'RuntimeError: No active
 @do(NS[MyoState, Expectation])
 def create_cmd_spec() -> Do:
     yield NS.lift(mock_test_functions())
-    yield run_prog(vim_test_command, Nil)
+    yield run_prog(vim_test_command, List(List('python')))
     cmd = yield NS.inspect_either(lambda s: s.data_by_name('command'))
     comp = yield NS.e(cmd.commands.head.to_either('no commands'))
     return k(comp.ident) == test_ident

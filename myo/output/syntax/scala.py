@@ -1,5 +1,5 @@
 from myo.output.syntax.base import OutputSyntax
-from myo.output.parser.sbt import CodeEntry
+from myo.output.parser.scala import CodeEntry
 
 from amino import IO, Map, _
 

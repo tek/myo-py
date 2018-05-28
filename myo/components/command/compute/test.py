@@ -1,6 +1,6 @@
 from typing import TypeVar
 
-from amino import do, Do, __, List
+from amino import do, Do, __, List, Nil
 from amino.logging import module_log
 
 from chiasma.util.id import StrIdent
@@ -25,10 +25,10 @@ def cons_test_command() -> Command:
 
 
 @do(NS[CommandData, None])
-def update_test_line(lines: List[str]) -> Do:
+def update_test_command(lines: List[str], langs: List[str]) -> Do:
     existing = yield NS.inspect(__.command_by_ident(test_ident))
     cmd = existing | cons_test_command
-    updated_cmd = cmd.set.lines(lines)
+    updated_cmd = cmd.set.lines(lines).set.langs(langs)
     yield NS.modify(__.replace_command(updated_cmd))
 
 
@@ -40,14 +40,15 @@ def vim_test_lines() -> Do:
 
 @prog
 @do(NS[CommandRibosome, None])
-def vim_test_command() -> Do:
+def vim_test_command(langs: List[str]) -> Do:
     lines = yield vim_test_lines()
-    yield Ribo.zoom_comp(update_test_line(lines))
+    yield Ribo.zoom_comp(update_test_command(lines, langs))
 
 
 @prog.do
 def vim_test(run_options: RunCommandOptions) -> Do:
-    yield vim_test_command()
+    yield vim_test_command(run_options.langs.get_or_strict(Nil))
     yield run_command(test_ident, run_options)
+
 
 __all__ = ('vim_test',)

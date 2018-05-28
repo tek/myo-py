@@ -13,11 +13,14 @@ from ribosome.test.integration.embed import plugin_test
 from ribosome.nvim.api.data import Buffer
 from ribosome.test.klk.expectation import await_k
 from ribosome.nvim.api.util import nvimio_await_success
+from ribosome.test.config import TestConfig
 
-from test.command import command_spec_test_config
+from myo import myo_config
+
 from test.test import mock_test_functions
 
 
+test_config = TestConfig.cons(myo_config)
 file = fixture_path('command', 'test', 'code.py')
 target = List('  File "<string>", line 1, in <module>', 'RuntimeError: No active exception to reraise')
 
@@ -38,7 +41,7 @@ def scratch_content() -> Do:
 @do(NvimIO[Expectation])
 def run_spec() -> Do:
     yield mock_test_functions()
-    yield json_cmd('MyoVimTest')
+    yield json_cmd('MyoVimTest', langs=['python'])
     yield json_cmd('MyoParse')
     yield await_k(scratch_content)
 
@@ -49,7 +52,7 @@ class TestSpec(SpecBase):
     '''
 
     def run(self) -> Expectation:
-        return plugin_test(command_spec_test_config, run_spec)
+        return plugin_test(test_config, run_spec)
 
 
 __all__ = ('TestSpec',)

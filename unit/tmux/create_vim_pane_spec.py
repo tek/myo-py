@@ -22,7 +22,7 @@ from myo.components.tmux.compute.create_vim_pane import create_vim_pane
 from myo.tmux.io import tmux_to_nvim
 from myo.config.plugin_state import MyoState
 
-from unit._support.tmux import tmux_default_test_config
+from test.tmux import tmux_default_test_config
 
 
 @do(NS[MyoState, Expectation])

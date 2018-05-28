@@ -1,11 +1,8 @@
 from amino import do, Do, Dat
-from amino.boolean import true
 
 from chiasma.util.id import IdentSpec, ensure_ident
 from chiasma.open_pane import ui_open_pane
-from amino.lenses.lens import lens
 from amino.logging import module_log
-from amino.state import EitherState
 
 from ribosome.compute.api import prog
 from ribosome.compute.ribosome_api import Ribo
@@ -13,8 +10,7 @@ from ribosome.nvim.io.state import NS
 
 from myo.util import Ident
 from myo.ui.data.ui_data import UiData
-from myo.ui.data.window import Window
-from myo.ui.pane import ui_modify_pane, map_window_trees
+from myo.ui.pane import map_window_trees
 from myo.components.ui.compute.pane import render_view
 
 log = module_log()

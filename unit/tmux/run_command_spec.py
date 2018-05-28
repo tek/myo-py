@@ -20,7 +20,7 @@ from myo.config.plugin_state import MyoState
 from test.command import update_command_data
 from test.klk.tmux import tmux_await_k
 
-from unit._support.tmux import two_panes, tmux_default_test_config
+from test.tmux import two_panes, tmux_default_test_config
 
 name = 'commo'
 text1 = Lists.random_alpha()

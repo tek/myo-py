@@ -8,20 +8,20 @@ from chiasma.util.id import StrIdent
 from amino import List, Map, Nothing, Path, do, Do, Nil, Just
 from amino.test import fixture_path
 from amino.test.spec import SpecBase
+from amino.lenses.lens import lens
 
-from ribosome.nvim.api.ui import current_buffer_content, current_buffer_name, current_cursor, current_window
+from ribosome.nvim.api.ui import current_buffer_content, current_buffer_name, current_cursor
 from ribosome.compute.run import run_prog
 from ribosome.compute.api import prog
 from ribosome.nvim.io.state import NS
 from ribosome.data.plugin_state import PS
 from ribosome.test.integration.external import external_state_test
-from ribosome.nvim.io.api import N
 
 from myo.data.command import Command, HistoryEntry
 from myo.components.command.compute.parse import parse, ParseOptions
-from myo.components.command.compute.output import render_parse_result, current_entry_jump, next_entry, prev_entry
-from myo.output.data import ParseResult, CodeEntry, OutputEvent
-from myo.output.parser.python import FileEntry, PyErrorEntry, ColEntry
+from myo.components.command.compute.output import render_parse_result, current_event_jump, next_event, prev_event
+from myo.output.data.output import OutputEvent, OutputLine
+from myo.output.parser.python import FileLine, ErrorLine, ColLine, CodeLine, python_event
 from myo.settings import auto_jump
 
 from test.command import update_command_data, command_spec_test_config
@@ -31,43 +31,35 @@ from integration._support.python_parse import events
 
 line, col = 2, 5
 line1 = 3
+line2 = 6
+line3 = 7
 file_path = fixture_path('command', 'parse', 'file.py')
-entry = FileEntry(
+output_line = OutputLine(
     f'  File "{file_path}", line {line}, in funcname',
-    Path(file_path),
-    line,
-    col,
-    Just('funcname'),
-    Just(CodeEntry('    yield', 'yield'))
-)
-entry1 = entry.set.col(line1)
-output_events = List(
-    OutputEvent(
-        Nil,
-        List(
-            entry,
-            entry1,
-            PyErrorEntry('RuntimeError: error', 'error', 'RuntimeError')
-        )
-    ),
-    OutputEvent(
-        Nil,
-        List(
-            entry,
-            entry1,
-            ColEntry('           ^', ' '),
-            PyErrorEntry('SyntaxError: error', 'error', 'SyntaxError')
-        )
+    FileLine(
+        Path(file_path),
+        line,
+        Just('funcname'),
     )
 )
-parse_result = ParseResult(Nil, output_events, List('python'))
+col5 = Just(OutputLine('    ^', ColLine(5)))
+line_lens = lens.meta.line
+code = OutputLine('    yield', CodeLine('yield'))
+output_events = List(
+    python_event(output_line, Just(code), col5),
+    python_event(line_lens.set(line1)(output_line), Just(code), col5),
+    OutputEvent.cons(List(OutputLine('RuntimeError: error', ErrorLine('error', 'RuntimeError')))),
+    python_event(line_lens.set(line2)(output_line), Just(code), col5),
+    python_event(line_lens.set(line3)(output_line), Just(code), col5),
+    OutputEvent.cons(List(OutputLine('SyntaxError: error', ErrorLine('error', 'SyntaxError')))),
+)
 trace_file = fixture_path('tmux', 'python_parse', 'trace')
 
 
 @do(NS[PS, Expectation])
 def command_output_spec() -> Do:
     cmd_ident = StrIdent('commo')
-    cmd = Command.cons(cmd_ident)
+    cmd = Command.cons(cmd_ident, langs=List('python'))
     hist = HistoryEntry(cmd, Nothing)
     logs = Map({cmd_ident: trace_file})
     yield update_command_data(commands=List(cmd), history=List(hist), logs=logs)
@@ -79,8 +71,9 @@ def command_output_spec() -> Do:
 
 @do(NS[PS, Expectation])
 def jump_spec() -> Do:
-    yield run_prog(prog.result(render_parse_result), List(parse_result))
-    yield run_prog(current_entry_jump, Nil)
+    yield NS.lift(auto_jump.update(False))
+    yield run_prog(prog.result(render_parse_result), List(output_events))
+    yield run_prog(current_event_jump, Nil)
     name = yield NS.lift(current_buffer_name())
     cursor = yield NS.lift(current_cursor())
     return (k(name) == str(file_path)) & (k(cursor) == (line, col))
@@ -89,11 +82,12 @@ def jump_spec() -> Do:
 @do(NS[PS, Expectation])
 def next_spec() -> Do:
     yield NS.lift(auto_jump.update(False))
-    yield run_prog(prog.result(render_parse_result), List(parse_result))
+    yield run_prog(prog.result(render_parse_result), List(output_events))
     cursor1 = yield NS.lift(current_cursor())
-    yield run_prog(next_entry, Nil)
+    yield run_prog(next_event, Nil)
     cursor2 = yield NS.lift(current_cursor())
-    yield run_prog(prev_entry, Nil)
+    a = yield NS.lift(current_buffer_content())
+    yield run_prog(prev_event, Nil)
     cursor3 = yield NS.lift(current_cursor())
     return k((cursor1, cursor2, cursor3)).must(tupled(3)((equal((1, 0)), equal((3, 0)), equal((1, 0)))))
 
@@ -108,7 +102,6 @@ class ParseSpec(SpecBase):
     def command_output(self) -> Expectation:
         return external_state_test(command_spec_test_config, command_output_spec)
 
-    @pending
     def jump(self) -> Expectation:
         return external_state_test(command_spec_test_config, jump_spec)
 

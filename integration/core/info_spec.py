@@ -13,7 +13,7 @@ from ribosome.test.integration.tmux import tmux_plugin_test
 
 from myo import myo_config
 
-from unit._support.tmux import tmux_test_config
+from test.tmux import tmux_test_config
 
 vars = Map(
     myo_vim_tmux_pane=0,

@@ -74,14 +74,17 @@ class RunCommandOptions(Dat['RunCommandOptions']):
     @staticmethod
     def cons(
             interpreter: str=None,
+            langs: List[str]=None,
     ) -> 'RunCommandOptions':
-        return RunCommandOptions(Maybe.optional(interpreter))
+        return RunCommandOptions(Maybe.optional(interpreter), Maybe.optional(langs))
 
     def __init__(
             self,
             interpreter: Maybe[str],
+            langs: Maybe[List[str]],
     ) -> None:
         self.interpreter = interpreter
+        self.langs = langs
 
 
 def system_task_details() -> Prog[SystemTaskDetails]:

@@ -17,6 +17,7 @@ from chiasma.data.tmux import Views
 from amino import List, do, Do, Dat
 from amino.lenses.lens import lens
 from amino.boolean import false
+from amino.state import EitherState
 
 from myo.ui.data.ui_data import UiData
 from myo.ui.data.view import Layout, Pane, ViewGeometry
@@ -24,6 +25,7 @@ from myo.ui.data.window import Window
 from myo.ui.data.space import Space
 from myo.ui.data.view_path import pane_path
 from myo.components.ui.compute.open_pane import ui_open_pane
+from myo.ui.pane import map_window_trees
 
 D = TypeVar('D')
 
@@ -43,11 +45,15 @@ class OPData(Dat['OPData']):
         self.tmux = tmux
 
 
+def open_pane_op(ident_spec: IdentSpec) -> TS[OPData, None]:
+    return map_window_trees(lambda a: ui_open_pane(ident_spec)(a).get_or_strict(a)).tmux.zoom(lens.ui)
+
+
 @do(TS[OPData, None])
 def open_pane(ident_spec: IdentSpec) -> Do:
     ident = ensure_ident(ident_spec)
-    yield ui_open_pane(ident).transform_s_lens(lens.ui).tmux
-    a = yield pane_path(ident).transform_s_lens(lens.ui).tmux
+    yield open_pane_op(ident)
+    a = yield pane_path(ident).zoom(lens.ui).tmux
     yield render(P=Pane, L=Layout)(a.space.ident, a.window.ident, a.window.layout).transform_s_lens(lens.tmux.views)
 
 
@@ -84,7 +90,7 @@ class OpenPaneSpec(TmuxSpec):
         )
         data = OPData.cons(layout)
         def ui_open(name: str) -> TS[OPData, None]:
-            return ui_open_pane(StrIdent(name)).transform_s_lens(lens.ui).tmux
+            return open_pane_op(name)
         @do(TS[OPData, None])
         def go() -> Do:
             yield ui_open('one')

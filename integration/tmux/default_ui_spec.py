@@ -1,7 +1,6 @@
 from kallikrein import Expectation
 from kallikrein.matchers.length import have_length
 
-from chiasma.io.compute import TmuxIO
 from chiasma.commands.pane import all_panes
 
 from amino import do, Do
@@ -9,14 +8,14 @@ from amino.test.spec import SpecBase
 
 from ribosome.nvim.io.compute import NvimIO
 from ribosome.nvim.api.command import nvim_command
-from ribosome.test.config import TestConfig
 from ribosome.test.integration.tmux import tmux_plugin_test
 
 from myo import myo_config
 
 from test.klk.tmux import tmux_await_k
+from test.tmux import tmux_test_config
 
-test_config = TestConfig.cons(myo_config)
+test_config = tmux_test_config(myo_config)
 
 
 @do(NvimIO[Expectation])

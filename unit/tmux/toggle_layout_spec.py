@@ -19,7 +19,7 @@ from myo.ui.data.view import Layout, Pane
 
 from test.klk.tmux import tmux_await_k
 
-from unit._support.tmux import tmux_default_test_config, init_tmux_data
+from test.tmux import tmux_default_test_config, init_tmux_data
 
 layout: ViewTree[Layout, Pane] = ViewTree.layout(
     Layout.cons('root', vertical=False),

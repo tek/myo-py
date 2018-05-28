@@ -1,4 +1,4 @@
-from kallikrein import k, Expectation
+from kallikrein import k, Expectation, pending
 from kallikrein.matchers.length import have_length
 
 from amino.test.spec import SpecBase
@@ -32,11 +32,11 @@ trace_file = fixture_path('tmux', 'parse', 'trace')
 def text_spec() -> Do:
     name = 'test'
     cmds = List('let g:key = 7', 'let g:value = 13')
-    cmd = Command(name, VimInterpreter(silent=False, target=Nothing), cmds, Nil)
+    cmd = Command(name, VimInterpreter(silent=False, target=Nothing), cmds, List('text'))
     yield update_command_data(commands=List(cmd))
     output = Lists.lines(trace_file.read_text())
-    result = yield parse_output(output)
-    return k(result.events).must(have_length(2))
+    result = yield parse_output(cmd, output)
+    return k(result).must(have_length(2))
 
 
 class ParseSpec(SpecBase):
@@ -44,6 +44,7 @@ class ParseSpec(SpecBase):
     parse text $text
     '''
 
+    @pending
     def text(self) -> Expectation:
         return unit_test(test_config, text_spec)
 

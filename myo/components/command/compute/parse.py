@@ -6,16 +6,16 @@ from ribosome.compute.ribosome_api import Ribo
 
 from chiasma.util.id import Ident, IdentSpec
 
-from amino import do, Do, List, Dat, __, Either, _, Maybe, IO, Lists, Just
+from amino import do, Do, List, Dat, __, _, Maybe, IO, Lists, Just
 from amino.logging import module_log
 
-from myo.output import Parsing
-from myo.output.data import ParseResult
+from myo.output.data.output import ParseResult
 from myo.components.command.data import CommandData
-from myo.data.command import HistoryEntry
+from myo.data.command import HistoryEntry, Command
 from myo.components.command.compute.output import render_parse_result
 from myo.components.command.compute.tpe import CommandRibosome
 from myo.settings import display_parse_result
+from myo.output.main import parse_with_langs
 
 log = module_log()
 D = TypeVar('D')
@@ -28,19 +28,18 @@ class ParseConfig(Dat['ParseConfig']):
 
 
 @do(NS[CommandRibosome, None])
-def parse_config() -> Do:
-    yield NS.pure(ParseConfig(List('python')))
+def parse_config(cmd: Command) -> Do:
+    yield NS.pure(ParseConfig(cmd.langs))
 
 
 @do(NS[D, ParseResult])
 def parse_output_with(output: List[str], config: ParseConfig) -> Do:
-    parsing = yield NS.delay(lambda v: Parsing(v, config.langs))
-    yield NS.from_io(parsing.parse(output, None))
+    yield NS.e(parse_with_langs(output, config.langs))
 
 
 @do(NS[CommandRibosome, ParseResult])
-def parse_output(output: List[str]) -> Do:
-    config = yield parse_config()
+def parse_output(cmd: Command, output: List[str]) -> Do:
+    config = yield parse_config(cmd)
     yield parse_output_with(output, config)
 
 
@@ -51,8 +50,8 @@ def cmd_output(ident: Ident) -> Do:
     return Lists.lines(text)
 
 
-def most_recent_command() -> NS[CommandData, Either[str, HistoryEntry]]:
-    return NS.inspect(lambda s: s.history.last.to_either(f'history is empty') / _.cmd)
+def most_recent_command() -> NS[CommandData, HistoryEntry]:
+    return NS.inspect_either(lambda s: s.history.last.to_either(f'history is empty') / _.cmd)
 
 
 class ParseOptions(Dat['ParseOptions']):
@@ -67,17 +66,16 @@ class ParseOptions(Dat['ParseOptions']):
         self.langs = langs
 
 
-@do(NS[CommandData, List[str]])
-def fetch_output() -> Do:
-    cmd_e = yield most_recent_command()
-    cmd = yield NS.from_either(cmd_e)
-    yield cmd_output(cmd.ident)
+@do(NS[CommandRibosome, None])
+def parse_command(cmd: Command) -> Do:
+    output = yield Ribo.zoom_comp(cmd_output(cmd.ident))
+    yield parse_output(cmd, output)
 
 
 @do(NS[CommandRibosome, None])
 def parse_most_recent() -> Do:
-    output = yield Ribo.zoom_comp(fetch_output())
-    yield parse_output(output)
+    cmd = yield Ribo.zoom_comp(most_recent_command())
+    yield parse_command(cmd)
 
 
 @prog.unit

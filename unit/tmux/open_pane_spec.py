@@ -21,7 +21,7 @@ from ribosome.test.prog import request
 
 from myo.config.plugin_state import MyoState
 
-from unit._support.tmux import two_panes, tmux_default_test_config
+from test.tmux import two_panes, tmux_default_test_config
 
 
 class PaneFocusData(Dat['PaneFocusData']):

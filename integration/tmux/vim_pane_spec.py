@@ -16,7 +16,7 @@ from myo import myo_config
 
 from test.klk.tmux import tmux_await_k
 
-from unit._support.tmux import tmux_test_config
+from test.tmux import tmux_test_config
 
 
 @do(NvimIO[Expectation])

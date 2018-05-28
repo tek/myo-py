@@ -15,7 +15,7 @@ from myo.config.plugin_state import MyoState
 
 from test.klk.tmux import tmux_await_k
 
-from unit._support.tmux import (two_open_panes, tmux_default_test_config, pane_left_vertical_right,
+from test.tmux import (two_open_panes, tmux_default_test_config, pane_left_vertical_right,
                                 vertical_left_vertical_right)
 
 

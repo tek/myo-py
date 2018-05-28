@@ -33,7 +33,7 @@ from myo.tmux.io import tmux_to_nvim
 from myo.ui.data.ui_data import UiData
 
 
-tmux_spec_config = Config.cons(
+tmux_spec_config: Config = Config.cons(
     name='myo',
     prefix='myo',
     state_ctor=Env.cons,
@@ -46,8 +46,12 @@ vars = Map(
 )
 
 
-def tmux_test_config(config: Config, components: List[str]=Nil, extra_vars: Map[str, Any]=Map(), **kw: Any
-                     ) -> TestConfig:
+def tmux_test_config(
+        config: Config=tmux_spec_config,
+        components: List[str]=Nil,
+        extra_vars: Map[str, Any]=Map(),
+        **kw: Any,
+) -> TestConfig:
     return TestConfig.cons(config, vars=vars ** extra_vars, components=List('ui', 'tmux') + components, **kw)
 
 
