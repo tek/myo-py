@@ -27,7 +27,7 @@ def chiasma_open_pane(ident: Ident) -> Do:
     yield map_window_trees(lambda a: ui_open_pane(ident)(a).get_or_strict(a)).nvim
 
 
-@prog.do
+@prog.do(None)
 def open_pane(ident_spec: IdentSpec, options: OpenPaneOptions) -> Do:
     ident = ensure_ident(ident_spec)
     yield Ribo.lift_comp(chiasma_open_pane(ident), UiData)

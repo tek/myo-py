@@ -43,7 +43,7 @@ def config_uis() -> Do:
     yield State.pure(components // _.config // _.ui)
 
 
-@prog.do
+@prog.do(None)
 def view_owners(ident: Ident) -> Do:
     view_path_m = yield Ribo.lift_comp(view_path_by_ident(ident).nvim, UiData)
     space, window, view = yield Prog.from_maybe(view_path_m, f'no view with ident `{ident}`')
@@ -59,7 +59,7 @@ def view_owners(ident: Ident) -> Do:
     yield Prog.pure((space, window, owner))
 
 
-@prog.do
+@prog.do(None)
 def render_view(ident: Ident) -> Do:
     space, window, owner = yield view_owners(ident)
     renderer = yield Prog.from_maybe(owner.render, f'no renderer for {owner}')

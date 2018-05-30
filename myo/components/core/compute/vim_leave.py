@@ -7,7 +7,7 @@ from ribosome.compute.program import bind_programs
 from myo.config.handler import find_handlers
 
 
-@prog.do
+@prog.do(None)
 def vim_leave() -> Do:
     programs = yield find_handlers(_.quit)
     yield bind_programs(programs, Nil)

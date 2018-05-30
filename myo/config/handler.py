@@ -31,7 +31,7 @@ def select_handler(eligible: List[Program], desc: str) -> Do:
     yield NS.lift(eligible.detach_head.map2(select) | N.error(f'no handler for {desc}'))
 
 
-@prog.do
+@prog.do(None)
 def find_handler(pred: Callable[[MyoComponent], Maybe[Program]], desc: str) -> Do:
     eligible = yield find_handlers(pred)
     yield select_handler(eligible, desc)

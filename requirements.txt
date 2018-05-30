@@ -2,4 +2,4 @@ ribosome~=13.0.0a48
 chiasma~=0.1.0.a21
 psutil==5.3.1
 networkx==2.0
-kallikrein~=0.22.0a16
+kallikrein~=0.22.0a17

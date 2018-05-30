@@ -21,7 +21,7 @@ def ui_toggle_pane(ident: Ident) -> Do:
     yield map_window_trees(lambda a: open_or_toggle_pane(ident)(a).get_or_strict(a)).nvim
 
 
-@prog.do
+@prog.do(None)
 def toggle_pane(ident_spec: IdentSpec) -> Do:
     ident = ensure_ident(ident_spec)
     yield Ribo.lift_comp(ui_toggle_pane(ident), UiData)

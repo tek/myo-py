@@ -17,13 +17,13 @@ def display_info(widgets: List[InfoWidget]) -> Do:
     yield NS.lift(show_in_scratch_buffer_default(widgets // _.lines))
 
 
-@prog.do
+@prog.do(None)
 def collect_info() -> Do:
     programs = yield find_handlers(_.info)
     yield bind_programs(programs, Nil)
 
 
-@prog.do
+@prog.do(None)
 def info() -> Do:
     widgets = yield collect_info()
     yield Ribo.trivial(display_info(widgets))

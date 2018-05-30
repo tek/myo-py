@@ -15,7 +15,6 @@ from myo.command.run_task import RunTask
 from myo.components.tmux.compute.create_vim_pane import create_vim_pane
 from myo.components.tmux.compute.info import tmux_info
 from myo.components.tmux.compute.quit import tmux_quit
-from myo.env import Env
 
 
 def run_handler_for(task: RunTask) -> Maybe[Program]:

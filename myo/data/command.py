@@ -95,5 +95,19 @@ class HistoryEntry(Dat['HistoryEntry']):
         self.target = target
 
 
+class Pid(Dat['Pid']):
+
+    def __init__(self, value: int) -> None:
+        self.value = value
+
+
+class RunningCommand(Dat['RunningCommand']):
+
+    def __init__(self, ident: Ident, pid: Maybe[Pid], system: bool) -> None:
+        self.ident = ident
+        self.pid = pid
+        self.system = system
+
+
 __all__ = ('Command', 'Interpreter', 'VimInterpreter', 'SystemInterpreter', 'ShellInterpreter', 'Execute',
-           'TestLineParams', 'TestCommand', 'HistoryEntry')
+           'TestLineParams', 'TestCommand', 'HistoryEntry', 'RunningCommand', 'Pid',)

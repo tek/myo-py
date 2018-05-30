@@ -3,7 +3,7 @@ from uuid import uuid4, UUID
 from amino import Dat, Nil, Map, Path, List, Either, _, Maybe
 from amino.list import replace_one
 
-from myo.data.command import Command, HistoryEntry
+from myo.data.command import Command, HistoryEntry, RunningCommand
 from myo.output.data.report import ParseReport
 
 from chiasma.util.id import Ident
@@ -45,6 +45,7 @@ class CommandData(Dat['CommandData']):
             uuid: UUID=None,
             history: List[HistoryEntry]=Nil,
             output: OutputData=None,
+            running: List[RunningCommand]=Nil,
     ) -> 'CommandData':
         return CommandData(
             commands,
@@ -52,6 +53,7 @@ class CommandData(Dat['CommandData']):
             uuid or uuid4(),
             history,
             output or OutputData.cons(),
+            running,
         )
 
     def __init__(
@@ -61,12 +63,14 @@ class CommandData(Dat['CommandData']):
             uuid: UUID,
             history: List[HistoryEntry],
             output: OutputData,
+            running: List[RunningCommand]=Nil,
     ) -> None:
         self.commands = commands
         self.logs = logs
         self.uuid = uuid
         self.history = history
         self.output = output
+        self.running = running
 
     def command_by_ident(self, ident: Ident) -> Either[str, Command]:
         return self.commands.find(_.ident == ident).to_either(f'no command `{ident}`')

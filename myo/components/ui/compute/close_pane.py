@@ -27,7 +27,7 @@ def ui_close_pane_trans(ident_spec: IdentSpec) -> Do:
     yield ui_close_pane(ident).transform_s_lens(lens.comp)
 
 
-@prog.do
+@prog.do(None)
 def close_pane(ident_spec: IdentSpec) -> Do:
     ident = ensure_ident(ident_spec)
     yield ui_close_pane_trans(ident)

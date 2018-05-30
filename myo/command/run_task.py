@@ -37,5 +37,9 @@ class RunTask(Dat['RunTask']):
         self.details = details
 
 
+def is_system_task(task: RunTaskDetails) -> bool:
+    return isinstance(task, (SystemTaskDetails, UiSystemTaskDetails))
+
+
 __all__ = ('RunTaskDetails', 'VimTaskDetails', 'SystemTaskDetails', 'UiSystemTaskDetails', 'UiShellTaskDetails',
-           'RunTask')
+           'RunTask', 'is_system_task',)

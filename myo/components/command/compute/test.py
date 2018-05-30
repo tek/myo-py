@@ -45,7 +45,7 @@ def vim_test_command(langs: List[str]) -> Do:
     yield Ribo.zoom_comp(update_test_command(lines, langs))
 
 
-@prog.do
+@prog.do(None)
 def vim_test(run_options: RunCommandOptions) -> Do:
     yield vim_test_command(run_options.langs.get_or_strict(Nil))
     yield run_command(test_ident, run_options)

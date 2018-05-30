@@ -30,7 +30,7 @@ def ui_minimize_pane_trans(ident: Ident) -> Do:
     yield ui_minimize_pane(ident).transform_s_lens(lens.comp)
 
 
-@prog.do
+@prog.do(None)
 def minimize_pane(ident_spec: Union[str, Ident]) -> Do:
     ident = ensure_ident(ident_spec)
     yield ui_minimize_pane_trans(ident)

@@ -3,11 +3,14 @@ import tempfile
 import subprocess
 from typing import TypeVar
 
+from psutil import Process
+
 from chiasma.util.id import IdentSpec, ensure_ident
 
 from amino import do, Do, Maybe, __, _, Path, IO, L, List, Boolean, Lists, Nil
 from amino.dat import Dat
 from amino.case import Case
+from amino.logging import module_log
 
 from ribosome.compute.api import prog
 from ribosome.compute.program import Program
@@ -19,10 +22,11 @@ from ribosome.compute.prog import Prog
 
 from myo.util import Ident
 from myo.config.handler import find_handler
-from myo.data.command import Command, Interpreter, SystemInterpreter, ShellInterpreter, VimInterpreter
+from myo.data.command import (Command, Interpreter, SystemInterpreter, ShellInterpreter, VimInterpreter, Pid,
+                              RunningCommand)
 from myo.components.ui.compute.pane import ui_pane_by_ident
 from myo.command.run_task import (RunTaskDetails, UiSystemTaskDetails, UiShellTaskDetails, VimTaskDetails,
-                                  SystemTaskDetails)
+                                  SystemTaskDetails, is_system_task)
 from myo.components.command.compute.history import push_history
 from myo.command.run_task import RunTask
 from myo.components.command.data import CommandData
@@ -31,6 +35,7 @@ from myo.config.component import MyoComponent
 from myo.env import Env
 from myo.components.command.compute.tpe import CommandRibosome
 
+log = module_log()
 D = TypeVar('D')
 
 
@@ -69,6 +74,19 @@ def run_internal_command(task: RunTask) -> Do:
     yield run_task(task)(task.details)
 
 
+def process_alive(pid: int) -> IO[bool]:
+    return IO.delay(Process, pid).replace(True).recover(lambda a: False)
+
+
+@prog
+@do(NS[CommandRibosome, bool])
+def command_running(cmd: Command) -> Do:
+    running_cmd = yield Ribo.inspect_comp(lambda a: a.running.find(lambda b: b.ident == cmd.ident))
+    pid = running_cmd.flat_map(lambda a: a.pid)
+    running = pid.cata(process_alive, IO.pure(False))
+    yield NS.from_io(running)
+
+
 class RunCommandOptions(Dat['RunCommandOptions']):
 
     @staticmethod
@@ -101,9 +119,11 @@ def ui_system_task_details(target: Ident) -> Do:
 @do(Prog[RunTaskDetails])
 def ui_shell_task_details(cmd_ident: Ident, target: Ident) -> Do:
     shell = yield Ribo.lift_comp(NS.inspect_f(__.command_by_ident(target)), CommandData)
-    yield run_command_1(shell)
+    running = yield command_running(shell)
+    if not running:
+        yield run_command_1(shell)
     target = yield Prog.from_maybe(shell.interpreter.target,
-                                   f'shell `{shell.ident}` for command `{cmd_ident}` has no pane')
+                                   lambda: f'shell `{shell.ident}` for command `{cmd_ident}` has no pane')
     pane = yield ui_pane_by_ident(target)
     yield open_pane(pane.ident, OpenPaneOptions())
     return UiShellTaskDetails(shell, pane)
@@ -150,23 +170,30 @@ def task_log(ident: Ident) -> Do:
     yield existing / NS.pure | L(insert_log)(ident)
 
 
+@do(NS[CommandRibosome, Path])
+def store_running_command(cmd: Command, pid: Maybe[Pid], system: bool) -> Do:
+    current = yield Ribo.inspect_comp(lambda a: a.running)
+    new = current.filter_not(lambda a: a.ident == cmd.ident).cat(RunningCommand(cmd.ident, pid, system))
+    yield Ribo.modify_comp(lambda a: a.set.running(new))
+
+
 @do(Prog[None])
 def run_command_1(cmd: Command) -> Do:
     task_details = yield run_task_details(cmd)(cmd.interpreter)
-    log = yield Ribo.lift(task_log(cmd.ident), CommandData)
-    task = RunTask(cmd, log, task_details)
+    cmd_log = yield Ribo.lift(task_log(cmd.ident), CommandData)
+    task = RunTask(cmd, cmd_log, task_details)
     handler = yield find_handler(__.run(task), str(task))
-    yield handler(task)
+    pid = yield handler(task)
+    yield Ribo.lift(store_running_command(cmd, pid, is_system_task(task_details)), CommandData)
     yield push_history(cmd, cmd.interpreter)
 
 
-# TODO allow prog to reuse previous Ribosome component affiliation
 @prog
 def command_by_ident(ident: Ident) -> NS[Ribosome[Env, MyoComponent, CommandData], Command]:
     return Ribo.inspect_comp_e(__.command_by_ident(ident))
 
 
-@prog.do
+@prog.do(None)
 def run_command(ident_spec: IdentSpec, options: RunCommandOptions) -> Do:
     ident = ensure_ident(ident_spec)
     cmd = yield command_by_ident(ident)
@@ -182,7 +209,7 @@ class RunLineOptions(Dat['RunLineOptions']):
         self.langs = langs
 
 
-@prog.do
+@prog.do(None)
 def run_line(options: RunLineOptions) -> Do:
     interpreter = options.shell.cata_f(ShellInterpreter, lambda: SystemInterpreter(options.pane))
     cmd = Command.cons(Ident.generate(), interpreter, lines=options.lines, langs=options.langs | Nil)

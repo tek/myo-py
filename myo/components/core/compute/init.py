@@ -18,7 +18,7 @@ def init_handlers() -> Do:
     yield find_handlers(_.init)
 
 
-@prog.do
+@prog.do(None)
 def init() -> Do:
     handlers = yield find_handlers(_.init)
     yield handlers.traverse(bind_nullary_program, Prog)

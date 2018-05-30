@@ -35,7 +35,7 @@ def insert_default_ui(ident: Ident, layout_ident: Ident, make_ident: Ident) -> D
     yield NS.modify(__.append1.spaces(Space.cons(ident, List(Window.cons(ident, layout=layout)))))
 
 
-@prog.do
+@prog.do(None)
 def run_init() -> Do:
     handler = yield find_handler(__.create_vim_pane(), 'insert_vim_pane')
     pid = yield Ribo.lift_nvimio(vim_pid())
@@ -46,7 +46,7 @@ def run_init() -> Do:
     yield handler(ident, pid)
 
 
-@prog.do
+@prog.do(None)
 def init() -> Do:
     allow_init = yield Ribo.setting_prog(init_default_ui)
     yield run_init() if allow_init else Prog.unit

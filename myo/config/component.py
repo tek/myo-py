@@ -9,6 +9,7 @@ from myo.env import Env
 from myo.ui.ui import Ui
 from myo.command.run_task import RunTask
 from myo.data.info import InfoWidget
+from myo.data.command import Pid
 
 
 def no_handler(*a: Any, **kw: Any) -> Maybe[Program]:
@@ -19,7 +20,7 @@ class MyoComponent(Dat['MyoComponent']):
 
     @staticmethod
     def cons(
-            run: Callable[[RunTask], Maybe[Program]]=None,
+            run: Callable[[RunTask], Maybe[Program[Pid]]]=None,
             create_vim_pane: Callable[[], Maybe[Program]]=None,
             info: Program[InfoWidget]=None,
             ui: Ui=None,
@@ -37,7 +38,7 @@ class MyoComponent(Dat['MyoComponent']):
 
     def __init__(
             self,
-            run: Callable[[RunTask], Maybe[Program]],
+            run: Callable[[RunTask], Maybe[Program[Pid]]],
             create_vim_pane: Callable[[RunTask], Maybe[Program]],
             info: Maybe[Program[InfoWidget]],
             ui: Maybe[Ui],

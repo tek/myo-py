@@ -19,6 +19,6 @@ setup(
         'networkx==2.0',
     ],
     tests_require=[
-        'kallikrein~=0.22.a16',
+        'kallikrein~=0.22.a17',
     ],
 )
