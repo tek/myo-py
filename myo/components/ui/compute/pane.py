@@ -77,7 +77,7 @@ def ui_pane_by_ident(ident: Ident) -> Do:
         .map(_.data)
         .to_either(f'invalid result from `pane_path_by_ident`')
     )
-    yield NS.lift(pane)
+    yield NS.e(pane)
 
 
 __all__ = ('config_uis', 'pane_owners', 'render_pane')

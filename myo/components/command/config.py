@@ -15,8 +15,8 @@ from myo.components.command.compute.output import (current_event_jump, jump_mapp
                                                  prev_mapping, prev_event, next_mapping, next_event)
 from myo.command.run_task import RunTask
 from myo.components.command.compute.test import vim_test
-from myo.components.command.compute.init import init
-from myo.env import Env
+from myo.components.command.compute.vim_test_wrappers import (test_determine_runner, test_executable,
+                                                              test_build_position, test_build_args)
 
 
 def run_handler_for(task: RunTask) -> Maybe[Program]:
@@ -38,9 +38,12 @@ command: Component[CommandData, MyoComponent] = Component.cons(
         rpc.write(prev_event),
         rpc.write(next_event),
         rpc.write(vim_test).conf(json=true),
-        rpc.write(init),
+        rpc.read(test_determine_runner),
+        rpc.read(test_executable),
+        rpc.read(test_build_position),
+        rpc.read(test_build_args),
     ),
-    config=MyoComponent.cons(run=run_handler_for, init=init),
+    config=MyoComponent.cons(run=run_handler_for),
     mappings=Mappings.cons(
         (jump_mapping, current_event_jump),
         (quit_mapping, quit_output),

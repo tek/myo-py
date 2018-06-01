@@ -28,6 +28,10 @@ vim_test_filename_modifier_help = '''A vim-test setting that is applied to file 
 init_default_ui_help = '''Create space, window, layout and pane for vim and the default execution target at startup.
 The default target pane will be positioned to the right of vim.
 '''
+test_ui_help = '''Tests run with vim-test will be executed in this ui. Can be `tmux` or `internal`.
+'''
+test_pane_help = '''Tests run with vim-test will be executed in this pane.
+'''
 
 
 tmux_watcher_interval = float_setting('tmux_watcher_interval', 'tmux process polling interval',
@@ -41,7 +45,9 @@ vim_test_filename_modifier = str_setting('test#filename_modifier', 'vim-test fil
                                          vim_test_filename_modifier_help, False, Right(':.'))
 init_default_ui = bool_setting('init_default_ui', 'initialize vim and make panes', init_default_ui_help, True,
                                Right(true))
+test_ui = str_setting('test_ui', 'ui for running tests', test_ui_help, True, Right('tmux'))
+test_pane = str_setting('test_pane', 'pane for running tests', test_pane_help, True, Right('make'))
 
 
 __all__ = ('tmux_watcher_interval', 'tmux_socket', 'vim_tmux_pane', 'display_parse_result', 'auto_jump',
-           'vim_test_filename_modifier', 'init_default_ui',)
+           'vim_test_filename_modifier', 'init_default_ui', 'test_ui', 'test_pane',)

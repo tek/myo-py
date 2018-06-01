@@ -183,6 +183,7 @@ def run_command_1(cmd: Command) -> Do:
     cmd_log = yield Ribo.lift(task_log(cmd.ident), CommandData)
     task = RunTask(cmd, cmd_log, task_details)
     handler = yield find_handler(__.run(task), str(task))
+    log.debug(f'running `{task}` with `{handler}`')
     pid = yield handler(task)
     yield Ribo.lift(store_running_command(cmd, pid, is_system_task(task_details)), CommandData)
     yield push_history(cmd, cmd.interpreter)

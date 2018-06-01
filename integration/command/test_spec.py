@@ -1,7 +1,7 @@
 from kallikrein import Expectation, k
 from kallikrein.matchers.lines import have_lines
 
-from amino import do, Do, List
+from amino import do, Do, List, Map
 from amino.test import fixture_path
 from amino.test.spec import SpecBase
 
@@ -20,7 +20,7 @@ from myo import myo_config
 from test.test import mock_test_functions
 
 
-test_config = TestConfig.cons(myo_config)
+test_config = TestConfig.cons(myo_config, vars=Map(myo_test_ui='internal'))
 file = fixture_path('command', 'test', 'code.py')
 target = List('  File "<string>", line 1, in <module>', 'RuntimeError: No active exception to reraise')
 

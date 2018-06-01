@@ -28,8 +28,6 @@ ui = Component.cons(
         rpc.write(toggle_pane),
         rpc.write(minimize_pane),
         rpc.write(toggle_layout),
-        rpc.write(ui_pane_by_ident),
-        rpc.write(init).conf(prefix=Full()),
         rpc.write(ui_info),
     ),
     config=MyoComponent.cons(info=ui_info, init=init),
