@@ -4,6 +4,7 @@ from amino.lenses.lens import lens
 
 from chiasma.util.id import Ident
 from chiasma.ui.view_geometry import ViewGeometry
+from chiasma.ui.state import ViewState
 
 from ribosome.compute.api import prog
 from ribosome.config.component import ComponentData
@@ -29,6 +30,7 @@ class CreatePaneOptions(Dat['CreatePaneOptions']):
             minimized_size: Maybe[int]=Nothing,
             weight: Maybe[float]=Nothing,
             position: Maybe[int]=Nothing,
+            minimized: Maybe[bool]=False,
     ) -> 'CreatePaneOptions':
         return CreatePaneOptions(
             layout,
@@ -39,6 +41,7 @@ class CreatePaneOptions(Dat['CreatePaneOptions']):
             minimized_size,
             weight,
             position,
+            minimized,
         )
 
     def __init__(
@@ -51,6 +54,7 @@ class CreatePaneOptions(Dat['CreatePaneOptions']):
             minimized_size: Maybe[int],
             weight: Maybe[float],
             position: Maybe[int],
+            minimized: Maybe[bool],
     ) -> None:
         self.layout = layout
         self.name = name
@@ -60,11 +64,13 @@ class CreatePaneOptions(Dat['CreatePaneOptions']):
         self.minimized_size = minimized_size
         self.weight = weight
         self.position = position
+        self.minimized = minimized
 
 
 def pane_from_options(options: CreatePaneOptions) -> Pane:
     return Pane.cons(
         ident=options.name | Ident.generate,
+        state=ViewState.cons(options.minimized | False),
         geometry=ViewGeometry(
             options.min_size,
             options.max_size,
