@@ -1,4 +1,4 @@
-from amino import do, Do, Boolean, Path, Just, L, _, Maybe, IO, Lists
+from amino import do, Do, Boolean, Path, Just, L, _, Maybe
 from amino.lenses.lens import lens
 from amino.case import Case
 from amino.logging import module_log
@@ -6,10 +6,8 @@ from amino.logging import module_log
 from chiasma.io.state import TS
 from myo.components.tmux.data import TmuxData
 
-from psutil import Process
 from chiasma.pane import pane_by_ident
-from chiasma.commands.pane import send_keys, pipe_pane, pane_pid
-from chiasma.io.compute import TmuxIO
+from chiasma.commands.pane import send_keys, pipe_pane
 
 from ribosome.compute.api import prog
 from ribosome.config.component import ComponentData
@@ -19,16 +17,9 @@ from myo.env import Env
 from myo.command.run_task import RunTaskDetails, UiSystemTaskDetails, UiShellTaskDetails, RunTask
 from myo.data.command import Command, Pid
 from myo.ui.data.view import Pane
+from myo.tmux.pid import process_pid
 
 log = module_log()
-
-
-@do(TmuxIO[Maybe[Pid]])
-def process_pid(pane_id: int) -> Do:
-    shell_pid = yield pane_pid(pane_id)
-    proc = yield TmuxIO.from_io(IO.delay(Process, shell_pid))
-    children = yield TmuxIO.from_io(IO.delay(proc.children))
-    return Lists.wrap(children).head.map(lambda a: a.pid).map(Pid)
 
 
 @do(TS[ComponentData[Env, TmuxData], Maybe[Pid]])

@@ -48,14 +48,23 @@ class Command(Dat['Command']):
             interpreter: Interpreter=None,
             lines: List[str]=Nil,
             langs: List[str]=Nil,
+            signals: List[str]=Nil,
     ) -> 'Command':
-        return Command(ensure_ident(ident), interpreter or SystemInterpreter.cons(), lines, langs)
+        return Command(ensure_ident(ident), interpreter or SystemInterpreter.cons(), lines, langs, signals)
 
-    def __init__(self, ident: Ident, interpreter: Interpreter, lines: List[str], langs: List[str]) -> None:
+    def __init__(
+            self,
+            ident: Ident,
+            interpreter: Interpreter,
+            lines: List[str],
+            langs: List[str],
+            signals: List[str],
+    ) -> None:
         self.ident = ident
         self.interpreter = interpreter
         self.lines = lines
         self.langs = langs
+        self.signals = signals
 
 
 class Execute(Dat['Execute']):

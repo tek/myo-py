@@ -74,7 +74,7 @@ class AddShellCommandOptions(Dat['AddShellCommandOptions']):
 
 
 def cons_vim_command(options: AddVimCommandOptions) -> Either[str, Command]:
-    return Command(
+    return Command.cons(
         options.ident | Ident.generate,
         VimInterpreter(options.silent | false, options.target),
         options.lines.o(options.line / List) | Nil,
@@ -83,7 +83,7 @@ def cons_vim_command(options: AddVimCommandOptions) -> Either[str, Command]:
 
 
 def cons_system_command(options: AddSystemCommandOptions) -> Either[str, Command]:
-    return Command(
+    return Command.cons(
         options.ident | Ident.generate,
         SystemInterpreter(options.target),
         options.lines.o(options.line / List) | Nil,
@@ -92,7 +92,7 @@ def cons_system_command(options: AddSystemCommandOptions) -> Either[str, Command
 
 
 def cons_shell_command(options: AddShellCommandOptions) -> Command:
-    return Command(
+    return Command.cons(
         options.ident | Ident.generate,
         ShellInterpreter(options.target),
         options.lines.o(options.line / List) | Nil,

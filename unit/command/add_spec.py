@@ -42,13 +42,13 @@ class AddSpec(SpecBase):
         name = 'lets'
         lines = List('let g:key = 7', 'let g:value = 13')
         args = dict(ident=name, lines=lines)
-        goal = Command(StrIdent(name), VimInterpreter.cons(), lines, List('vim'))
+        goal = Command.cons(StrIdent(name), VimInterpreter.cons(), lines, List('vim'))
         return add_cmd('vim', args, goal)
 
     def system_cmd(self) -> Expectation:
         name = 'commo'
         lines = List('echo "1"')
-        goal = Command(StrIdent(name), SystemInterpreter(Nothing), lines, Nil)
+        goal = Command.cons(StrIdent(name), SystemInterpreter(Nothing), lines, Nil)
         args = dict(ident=name, lines=lines)
         return add_cmd('system', args, goal)
 
@@ -56,7 +56,7 @@ class AddSpec(SpecBase):
         name = 'commo'
         lines = List('print("1")')
         target = 'shello'
-        goal = Command(StrIdent(name), ShellInterpreter(StrIdent(target)), lines, Nil)
+        goal = Command.cons(StrIdent(name), ShellInterpreter(StrIdent(target)), lines, Nil)
         args = dict(ident=name, lines=lines, target=target)
         return add_cmd('shell', args, goal)
 

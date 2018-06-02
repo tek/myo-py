@@ -26,14 +26,14 @@ def ui_minimize_pane(ident: Ident) -> Do:
 
 @prog
 @do(EitherState[ComponentData[Env, UiData], Window])
-def ui_minimize_pane_trans(ident: Ident) -> Do:
-    yield ui_minimize_pane(ident).transform_s_lens(lens.comp)
+def ui_minimize_pane_prog(ident: Ident) -> Do:
+    yield ui_minimize_pane(ident).zoom(lens.comp)
 
 
 @prog.do(None)
 def minimize_pane(ident_spec: Union[str, Ident]) -> Do:
     ident = ensure_ident(ident_spec)
-    yield ui_minimize_pane_trans(ident)
+    yield ui_minimize_pane_prog(ident)
     yield render_view(ident)
 
 

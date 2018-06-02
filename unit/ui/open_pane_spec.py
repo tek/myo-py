@@ -54,7 +54,7 @@ def open_pane(ident_spec: IdentSpec) -> Do:
     ident = ensure_ident(ident_spec)
     yield open_pane_op(ident)
     a = yield pane_path(ident).zoom(lens.ui).tmux
-    yield render(P=Pane, L=Layout)(a.space.ident, a.window.ident, a.window.layout).transform_s_lens(lens.tmux.views)
+    yield render(P=Pane, L=Layout)(a.space.ident, a.window.ident, a.window.layout).zoom(lens.tmux.views)
 
 
 class OpenPaneSpec(TmuxSpec):

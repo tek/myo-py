@@ -1,0 +1,31 @@
+from amino import do, Do, IO
+from amino.lenses.lens import lens
+
+from ribosome.compute.api import prog
+
+from psutil import Process
+
+from chiasma.util.id import Ident
+from chiasma.pane import pane_by_ident
+from chiasma.io.state import TS
+from ribosome.nvim.io.state import NS
+from ribosome.compute.ribosome_api import Ribo
+
+from myo.components.tmux.tpe import TmuxRibosome
+from myo.tmux.pid import process_pid
+
+
+@prog
+@do(NS[TmuxRibosome, None])
+def tmux_kill_pane(ident: Ident) -> Do:
+    pane = yield Ribo.zoom_comp(pane_by_ident(ident).nvim.zoom(lens.views))
+    pane_id = yield NS.m(pane.id, lambda: f'pane `{ident}` has no id')
+    pid_m = yield TS.lift(process_pid(pane_id)).nvim
+    pid = yield NS.m(pid_m, lambda: f'pane `{ident}` has no running process')
+    proc = yield NS.from_io(IO.delay(Process, pid.value))
+    # signal!
+    yield NS.from_io(IO.delay(proc.kill))
+    yield NS.unit
+
+
+__all__ = ('tmux_kill_pane',)

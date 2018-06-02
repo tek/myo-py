@@ -22,15 +22,15 @@ def ui_close_pane(ident: Ident) -> Do:
 
 @prog
 @do(EitherState[ComponentData[Env, UiData], Window])
-def ui_close_pane_trans(ident_spec: IdentSpec) -> Do:
+def ui_close_pane_prog(ident_spec: IdentSpec) -> Do:
     ident = ensure_ident(ident_spec)
-    yield ui_close_pane(ident).transform_s_lens(lens.comp)
+    yield ui_close_pane(ident).zoom(lens.comp)
 
 
 @prog.do(None)
 def close_pane(ident_spec: IdentSpec) -> Do:
     ident = ensure_ident(ident_spec)
-    yield ui_close_pane_trans(ident)
+    yield ui_close_pane_prog(ident)
     yield render_view(ident)
 
 
