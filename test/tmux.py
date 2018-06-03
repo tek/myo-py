@@ -103,7 +103,6 @@ def two_panes() -> Do:
     )
     window, space = yield init_tmux_data(layout)
     yield update_views(lens.panes.set(List(TPane.cons('one', id=0), TPane.cons('two', id=1))))
-    yield update_ui_data(lens.spaces.modify(map_panes_in_spaces(lambda a: True, lens.open.set(true))))
     return window, space
 
 
@@ -111,6 +110,7 @@ def two_panes() -> Do:
 def two_open_panes() -> Do:
     yield NS.lift(tmux_to_nvim(TmuxIO.write('split-window')))
     yield two_panes()
+    yield update_ui_data(lens.spaces.modify(map_panes_in_spaces(lambda a: True, lens.open.set(true))))
 
 
 pane_left_vertical_right_layout: ViewTree[Layout, Pane] = ViewTree.layout(
