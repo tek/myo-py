@@ -99,6 +99,10 @@ class TestCommand(Dat['TestCommand']):
 
 class HistoryEntry(Dat['HistoryEntry']):
 
+    @staticmethod
+    def cons(cmd: Command, target: Ident=None) -> 'HistoryEntry':
+        return HistoryEntry(cmd, Maybe.optional(target))
+
     def __init__(self, cmd: Command, target: Maybe[Ident]) -> None:
         self.cmd = cmd
         self.target = target

@@ -1,20 +1,40 @@
-from kallikrein import k, Expectation, pending
+from kallikrein import k, Expectation
 
 from amino.test.spec import SpecBase
-from amino import do, Do
 
-from ribosome.test.unit import unit_test
-from ribosome.test.prog import request
+from chiasma.util.id import StrIdent
+from amino import do, Do, List
+
+from ribosome.test.prog import request_one, request
 from ribosome.nvim.io.state import NS
-from ribosome.data.plugin_state import PS
+from ribosome.test.integration.external import external_state_test
+from ribosome.nvim.io.compute import NvimIO
+from ribosome.util.persist import store_json_data
+from ribosome.test.config import TestConfig
 
-from test.command import command_spec_test_config
+from myo.config.plugin_state import MyoState
+from myo.data.command import Command, HistoryEntry
+
+from test.command import command_spec_config
+
+cmd1 = Command.cons('cmd1')
+cmd2 = Command.cons('cmd2')
+history = List(HistoryEntry.cons(cmd1, StrIdent('pane1')), HistoryEntry.cons(cmd2))
 
 
-@do(NS[PS, Expectation])
+@do(NS[MyoState, Expectation])
 def history_spec() -> Do:
-    yield request('load_history', 5)
-    return k(1) == 1
+    yield request('init')
+    h = yield request_one('history')
+    return k(h) == history
+
+
+@do(NvimIO[None])
+def pre() -> Do:
+    yield store_json_data('history', history)
+
+
+test_config = TestConfig.cons(command_spec_config, components=List('core', 'command'), pre=pre)
 
 
 class HistorySpec(SpecBase):
@@ -22,9 +42,8 @@ class HistorySpec(SpecBase):
     history $history
     '''
 
-    @pending
     def history(self) -> Expectation:
-        return unit_test(command_spec_test_config, history_spec)
+        return external_state_test(test_config, history_spec)
 
 
 __all__ = ('HistorySpec',)

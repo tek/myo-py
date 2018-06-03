@@ -19,6 +19,8 @@ from myo.components.command.compute.vim_test_wrappers import (test_determine_run
                                                               test_build_position, test_build_args)
 from myo.components.command.compute.kill import kill
 from myo.components.command.compute.reboot import reboot
+from myo.components.command.compute.history import history
+from myo.components.command.compute.init import command_init
 
 
 def run_handler_for(task: RunTask) -> Maybe[Program]:
@@ -43,12 +45,13 @@ command: Component[CommandData, MyoComponent] = Component.cons(
         rpc.write(vim_test).conf(json=true),
         rpc.write(kill),
         rpc.write(reboot),
+        rpc.read(history),
         rpc.read(test_determine_runner),
         rpc.read(test_executable),
         rpc.read(test_build_position),
         rpc.read(test_build_args),
     ),
-    config=MyoComponent.cons(run=run_handler_for),
+    config=MyoComponent.cons(run=run_handler_for, init=command_init),
     mappings=Mappings.cons(
         (jump_mapping, current_event_jump),
         (quit_mapping, quit_output),
