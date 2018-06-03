@@ -9,6 +9,7 @@ from myo.output.data.report import ParseReport
 from chiasma.util.id import Ident
 
 from ribosome.nvim.scratch import ScratchBuffer
+from ribosome.nvim.io.state import NS
 
 
 class OutputData(Dat['OutputData']):
@@ -83,6 +84,10 @@ class CommandData(Dat['CommandData']):
 
     def log(self, ident: Ident, path: Path) -> 'CommandData':
         return self.append.logs((ident, path))
+
+
+def running_command(ident: Ident) -> NS[CommandData, Command]:
+    return NS.inspect(lambda a: a.running.find(lambda b: b.ident == ident).to_either(f'no running command `{ident}`'))
 
 
 __all__ = ('CommandData',)

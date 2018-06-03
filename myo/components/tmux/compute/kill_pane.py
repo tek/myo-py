@@ -13,6 +13,7 @@ from ribosome.compute.ribosome_api import Ribo
 
 from myo.components.tmux.tpe import TmuxRibosome
 from myo.tmux.pid import process_pid
+from myo.util.process import kill_process
 
 
 @prog
@@ -22,9 +23,8 @@ def tmux_kill_pane(ident: Ident) -> Do:
     pane_id = yield NS.m(pane.id, lambda: f'pane `{ident}` has no id')
     pid_m = yield TS.lift(process_pid(pane_id)).nvim
     pid = yield NS.m(pid_m, lambda: f'pane `{ident}` has no running process')
-    proc = yield NS.from_io(IO.delay(Process, pid.value))
     # signal!
-    yield NS.from_io(IO.delay(proc.kill))
+    yield NS.from_io(kill_process(pid))
     yield NS.unit
 
 
