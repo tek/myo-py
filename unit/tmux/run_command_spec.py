@@ -27,7 +27,7 @@ from test.tmux import two_panes, tmux_default_test_config
 name = 'commo'
 text1 = Lists.random_alpha()
 text2 = Lists.random_alpha()
-
+python_shell_cmd = 'python'
 conf = tmux_default_test_config(List('command'))
 
 
@@ -37,7 +37,7 @@ def run_command_spec() -> Do:
     cmd = Command.cons(name, SystemInterpreter.cons('one'), cmds, Nil)
     yield two_panes()
     yield update_command_data(commands=List(cmd))
-    yield request('run_command', name, '{}')
+    yield request('run', name, '{}')
     yield NS.lift(tmux_await_k(contain(text1) & contain(text2), capture_pane, 0))
 
 
@@ -47,18 +47,22 @@ def text2_count() -> Do:
     return len(content.filter(lambda a: a == text2))
 
 
-@do(NS[MyoState, Expectation])
-def run_shell_spec() -> Do:
-    shell_cmd = 'python'
+@do(NS[MyoState, None])
+def python_shell() -> Do:
     cmds = List(f'print("{text1}")', f'print("{text2}")')
-    shell = Command.cons(shell_cmd, SystemInterpreter.cons('one'), List(shell_cmd), Nil)
-    cmd = Command.cons(name, ShellInterpreter.cons(shell_cmd), cmds, Nil)
+    shell = Command.cons(python_shell_cmd, SystemInterpreter.cons('one'), List(python_shell_cmd), Nil)
+    cmd = Command.cons(name, ShellInterpreter.cons(python_shell_cmd), cmds, Nil)
     yield two_panes()
     yield update_command_data(commands=List(shell, cmd))
-    yield request('run_command', shell_cmd, '{}')
-    yield request('run_command', name, '{}')
+
+
+@do(NS[MyoState, Expectation])
+def run_shell_spec() -> Do:
+    yield python_shell()
+    yield request('run', python_shell_cmd, '{}')
+    yield request('run', name, '{}')
     yield NS.lift(tmux_await_k(contain(text1) & contain(text2), capture_pane, 0))
-    yield request('run_command', name, '{}')
+    yield request('run', name, '{}')
     yield NS.lift(tmux_await_k(eq(2), text2_count))
     yield NS.lift(tmux_await_k(~contain(f'>>> python'), capture_pane, 0))
 
@@ -69,10 +73,20 @@ def pipe_pane_spec() -> Do:
     cmd = Command.cons(name, SystemInterpreter.cons('one'), cmds, Nil)
     yield two_panes()
     yield update_command_data(commands=List(cmd))
-    yield request('run_command', name, '{}')
+    yield request('run', name, '{}')
     path = yield NS.inspect(lambda a: a.component_data[CommandData].logs[StrIdent('commo')])
     read = lambda: N.from_io(IO.delay(path.read_text)).map(lambda a: k(Lists.lines(a)).must(contain(text1)))
     yield NS.lift(await_k(read))
+
+
+@do(NS[MyoState, Expectation])
+def rerun_spec() -> Do:
+    yield python_shell()
+    yield request('run', python_shell_cmd, '{}')
+    yield request('run', name, '{}')
+    yield NS.lift(tmux_await_k(contain(text1) & contain(text2), capture_pane, 0))
+    yield request('rerun')
+    yield NS.lift(tmux_await_k(eq(2), text2_count))
 
 
 class RunCommandSpec(TmuxSpec):
@@ -80,6 +94,7 @@ class RunCommandSpec(TmuxSpec):
     run a command in a tmux pane $run_command
     run a shell in a tmux pane $run_shell
     write output to a file $pipe_pane
+    run a command from the history $rerun
     '''
 
     def run_command(self) -> Expectation:
@@ -90,6 +105,9 @@ class RunCommandSpec(TmuxSpec):
 
     def pipe_pane(self) -> Expectation:
         return unit_test(conf, pipe_pane_spec)
+
+    def rerun(self) -> Expectation:
+        return unit_test(conf, rerun_spec)
 
 
 __all__ = ('RunCommandSpec',)

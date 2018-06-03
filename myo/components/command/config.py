@@ -7,7 +7,7 @@ from ribosome.compute.program import Program
 from ribosome.data.mapping import Mappings
 
 from myo.components.command.compute.add import add_system_command, add_vim_command, add_shell_command
-from myo.components.command.compute.run import run_command, run_line, internal_can_run, run_internal_command
+from myo.components.command.compute.run import run, run_line, internal_can_run, run_internal_command, rerun
 from myo.config.component import MyoComponent
 from myo.components.command.data import CommandData
 from myo.components.command.compute.parse import parse
@@ -32,8 +32,9 @@ command: Component[CommandData, MyoComponent] = Component.cons(
         rpc.write(add_vim_command).conf(json=true),
         rpc.write(add_system_command).conf(json=true),
         rpc.write(add_shell_command).conf(json=true),
-        rpc.write(run_command).conf(json=true),
+        rpc.write(run).conf(json=true),
         rpc.write(run_line).conf(name=Just('line'), json=true),
+        rpc.write(rerun),
         rpc.write(parse).conf(json=true),
         rpc.write(current_event_jump),
         rpc.write(quit_output),

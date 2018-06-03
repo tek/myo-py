@@ -36,7 +36,7 @@ def vim_cmd_spec() -> Do:
     cmds = List('let g:key = 7', 'let g:value = 13')
     cmd = Command.cons(name, VimInterpreter.cons(), cmds, Nil)
     yield update_command_data(commands=List(cmd))
-    yield request('run_command', name, '{}')
+    yield request('run', name, '{}')
     vim = yield NS.lift(nvim_api())
     return k(vim.request_log.flat_map(lambda a: a[1].head)).must(end_with(cmds))
 

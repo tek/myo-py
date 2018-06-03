@@ -35,7 +35,7 @@ def kill_command_spec() -> Do:
     window, space = yield init_tmux_data(layout)
     yield update_command_data(commands=List(shell))
     yield request('open_pane', 'two')
-    yield request('run_command', shell_cmd, '{}')
+    yield request('run', shell_cmd, '{}')
     started = yield NS.lift(tmux_await_k(be_just, process_pid, 1))
     yield request('kill', shell_cmd)
     killed = yield NS.lift(tmux_await_k(be_nothing, process_pid, 1))

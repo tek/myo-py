@@ -11,7 +11,7 @@ from myo.command.run_task import RunTask, VimTaskDetails
 
 @prog.unit
 @do(NS[Env, None])
-def run_command(task: RunTask) -> Do:
+def run(task: RunTask) -> Do:
     cmd = task.command
     yield NS.lift(cmd.lines.traverse(lambda a: nvim_command(a, verbose=~cmd.interpreter.silent), NvimIO))
     yield NS.unit
@@ -21,4 +21,4 @@ def vim_can_run(task: RunTask) -> Boolean:
     return isinstance(task.details, VimTaskDetails)
 
 
-__all__ = ('run_command', 'vim_can_run')
+__all__ = ('run', 'vim_can_run')

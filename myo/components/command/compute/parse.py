@@ -18,6 +18,7 @@ from myo.components.command.compute.tpe import CommandRibosome
 from myo.settings import display_parse_result
 from myo.output.main import parse_with_langs
 from myo.components.command.compute.run import command_by_ident
+from myo.command.history import most_recent_command
 
 log = module_log()
 D = TypeVar('D')
@@ -51,10 +52,6 @@ def cmd_output(ident: Ident) -> Do:
     cmd_log = yield NS.inspect_either(__.log_by_ident(ident))
     text = yield NS.from_io(IO.delay(cmd_log.read_text))
     return Lists.lines(text)
-
-
-def most_recent_command() -> NS[CommandData, HistoryEntry]:
-    return NS.inspect_either(lambda s: s.history.last.to_either(f'history is empty') / _.cmd)
 
 
 class shell_for_command(Case[Interpreter, NS[CommandData, Maybe[Command]]], alg=Interpreter):

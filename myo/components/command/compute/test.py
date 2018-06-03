@@ -10,7 +10,7 @@ from ribosome.compute.api import prog
 from ribosome.compute.ribosome_api import Ribo
 
 from myo.components.command.data import CommandData
-from myo.components.command.compute.run import run_command, RunCommandOptions
+from myo.components.command.compute.run import run, RunCommandOptions
 from myo.data.command import Command, SystemInterpreter
 from myo.components.command.compute.vim_test import vim_test_line
 from myo.components.command.compute.tpe import CommandRibosome
@@ -53,7 +53,7 @@ def vim_test_command(langs: List[str]) -> Do:
 @prog.do(None)
 def vim_test(run_options: RunCommandOptions) -> Do:
     yield vim_test_command(run_options.langs.get_or_strict(Nil))
-    yield run_command(test_ident, run_options)
+    yield run(test_ident, run_options)
 
 
 __all__ = ('vim_test',)

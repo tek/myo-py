@@ -34,6 +34,7 @@ from myo.components.ui.compute.open_pane import open_pane, OpenPaneOptions
 from myo.config.component import MyoComponent
 from myo.env import Env
 from myo.components.command.compute.tpe import CommandRibosome
+from myo.command.history import history_entry
 
 log = module_log()
 D = TypeVar('D')
@@ -121,7 +122,7 @@ def ui_shell_task_details(cmd_ident: Ident, target: Ident) -> Do:
     shell = yield Ribo.lift_comp(NS.inspect_f(__.command_by_ident(target)), CommandData)
     running = yield command_running(shell)
     if not running:
-        yield run_command_1(shell)
+        yield run_command(shell)
     target = yield Prog.from_maybe(shell.interpreter.target,
                                    lambda: f'shell `{shell.ident}` for command `{cmd_ident}` has no pane')
     pane = yield ui_pane_by_ident(target)
@@ -178,7 +179,7 @@ def store_running_command(cmd: Command, pid: Maybe[Pid], system: bool) -> Do:
 
 
 @do(Prog[None])
-def run_command_1(cmd: Command) -> Do:
+def run_command(cmd: Command) -> Do:
     task_details = yield run_task_details(cmd)(cmd.interpreter)
     cmd_log = yield Ribo.lift(task_log(cmd.ident), CommandData)
     task = RunTask(cmd, cmd_log, task_details)
@@ -195,10 +196,10 @@ def command_by_ident(ident: Ident) -> NS[Ribosome[Env, MyoComponent, CommandData
 
 
 @prog.do(None)
-def run_command(ident_spec: IdentSpec, options: RunCommandOptions) -> Do:
+def run(ident_spec: IdentSpec, options: RunCommandOptions) -> Do:
     ident = ensure_ident_or_generate(ident_spec)
     cmd = yield command_by_ident(ident)
-    yield run_command_1(cmd)
+    yield run_command(cmd)
 
 
 class RunLineOptions(Dat['RunLineOptions']):
@@ -214,7 +215,13 @@ class RunLineOptions(Dat['RunLineOptions']):
 def run_line(options: RunLineOptions) -> Do:
     interpreter = options.shell.cata_f(ShellInterpreter, lambda: SystemInterpreter(options.pane))
     cmd = Command.cons(Ident.generate(), interpreter, lines=options.lines, langs=options.langs | Nil)
-    yield run_command_1(cmd)
+    yield run_command(cmd)
 
 
-__all__ = ('run_command', 'run_line')
+@prog.do(None)
+def rerun(index: int=0) -> Do:
+    entry = yield Ribo.lift_comp(history_entry(index), CommandData)
+    yield run_command(entry.cmd)
+
+
+__all__ = ('run', 'run_line', 'rerun',)
