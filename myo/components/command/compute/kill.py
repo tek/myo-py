@@ -14,13 +14,12 @@ from myo.util.process import kill_process
 
 @prog
 @do(NS[CommandRibosome, None])
-def kill_command(ident_spec: IdentSpec) -> Do:
+def kill(ident_spec: IdentSpec) -> Do:
     ident = yield ensure_ident_ns(ident_spec)
     cmd_e = yield Ribo.zoom_comp(running_command(ident))
     cmd = yield NS.e(cmd_e)
     pid = yield NS.m(cmd.pid, lambda: f'cannot kill command `{ident}`: no associated pid')
     yield NS.from_io(kill_process(pid))
-    yield NS.unit
 
 
-__all__ = ('kill_command',)
+__all__ = ('kill',)

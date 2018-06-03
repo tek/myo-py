@@ -1,7 +1,7 @@
-from kallikrein import k, Expectation
+from kallikrein import Expectation
 from kallikrein.matchers.maybe import be_nothing, be_just
 
-from amino import do, Do, List, Nil
+from amino import do, Do, List
 
 from chiasma.data.view_tree import ViewTree
 from chiasma.test.tmux_spec import TmuxSpec
@@ -29,7 +29,7 @@ layout: ViewTree[Layout, Pane] = ViewTree.layout(
 
 
 @do(NS[MyoState, Expectation])
-def kill_pane_spec() -> Do:
+def kill_command_spec() -> Do:
     shell_cmd = 'python'
     shell = Command.cons(shell_cmd, SystemInterpreter.cons('two'), List(shell_cmd), signals=List('int'))
     window, space = yield init_tmux_data(layout)
@@ -37,18 +37,18 @@ def kill_pane_spec() -> Do:
     yield request('open_pane', 'two')
     yield request('run_command', shell_cmd, '{}')
     started = yield NS.lift(tmux_await_k(be_just, process_pid, 1))
-    yield request('kill_command', shell_cmd)
+    yield request('kill', shell_cmd)
     killed = yield NS.lift(tmux_await_k(be_nothing, process_pid, 1))
     return started & killed
 
 
 class KillCommmandSpec(TmuxSpec):
     '''
-    kill a command's process running in a tmux pane $kill_command
+    kill a command's process running in a tmux pane $kill
     '''
 
-    def kill_command(self) -> Expectation:
-        return unit_test(tmux_default_test_config(List('command')), kill_pane_spec)
+    def kill(self) -> Expectation:
+        return unit_test(tmux_default_test_config(List('command')), kill_command_spec)
 
 
 __all__ = ('KillCommmandSpec',)

@@ -17,7 +17,8 @@ from myo.command.run_task import RunTask
 from myo.components.command.compute.test import vim_test
 from myo.components.command.compute.vim_test_wrappers import (test_determine_runner, test_executable,
                                                               test_build_position, test_build_args)
-from myo.components.command.compute.kill import kill_command
+from myo.components.command.compute.kill import kill
+from myo.components.command.compute.reboot import reboot
 
 
 def run_handler_for(task: RunTask) -> Maybe[Program]:
@@ -39,7 +40,8 @@ command: Component[CommandData, MyoComponent] = Component.cons(
         rpc.write(prev_event),
         rpc.write(next_event),
         rpc.write(vim_test).conf(json=true),
-        rpc.write(kill_command),
+        rpc.write(kill),
+        rpc.write(reboot),
         rpc.read(test_determine_runner),
         rpc.read(test_executable),
         rpc.read(test_build_position),
