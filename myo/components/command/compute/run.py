@@ -35,6 +35,7 @@ from myo.config.component import MyoComponent
 from myo.env import Env
 from myo.components.command.compute.tpe import CommandRibosome
 from myo.command.history import history_entry
+from myo.util.id import ensure_ident_prog
 
 log = module_log()
 D = TypeVar('D')
@@ -197,7 +198,7 @@ def command_by_ident(ident: Ident) -> NS[Ribosome[Env, MyoComponent, CommandData
 
 @prog.do(None)
 def run(ident_spec: IdentSpec, options: RunCommandOptions) -> Do:
-    ident = ensure_ident_or_generate(ident_spec)
+    ident = yield ensure_ident_prog(ident_spec)
     cmd = yield command_by_ident(ident)
     yield run_command(cmd)
 

@@ -2,7 +2,7 @@ from typing import Tuple
 
 from amino import do, Do, Just, Nothing, List, Nil
 
-from chiasma.util.id import IdentSpec, ensure_ident_or_generate
+from chiasma.util.id import IdentSpec
 from chiasma.data.view_tree import find_in_view_tree, ViewTree, SubUiNode
 from amino.lenses.lens import lens
 from amino.logging import module_log
@@ -19,6 +19,7 @@ from myo.components.ui.compute.pane import render_view
 from myo.ui.data.view import Layout, Pane
 from myo.ui.pane import ui_modify_layout_node
 from myo.ui.data.view_tree import MyoLayoutNode, MyoViewTree, MyoPaneNode
+from myo.util.id import ensure_ident_prog
 
 log = module_log()
 
@@ -70,7 +71,7 @@ def ui_toggle_layout(ident: Ident) -> Do:
 
 @prog.do(None)
 def toggle_layout(ident_spec: IdentSpec) -> Do:
-    ident = ensure_ident_or_generate(ident_spec)
+    ident = yield ensure_ident_prog(ident_spec)
     yield Ribo.lift_comp(ui_toggle_layout(ident).nvim, UiData)
     yield render_view(ident)
 

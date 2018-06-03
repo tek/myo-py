@@ -17,6 +17,7 @@ from myo.ui.data.window import Window
 from myo.env import Env
 from myo.ui.pane import ui_modify_pane
 from myo.components.ui.compute.pane import render_view
+from myo.util.id import ensure_ident_prog
 
 
 @do(EitherState[UiData, Window])
@@ -32,7 +33,7 @@ def ui_minimize_pane_prog(ident: Ident) -> Do:
 
 @prog.do(None)
 def minimize_pane(ident_spec: Union[str, Ident]) -> Do:
-    ident = ensure_ident_or_generate(ident_spec)
+    ident = yield ensure_ident_prog(ident_spec)
     yield ui_minimize_pane_prog(ident)
     yield render_view(ident)
 

@@ -33,7 +33,7 @@ def run_system_task(cmd: Command, pane: Pane, log_path: Maybe[Path]) -> Do:
     yield TS.lift(send_keys(id, cmd.lines))
     yield TS.lift(TmuxIO.flush())
     yield TS.lift(
-        tmuxio_repeat_timeout(lambda: process_pid(id), lambda a: a.is_just, '', timeout=3.)
+        tmuxio_repeat_timeout(lambda: process_pid(id), lambda a: a.present, '', timeout=3.)
         .recover_error(lambda a: Nothing)
     )
 

@@ -16,6 +16,7 @@ from myo.ui.pane import map_window_trees, find_in_ui
 from myo.components.ui.compute.pane import render_view
 from myo.ui.data.view_tree import MyoViewTree, MyoPaneNode
 from myo.ui.data.view import Pane
+from myo.util.id import ensure_ident_prog
 
 log = module_log()
 
@@ -49,7 +50,7 @@ def chiasma_open_pane(ident: Ident) -> Do:
 
 @prog.do(None)
 def open_pane(ident_spec: IdentSpec, options: OpenPaneOptions) -> Do:
-    ident = ensure_ident_or_generate(ident_spec)
+    ident = yield ensure_ident_prog(ident_spec)
     was_closed = yield Ribo.lift_comp(chiasma_open_pane(ident), UiData)
     if was_closed:
         yield render_view(ident)

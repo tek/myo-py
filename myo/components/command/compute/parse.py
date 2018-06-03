@@ -44,6 +44,7 @@ def parse_output_with(output: List[str], config: ParseConfig) -> Do:
 @do(NS[CommandRibosome, ParseResult])
 def parse_output(cmd: Command, output: List[str], shell: Maybe[Command]) -> Do:
     config = yield parse_config(cmd, shell)
+    log.debug(f'parsing output with {config}')
     yield parse_output_with(output, config)
 
 
