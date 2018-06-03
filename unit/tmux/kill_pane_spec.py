@@ -31,7 +31,7 @@ layout: ViewTree[Layout, Pane] = ViewTree.layout(
 @do(NS[MyoState, Expectation])
 def kill_pane_spec() -> Do:
     shell_cmd = 'python'
-    shell = Command.cons(shell_cmd, SystemInterpreter.cons('two'), List(shell_cmd), signals=List('int'))
+    shell = Command.cons(shell_cmd, SystemInterpreter.str('two'), List(shell_cmd), signals=List('int'))
     window, space = yield init_tmux_data(layout)
     yield update_command_data(commands=List(shell))
     yield request('open_pane', 'two')

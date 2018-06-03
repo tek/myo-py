@@ -1,8 +1,8 @@
-from amino import List, Maybe, Dat, ADT, Boolean, Either, Map, Nil, Just, Nothing
+from amino import List, Maybe, Dat, ADT, Either, Map, Nil, Nothing, do, Do, Just
 
 from myo.util import Ident
 
-from chiasma.util.id import IdentSpec, ensure_ident_or_generate
+from chiasma.util.id import IdentSpec, ensure_ident_or_generate, optional_ident, StrIdent
 
 
 class Interpreter(ADT['Interpreter']):
@@ -12,10 +12,16 @@ class Interpreter(ADT['Interpreter']):
 class VimInterpreter(Interpreter):
 
     @staticmethod
-    def cons(silent: bool=False, target: IdentSpec=None) -> 'VimInterpreter':
-        return VimInterpreter(Boolean(silent), Maybe.optional(target) / ensure_ident_or_generate)
+    @do(Either[str, 'VimInterpreter'])
+    def cons(silent: bool=False, target: IdentSpec=None) -> Do:
+        ident = yield optional_ident(target)
+        return VimInterpreter(silent, ident)
 
-    def __init__(self, silent: Boolean, target: Maybe[Ident]) -> None:
+    @staticmethod
+    def default() -> 'VimInterpreter':
+        return VimInterpreter(False, Nothing)
+
+    def __init__(self, silent: bool, target: Maybe[Ident]) -> None:
         self.silent = silent
         self.target = target
 
@@ -23,8 +29,14 @@ class VimInterpreter(Interpreter):
 class SystemInterpreter(Interpreter):
 
     @staticmethod
-    def cons(target: IdentSpec=None) -> 'SystemInterpreter':
-        return SystemInterpreter(Maybe.optional(target) / ensure_ident_or_generate)
+    @do(Either[str, 'SystemInterpreter'])
+    def cons(target: IdentSpec=None) -> Do:
+        ident = yield optional_ident(target)
+        return SystemInterpreter(ident)
+
+    @staticmethod
+    def str(target: str) -> 'SystemInterpreter':
+        return SystemInterpreter(Just(StrIdent(target)))
 
     def __init__(self, target: Maybe[Ident]) -> None:
         self.target = target
@@ -33,8 +45,14 @@ class SystemInterpreter(Interpreter):
 class ShellInterpreter(Interpreter):
 
     @staticmethod
-    def cons(target: IdentSpec) -> 'ShellInterpreter':
-        return ShellInterpreter(ensure_ident_or_generate(target))
+    @do(Either[str, 'ShellInterpreter'])
+    def cons(target: IdentSpec) -> Do:
+        ident = yield optional_ident(target)
+        return ShellInterpreter(ident)
+
+    @staticmethod
+    def str(target: str) -> 'ShellInterpreter':
+        return ShellInterpreter(StrIdent(target))
 
     def __init__(self, target: Ident) -> None:
         self.target = target
@@ -50,7 +68,13 @@ class Command(Dat['Command']):
             langs: List[str]=Nil,
             signals: List[str]=Nil,
     ) -> 'Command':
-        return Command(ensure_ident_or_generate(ident), interpreter or SystemInterpreter.cons(), lines, langs, signals)
+        return Command(
+            ensure_ident_or_generate(ident),
+            interpreter or SystemInterpreter(Nothing),
+            lines,
+            langs,
+            signals,
+        )
 
     def __init__(
             self,

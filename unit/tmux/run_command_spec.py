@@ -34,7 +34,7 @@ conf = tmux_default_test_config(List('command'))
 @do(NS[MyoState, Expectation])
 def run_command_spec() -> Do:
     cmds = List(f'echo {text1}', f'echo {text2}')
-    cmd = Command.cons(name, SystemInterpreter.cons('one'), cmds, Nil)
+    cmd = Command.cons(name, SystemInterpreter.str('one'), cmds, Nil)
     yield two_panes()
     yield update_command_data(commands=List(cmd))
     yield request('run', name, '{}')
@@ -50,8 +50,8 @@ def text2_count() -> Do:
 @do(NS[MyoState, None])
 def python_shell() -> Do:
     cmds = List(f'print("{text1}")', f'print("{text2}")')
-    shell = Command.cons(python_shell_cmd, SystemInterpreter.cons('one'), List(python_shell_cmd), Nil)
-    cmd = Command.cons(name, ShellInterpreter.cons(python_shell_cmd), cmds, Nil)
+    shell = Command.cons(python_shell_cmd, SystemInterpreter.str('one'), List(python_shell_cmd), Nil)
+    cmd = Command.cons(name, ShellInterpreter.str(python_shell_cmd), cmds, Nil)
     yield two_panes()
     yield update_command_data(commands=List(shell, cmd))
 
@@ -70,7 +70,7 @@ def run_shell_spec() -> Do:
 @do(NS[MyoState, Expectation])
 def pipe_pane_spec() -> Do:
     cmds = List(f'echo {text1}')
-    cmd = Command.cons(name, SystemInterpreter.cons('one'), cmds, Nil)
+    cmd = Command.cons(name, SystemInterpreter.str('one'), cmds, Nil)
     yield two_panes()
     yield update_command_data(commands=List(cmd))
     yield request('run', name, '{}')

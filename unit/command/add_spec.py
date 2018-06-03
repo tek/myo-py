@@ -42,7 +42,7 @@ class AddSpec(SpecBase):
         name = 'lets'
         lines = List('let g:key = 7', 'let g:value = 13')
         args = dict(ident=name, lines=lines)
-        goal = Command.cons(StrIdent(name), VimInterpreter.cons(), lines, List('vim'))
+        goal = Command.cons(StrIdent(name), VimInterpreter.default(), lines, List('vim'))
         return add_cmd('vim', args, goal)
 
     def system_cmd(self) -> Expectation:

@@ -40,7 +40,7 @@ def marker_count(pane: int) -> Do:
 
 @do(NS[MyoState, Expectation])
 def reboot_spec() -> Do:
-    shell = Command.cons(cmd, SystemInterpreter.cons('two'), List(f'echo "{data}"'))
+    shell = Command.cons(cmd, SystemInterpreter.str('two'), List(f'echo "{data}"'))
     window, space = yield init_tmux_data(layout)
     yield update_command_data(commands=List(shell))
     yield request('open_pane', 'two')

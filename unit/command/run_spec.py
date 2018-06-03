@@ -34,7 +34,7 @@ test_config = TestConfig.cons(config, components=List('command', 'vim', 'ui'))
 def vim_cmd_spec() -> Do:
     name = 'test'
     cmds = List('let g:key = 7', 'let g:value = 13')
-    cmd = Command.cons(name, VimInterpreter.cons(), cmds, Nil)
+    cmd = Command.cons(name, VimInterpreter.default(), cmds, Nil)
     yield update_command_data(commands=List(cmd))
     yield request('run', name, '{}')
     vim = yield NS.lift(nvim_api())

@@ -1,7 +1,7 @@
-from amino import Right
+from amino import Right, Nil
 from amino.boolean import true
 
-from ribosome.config.setting import float_setting, str_setting, int_setting, bool_setting
+from ribosome.config.setting import float_setting, str_setting, int_setting, bool_setting, str_list_setting
 
 state_dir_help = f'''
 Stored data consists of:
@@ -32,6 +32,8 @@ test_ui_help = '''Tests run with vim-test will be executed in this ui. Can be `t
 '''
 test_pane_help = '''Tests run with vim-test will be executed in this pane.
 '''
+test_langs_help = '''When parsing the output of a command executed with `MyoVimTest`, these languages are expected.
+'''
 
 
 tmux_watcher_interval = float_setting('tmux_watcher_interval', 'tmux process polling interval',
@@ -47,7 +49,8 @@ init_default_ui = bool_setting('init_default_ui', 'initialize vim and make panes
                                Right(true))
 test_ui = str_setting('test_ui', 'ui for running tests', test_ui_help, True, Right('tmux'))
 test_pane = str_setting('test_pane', 'pane for running tests', test_pane_help, True, Right('make'))
+test_langs = str_list_setting('test_langs', 'parsing langs for vim-test output', test_langs_help, True, Right(Nil))
 
 
 __all__ = ('tmux_watcher_interval', 'tmux_socket', 'vim_tmux_pane', 'display_parse_result', 'auto_jump',
-           'vim_test_filename_modifier', 'init_default_ui', 'test_ui', 'test_pane',)
+           'vim_test_filename_modifier', 'init_default_ui', 'test_ui', 'test_pane', 'test_langs',)
