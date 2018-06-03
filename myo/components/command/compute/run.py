@@ -5,7 +5,7 @@ from typing import TypeVar
 
 from psutil import Process
 
-from chiasma.util.id import IdentSpec, ensure_ident
+from chiasma.util.id import IdentSpec, ensure_ident_or_generate
 
 from amino import do, Do, Maybe, __, _, Path, IO, L, List, Boolean, Lists, Nil
 from amino.dat import Dat
@@ -196,7 +196,7 @@ def command_by_ident(ident: Ident) -> NS[Ribosome[Env, MyoComponent, CommandData
 
 @prog.do(None)
 def run_command(ident_spec: IdentSpec, options: RunCommandOptions) -> Do:
-    ident = ensure_ident(ident_spec)
+    ident = ensure_ident_or_generate(ident_spec)
     cmd = yield command_by_ident(ident)
     yield run_command_1(cmd)
 

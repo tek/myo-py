@@ -1,4 +1,4 @@
-from chiasma.util.id import IdentSpec, ensure_ident
+from chiasma.util.id import IdentSpec, ensure_ident_or_generate
 
 from amino import do, Do
 from amino.logging import module_log
@@ -23,7 +23,7 @@ def ui_toggle_pane(ident: Ident) -> Do:
 
 @prog.do(None)
 def toggle_pane(ident_spec: IdentSpec) -> Do:
-    ident = ensure_ident(ident_spec)
+    ident = ensure_ident_or_generate(ident_spec)
     yield Ribo.lift_comp(ui_toggle_pane(ident), UiData)
     yield render_view(ident)
 

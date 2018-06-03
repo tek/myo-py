@@ -1,6 +1,6 @@
 from amino import do, Do, Dat
 
-from chiasma.util.id import IdentSpec, ensure_ident
+from chiasma.util.id import IdentSpec, ensure_ident_or_generate
 from chiasma.open_pane import ui_open_pane
 from amino.logging import module_log
 
@@ -29,7 +29,7 @@ def chiasma_open_pane(ident: Ident) -> Do:
 
 @prog.do(None)
 def open_pane(ident_spec: IdentSpec, options: OpenPaneOptions) -> Do:
-    ident = ensure_ident(ident_spec)
+    ident = ensure_ident_or_generate(ident_spec)
     yield Ribo.lift_comp(chiasma_open_pane(ident), UiData)
     yield render_view(ident)
 

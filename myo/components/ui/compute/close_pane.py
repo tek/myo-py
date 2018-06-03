@@ -3,7 +3,7 @@ from amino.state import EitherState
 from amino.lenses.lens import lens
 from amino.boolean import false
 
-from chiasma.util.id import Ident, IdentSpec, ensure_ident
+from chiasma.util.id import Ident, IdentSpec, ensure_ident_or_generate
 
 from ribosome.compute.api import prog
 from ribosome.config.component import ComponentData
@@ -23,13 +23,13 @@ def ui_close_pane(ident: Ident) -> Do:
 @prog
 @do(EitherState[ComponentData[Env, UiData], Window])
 def ui_close_pane_prog(ident_spec: IdentSpec) -> Do:
-    ident = ensure_ident(ident_spec)
+    ident = ensure_ident_or_generate(ident_spec)
     yield ui_close_pane(ident).zoom(lens.comp)
 
 
 @prog.do(None)
 def close_pane(ident_spec: IdentSpec) -> Do:
-    ident = ensure_ident(ident_spec)
+    ident = ensure_ident_or_generate(ident_spec)
     yield ui_close_pane_prog(ident)
     yield render_view(ident)
 

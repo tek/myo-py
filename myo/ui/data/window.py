@@ -4,7 +4,7 @@ from amino import Dat, Maybe, Just, Either, Nothing
 from amino.case import Case
 
 from chiasma.data.view_tree import ViewTree, LayoutNode, PaneNode, SubUiNode
-from chiasma.util.id import IdentSpec, ensure_ident
+from chiasma.util.id import IdentSpec, ensure_ident_or_generate
 
 from myo.util import Ident
 from myo.ui.data.view import Pane, Layout
@@ -18,7 +18,7 @@ class Window(Dat['Window']):
             layout: LayoutNode[Layout, Pane]=None,
     ) -> 'Window':
         return Window(
-            ensure_ident(ident),
+            ensure_ident_or_generate(ident),
             layout or ViewTree.layout(),
         )
 

@@ -11,7 +11,7 @@ from chiasma.render import render
 from chiasma.data.session import Session
 from chiasma.io.state import TS
 from chiasma.commands.pane import all_panes
-from chiasma.util.id import IdentSpec, ensure_ident, StrIdent
+from chiasma.util.id import IdentSpec, ensure_ident_or_generate, StrIdent
 from chiasma.data.tmux import Views
 
 from amino import List, do, Do, Dat
@@ -51,7 +51,7 @@ def open_pane_op(ident_spec: IdentSpec) -> TS[OPData, None]:
 
 @do(TS[OPData, None])
 def open_pane(ident_spec: IdentSpec) -> Do:
-    ident = ensure_ident(ident_spec)
+    ident = ensure_ident_or_generate(ident_spec)
     yield open_pane_op(ident)
     a = yield pane_path(ident).zoom(lens.ui).tmux
     yield render(P=Pane, L=Layout)(a.space.ident, a.window.ident, a.window.layout).zoom(lens.tmux.views)

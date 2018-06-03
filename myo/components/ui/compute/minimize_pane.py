@@ -2,7 +2,7 @@ from typing import Union
 
 from amino import do, Do
 
-from chiasma.util.id import ensure_ident
+from chiasma.util.id import ensure_ident_or_generate
 from amino.boolean import true
 from amino.state import EitherState
 from amino.lenses.lens import lens
@@ -32,7 +32,7 @@ def ui_minimize_pane_prog(ident: Ident) -> Do:
 
 @prog.do(None)
 def minimize_pane(ident_spec: Union[str, Ident]) -> Do:
-    ident = ensure_ident(ident_spec)
+    ident = ensure_ident_or_generate(ident_spec)
     yield ui_minimize_pane_prog(ident)
     yield render_view(ident)
 

@@ -3,7 +3,7 @@ from typing import TypeVar
 from amino import do, Do, __, List, Nil, Nothing, Just
 from amino.logging import module_log
 
-from chiasma.util.id import StrIdent, ensure_ident, IdentSpec
+from chiasma.util.id import StrIdent, ensure_ident_or_generate, IdentSpec
 
 from ribosome.nvim.io.state import NS
 from ribosome.compute.api import prog
@@ -22,7 +22,7 @@ test_ident = StrIdent('<test>')
 
 
 def cons_test_command(ui: str, target: IdentSpec) -> Command:
-    effective_target = Nothing if ui == 'internal' else Just(ensure_ident(target))
+    effective_target = Nothing if ui == 'internal' else Just(ensure_ident_or_generate(target))
     return Command.cons(ident=test_ident, interpreter=SystemInterpreter(effective_target))
 
 
