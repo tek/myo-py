@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version_parts = (1, 0, 0, 'a', 7)
+version_parts = (1, 0, 0, 'a', 8)
 version = '.'.join(map(str, version_parts))
 
 setup(
@@ -14,7 +14,7 @@ setup(
     packages=find_packages(exclude=['unit', 'unit.*', 'integration', 'integration.*', 'test', 'test.*']),
     install_requires=[
         'ribosome~=13.0.0a57',
-        'chiasma~=0.1.0.a24',
+        'chiasma~=0.1.0.a25',
         'psutil==5.3.1',
         'networkx==2.0',
     ],
