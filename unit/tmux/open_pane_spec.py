@@ -1,6 +1,6 @@
 import os
 
-from kallikrein import Expectation
+from kallikrein import Expectation, k
 from kallikrein.matchers.length import have_length
 from kallikrein.matchers import equal, contain
 
@@ -8,20 +8,24 @@ from chiasma.test.tmux_spec import TmuxSpec
 from chiasma.io.compute import TmuxIO
 from chiasma.commands.pane import parse_pane_id, parse_bool, all_panes
 from chiasma.command import tmux_data_cmd, TmuxCmdData, simple_tmux_cmd_attr
+from chiasma.data.view_tree import ViewTree
+from chiasma.data.pane import Pane as TPane
 
-from test.klk.tmux import tmux_await_k
+from test.klk.tmux import tmux_await_k, pane_count
 
 from amino import do, Do, Dat, Either, List, IO
 from amino.test.path import pkg_dir
 from amino.test import temp_dir
+from amino.lenses.lens import lens
 
 from ribosome.test.unit import unit_test
 from ribosome.nvim.io.state import NS
 from ribosome.test.prog import request
 
 from myo.config.plugin_state import MyoState
+from myo.ui.data.view import Layout, Pane
 
-from test.tmux import two_panes, tmux_default_test_config
+from test.tmux import two_panes, tmux_default_test_config, init_tmux_data, update_views
 
 
 class PaneFocusData(Dat['PaneFocusData']):
@@ -66,7 +70,7 @@ def open_pane_spec() -> Do:
     yield NS.from_io(IO.delay(os.chdir, str(path)))
     yield request('open_pane', 'one', '{}')
     yield request('open_pane', 'two', '{}')
-    count = yield NS.lift(tmux_await_k(have_length(2), all_panes))
+    count = yield NS.lift(pane_count(2))
     cwd = yield NS.lift(tmux_await_k(contain(str(path)), pane_cwds))
     return count & cwd
 
@@ -78,10 +82,43 @@ def focus_spec() -> Do:
     yield NS.lift(tmux_await_k(equal(True), pane_zero_focus))
 
 
+pin_layout = ViewTree.layout(
+    Layout.cons('root', vertical=False),
+    List(
+        ViewTree.pane(Pane.cons('one', open=True)),
+        ViewTree.layout(
+            Layout.cons('right', vertical=True),
+            List(
+                ViewTree.pane(Pane.cons('two', pin=True)),
+                ViewTree.pane(Pane.cons('three')),
+            )
+        )
+    )
+)
+
+
+@do(NS[MyoState, Expectation])
+def pinned_sibling_spec() -> Do:
+    yield init_tmux_data(pin_layout)
+    yield update_views(lens.panes.set(List(TPane.cons('one', id=0))))
+    yield request('open_pane', 'three')
+    yield NS.lift(pane_count(3))
+
+
+@do(NS[MyoState, Expectation])
+def pinned_spec() -> Do:
+    yield init_tmux_data(pin_layout)
+    yield update_views(lens.panes.set(List(TPane.cons('one', id=0))))
+    yield request('open_pane', 'two')
+    yield NS.lift(pane_count(2))
+
+
 class OpenPaneSpec(TmuxSpec):
     '''
     open a tmux pane $open_pane
     keep focus on vim $focus
+    open pinned pane when opening sibling $pinned_sibling
+    open pinned pane without opening others $pinned
     '''
 
     def open_pane(self) -> Expectation:
@@ -89,6 +126,12 @@ class OpenPaneSpec(TmuxSpec):
 
     def focus(self) -> Expectation:
         return unit_test(tmux_default_test_config(), focus_spec)
+
+    def pinned_sibling(self) -> Expectation:
+        return unit_test(tmux_default_test_config(), pinned_sibling_spec)
+
+    def pinned(self) -> Expectation:
+        return unit_test(tmux_default_test_config(), pinned_spec)
 
 
 __all__ = ('OpenPaneSpec',)

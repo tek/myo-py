@@ -10,7 +10,7 @@ from chiasma.data.pane import Pane as TPane
 from chiasma.data.tmux import Views
 from myo.components.tmux.data import TmuxData
 
-from amino import List, __, Map, do, Do, L, _, Nil
+from amino import List, __, Map, do, Do, Nil
 from amino.boolean import true
 from amino.lenses.lens import lens
 from amino.test import temp_dir
@@ -92,16 +92,18 @@ def init_tmux_data(layout: ViewTree[Layout, Pane]) -> Do:
     return window, space
 
 
+two_pane_layout = ViewTree.layout(
+    Layout.cons('root', vertical=true),
+    List(
+        ViewTree.pane(Pane.cons('one', geometry=ViewGeometry.cons(min_size=10, max_size=90))),
+        ViewTree.pane(Pane.cons('two', geometry=ViewGeometry.cons(weight=0.5, position=12))),
+    )
+)
+
+
 @do(NS[MyoState, Tuple[Window, Space]])
 def two_panes() -> Do:
-    layout = ViewTree.layout(
-        Layout.cons('root', vertical=true),
-        List(
-            ViewTree.pane(Pane.cons('one', geometry=ViewGeometry.cons(min_size=10, max_size=90))),
-            ViewTree.pane(Pane.cons('two', geometry=ViewGeometry.cons(weight=0.5, position=12))),
-        )
-    )
-    window, space = yield init_tmux_data(layout)
+    window, space = yield init_tmux_data(two_pane_layout)
     yield update_views(lens.panes.set(List(TPane.cons('one', id=0), TPane.cons('two', id=1))))
     return window, space
 

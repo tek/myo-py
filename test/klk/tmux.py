@@ -2,8 +2,10 @@ from typing import Callable, Any, TypeVar
 
 from kallikrein import Expectation, k
 from kallikrein.matcher import Matcher
+from kallikrein.matchers.length import have_length
 
 from chiasma.io.compute import TmuxIO
+from chiasma.commands.pane import all_panes
 
 from amino import do, Do
 
@@ -30,4 +32,8 @@ def tmux_await_k(
     return await_k(check)
 
 
-__all__ = ('tmux_await_k',)
+def pane_count(count: int) -> NvimIO[Expectation]:
+    return tmux_await_k(have_length(count), all_panes)
+
+
+__all__ = ('tmux_await_k', 'pane_count',)
