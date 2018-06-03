@@ -74,8 +74,8 @@ def run_internal_command(task: RunTask) -> Do:
     yield run_task(task)(task.details)
 
 
-def process_alive(pid: int) -> IO[bool]:
-    return IO.delay(Process, pid).replace(True).recover(lambda a: False)
+def process_alive(pid: Pid) -> IO[bool]:
+    return IO.delay(Process, pid.value).replace(True).recover(lambda a: False)
 
 
 @prog
