@@ -1,9 +1,11 @@
 from kallikrein import Expectation, k
 from kallikrein.matchers import contain
+from kallikrein.matchers.comparison import eq
 
 from chiasma.test.tmux_spec import TmuxSpec
 from chiasma.commands.pane import capture_pane
 from chiasma.util.id import StrIdent
+from chiasma.io.compute import TmuxIO
 
 from amino import List, Lists, Nil, do, Do, IO
 
@@ -39,6 +41,12 @@ def run_command_spec() -> Do:
     yield NS.lift(tmux_await_k(contain(text1) & contain(text2), capture_pane, 0))
 
 
+@do(TmuxIO[int])
+def text2_count() -> Do:
+    content = yield capture_pane(0)
+    return len(content.filter(lambda a: a == text2))
+
+
 @do(NS[MyoState, Expectation])
 def run_shell_spec() -> Do:
     shell_cmd = 'python'
@@ -50,6 +58,9 @@ def run_shell_spec() -> Do:
     yield request('run_command', shell_cmd, '{}')
     yield request('run_command', name, '{}')
     yield NS.lift(tmux_await_k(contain(text1) & contain(text2), capture_pane, 0))
+    yield request('run_command', name, '{}')
+    yield NS.lift(tmux_await_k(eq(2), text2_count))
+    yield NS.lift(tmux_await_k(~contain(f'>>> python'), capture_pane, 0))
 
 
 @do(NS[MyoState, Expectation])

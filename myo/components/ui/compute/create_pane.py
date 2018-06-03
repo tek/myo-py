@@ -1,23 +1,20 @@
 from amino import do, Do, Dat, Maybe, Nothing, _
-from amino.state import EitherState
-from amino.lenses.lens import lens
 
 from chiasma.util.id import Ident
 from chiasma.ui.view_geometry import ViewGeometry
 from chiasma.ui.state import ViewState
 
 from ribosome.compute.api import prog
-from ribosome.config.component import ComponentData
 from ribosome.nvim.io.state import NS
 from ribosome.compute.ribosome_api import Ribo
 
-from myo.env import Env
 from myo.ui.data.ui_data import UiData
 from myo.ui.data.view import Pane
 from myo.ui.pane import insert_pane_into_ui
 from myo.components.ui.compute.tpe import UiRibosome
 
 
+# FIXME `ident` rather than `name`?
 class CreatePaneOptions(Dat['CreatePaneOptions']):
 
     @staticmethod

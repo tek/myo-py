@@ -1,6 +1,6 @@
 from typing import TypeVar
 
-from kallikrein import k, Expectation
+from kallikrein import k, Expectation, pending
 from kallikrein.matchers.length import have_length
 
 from chiasma.data.view_tree import ViewTree
@@ -62,6 +62,7 @@ class OpenPaneSpec(TmuxSpec):
     four nested layouts $four
     '''
 
+    @pending
     def four(self) -> Expectation:
         layout = ViewTree.layout(
             Layout.cons('root'),

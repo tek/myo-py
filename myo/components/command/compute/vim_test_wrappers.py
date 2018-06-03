@@ -13,7 +13,6 @@ log = module_log()
 @prog
 @do(NS[None, str])
 def test_determine_runner(file: str) -> Do:
-    log.test(file)
     yield NS.lift(vim_test_call(cons_decode_str, 'determine_runner', file))
 
 
