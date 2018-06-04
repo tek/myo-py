@@ -1,7 +1,7 @@
 from typing import TypeVar, Callable
 
 from amino import do, _, Do, List, __, Just, Boolean, IO, Either, Left, Right
-from amino.boolean import true
+from amino.boolean import true, false
 from amino.lenses.lens import lens
 from amino.logging import module_log
 from amino.case import Case
@@ -28,8 +28,8 @@ log = module_log()
 D = TypeVar('D')
 jump_mapping = Mapping.cons('output_jump', '<cr>', true)
 quit_mapping = Mapping.cons('output_quit', 'q', true)
-prev_mapping = Mapping.cons('output_prev', '<m-->', true)
-next_mapping = Mapping.cons('output_next', '<m-=>', true)
+prev_mapping = Mapping.cons('output_prev', '<m-->', false)
+next_mapping = Mapping.cons('output_next', '<m-=>', false)
 
 
 def output_data() -> NS[CommandData, OutputData]:
