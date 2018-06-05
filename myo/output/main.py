@@ -1,17 +1,10 @@
-import abc
-from typing import Callable
+from types import ModuleType
 
-from amino import List, Path, Either, __, L, _, Just, Empty, Nil, do, Do
-from amino.io import IO
-from amino.lazy import lazy
+from amino import List, Either, do, Do
 from amino.logging import module_log
 from amino.mod import instance_from_module
 
-from ribosome import NvimApi
-from ribosome.util.callback import VimCallback
-
-from myo.logging import Logging
-from myo.output.data.output import ParseResult, OutputEvent
+from myo.output.data.output import OutputEvent
 from myo.output.parser.base import Parser, parse_events
 
 log = module_log()
@@ -19,7 +12,9 @@ parsers_module = 'myo.output.parser'
 
 
 def resolve_parsers(langs: List[str]) -> List[Parser]:
-    modules = langs.flat_map(lambda a: Either.import_module(f'{parsers_module}.{a}').to_list)
+    def imp(mod: str) -> List[ModuleType]:
+        return Either.import_module(f'{parsers_module}.{mod}').or_else_call(Either.import_module, mod).to_list
+    modules = langs.flat_map(imp)
     return modules.traverse(lambda a: instance_from_module(a, Parser), Either)
 
 

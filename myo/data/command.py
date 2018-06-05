@@ -58,6 +58,39 @@ class ShellInterpreter(Interpreter):
         self.target = target
 
 
+class CommandConfig(Dat['CommandConfig']):
+
+    @staticmethod
+    def cons(
+            ident: IdentSpec,
+            output_filter: List[str]=None,
+            output_first_error: str=None,
+            output_path_truncator: str=None,
+            parsers: List[str]=None,
+    ) -> 'CommandConfig':
+        return CommandConfig(
+            ensure_ident_or_generate(ident),
+            Maybe.optional(output_filter),
+            Maybe.optional(output_first_error),
+            Maybe.optional(output_path_truncator),
+            Maybe.optional(parsers),
+        )
+
+    def __init__(
+            self,
+            ident: Ident,
+            output_filter: Maybe[List[str]],
+            output_first_error: Maybe[str],
+            output_path_truncator: Maybe[str],
+            parsers: Maybe[List[str]],
+    ) -> None:
+        self.ident = ident
+        self.output_filter = output_filter
+        self.output_first_error = output_first_error
+        self.output_path_truncator = output_path_truncator
+        self.parsers = parsers
+
+
 class Command(Dat['Command']):
 
     @staticmethod
@@ -67,6 +100,7 @@ class Command(Dat['Command']):
             lines: List[str]=Nil,
             langs: List[str]=Nil,
             signals: List[str]=Nil,
+            config: CommandConfig=None,
     ) -> 'Command':
         return Command(
             ensure_ident_or_generate(ident),
@@ -74,6 +108,7 @@ class Command(Dat['Command']):
             lines,
             langs,
             signals,
+            Maybe.optional(config),
         )
 
     def __init__(
@@ -83,12 +118,14 @@ class Command(Dat['Command']):
             lines: List[str],
             langs: List[str],
             signals: List[str],
+            config: Maybe[CommandConfig],
     ) -> None:
         self.ident = ident
         self.interpreter = interpreter
         self.lines = lines
         self.langs = langs
         self.signals = signals
+        self.config = config
 
 
 class Execute(Dat['Execute']):
@@ -147,4 +184,4 @@ class RunningCommand(Dat['RunningCommand']):
 
 
 __all__ = ('Command', 'Interpreter', 'VimInterpreter', 'SystemInterpreter', 'ShellInterpreter', 'Execute',
-           'TestLineParams', 'TestCommand', 'HistoryEntry', 'RunningCommand', 'Pid',)
+           'TestLineParams', 'TestCommand', 'HistoryEntry', 'RunningCommand', 'Pid', 'CommandConfig',)

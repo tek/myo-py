@@ -1,4 +1,4 @@
-from typing import TypeVar
+from typing import TypeVar, Callable
 
 from ribosome.compute.api import prog
 from ribosome.nvim.io.state import NS
@@ -6,18 +6,17 @@ from ribosome.compute.ribosome_api import Ribo
 
 from chiasma.util.id import Ident, IdentSpec
 
-from amino import do, Do, List, Dat, __, _, Maybe, IO, Lists, Just, Nothing, Nil
+from amino import do, Do, List, Dat, __, Maybe, IO, Lists, Just, Nothing, Nil, _
 from amino.logging import module_log
 from amino.case import Case
 
 from myo.output.data.output import ParseResult
 from myo.components.command.data import CommandData
-from myo.data.command import HistoryEntry, Command, Interpreter, ShellInterpreter
+from myo.data.command import Command, Interpreter, ShellInterpreter, CommandConfig
 from myo.components.command.compute.output import render_parse_result
 from myo.components.command.compute.tpe import CommandRibosome
 from myo.settings import display_parse_result
 from myo.output.main import parse_with_langs
-from myo.components.command.compute.run import command_by_ident
 from myo.command.history import most_recent_command
 
 log = module_log()
@@ -30,10 +29,18 @@ class ParseConfig(Dat['ParseConfig']):
         self.langs = langs
 
 
+def match_command_config(cmd: Command, shell: Maybe[Command]) -> Callable[[CommandConfig], bool]:
+    def match_command_config(conf: CommandConfig) -> bool:
+        return conf.ident == cmd.ident or shell.ident.contains(conf.ident)
+    return match_command_config
+
+
 @do(NS[CommandRibosome, None])
 def parse_config(cmd: Command, shell: Maybe[Command]) -> Do:
+    cmd_conf = yield Ribo.inspect_comp(lambda a: a.command_configs.find(match_command_config(cmd, shell)))
     shell_langs = shell.map(lambda a: a.langs).get_or_strict(Nil)
-    yield NS.pure(ParseConfig((cmd.langs + shell_langs).distinct))
+    cmd_conf_langs = (cmd_conf // _.parsers).get_or_strict(Nil)
+    yield NS.pure(ParseConfig((cmd.langs + shell_langs + cmd_conf_langs).distinct))
 
 
 @do(NS[D, ParseResult])

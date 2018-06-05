@@ -14,13 +14,12 @@ from myo.ui.pane import insert_pane_into_ui
 from myo.components.ui.compute.tpe import UiRibosome
 
 
-# FIXME `ident` rather than `name`?
 class CreatePaneOptions(Dat['CreatePaneOptions']):
 
     @staticmethod
     def cons(
             layout: Ident,
-            name: Maybe[Ident]=Nothing,
+            ident: Maybe[Ident]=Nothing,
             min_size: Maybe[int]=Nothing,
             max_size: Maybe[int]=Nothing,
             fixed_size: Maybe[int]=Nothing,
@@ -31,7 +30,7 @@ class CreatePaneOptions(Dat['CreatePaneOptions']):
     ) -> 'CreatePaneOptions':
         return CreatePaneOptions(
             layout,
-            name,
+            ident,
             min_size,
             max_size,
             fixed_size,
@@ -44,7 +43,7 @@ class CreatePaneOptions(Dat['CreatePaneOptions']):
     def __init__(
             self,
             layout: Ident,
-            name: Maybe[Ident],
+            ident: Maybe[Ident],
             min_size: Maybe[int],
             max_size: Maybe[int],
             fixed_size: Maybe[int],
@@ -54,7 +53,7 @@ class CreatePaneOptions(Dat['CreatePaneOptions']):
             minimized: Maybe[bool],
     ) -> None:
         self.layout = layout
-        self.name = name
+        self.ident = ident
         self.min_size = min_size
         self.max_size = max_size
         self.fixed_size = fixed_size
@@ -66,7 +65,7 @@ class CreatePaneOptions(Dat['CreatePaneOptions']):
 
 def pane_from_options(options: CreatePaneOptions) -> Pane:
     return Pane.cons(
-        ident=options.name | Ident.generate,
+        ident=options.ident | Ident.generate,
         state=ViewState.cons(options.minimized | False),
         geometry=ViewGeometry(
             options.min_size,
