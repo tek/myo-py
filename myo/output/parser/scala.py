@@ -2,7 +2,7 @@ from typing import Union
 
 from networkx import DiGraph
 
-from amino import List, _, Path, do, Either, Try, Do, Maybe, Regex, Nil, Nothing, ADT, Just
+from amino import List, Path, do, Either, Try, Do, Maybe, Regex, Nil, Nothing, ADT, Just
 from amino.util.numeric import parse_int
 
 from myo.output.data.output import OutputLine, OutputEvent, Location
@@ -98,26 +98,6 @@ class ScalaOutputEvent(OutputEvent):
         self.lines = lines
         self.col = col
 
-    @property
-    def location(self):
-        return self.file
-
-    @property
-    def file_path(self):
-        return self.file.file_path
-
-    @property
-    def coords(self):
-        return self.file.line, self.col / _.col | 1
-
-    @property
-    def code(self):
-        return self.lines.filter_type(CodeLine)
-
-    @property
-    def locations(self):
-        return List(self)
-
 
 def scala_graph() -> DiGraph:
     g = DiGraph()
@@ -128,7 +108,7 @@ def scala_graph() -> DiGraph:
     return g
 
 
-@do(Maybe[OutputEvent])
+@do(Maybe[OutputEvent[ScalaLine]])
 def scala_event(lines: List[OutputLine[ScalaLine]]) -> Do:
     col = lines.find(lambda a: isinstance(a.meta, ColLine))
     file = yield lines.find(lambda a: isinstance(a.meta, FileLine))
