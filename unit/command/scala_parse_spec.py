@@ -1,10 +1,9 @@
 from kallikrein import k, Expectation, kf
 from kallikrein.matchers.length import have_length
-from kallikrein.matchers.maybe import be_just
 from kallikrein.matchers.either import be_right
 from kallikrein.matchers.match_with import match_with
 
-from amino import Lists, _, do, Either, Do
+from amino import Lists, do, Either, Do
 from amino.test.spec import SpecBase
 
 from myo.output.parser.scala import scala_parser

@@ -19,7 +19,7 @@ from myo.ui.data.view import Pane
 
 @do(NvimIO[Expectation])
 def create_pane_spec() -> Do:
-    yield nvim_command('MyoCreatePane', '{ "layout": "make", "name": "pane"}')
+    yield nvim_command('MyoCreatePane', '{ "layout": "make", "ident": "pane"}')
     state = yield component_state('ui')
     space = yield N.m(state.spaces.head, 'no space')
     win = yield N.m(space.windows.head, 'no window')
