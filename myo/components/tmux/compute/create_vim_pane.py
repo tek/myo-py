@@ -1,4 +1,4 @@
-from amino import do, Do, Either, Just
+from amino import do, Do, Either, Just, env
 from amino.logging import module_log
 from amino.lenses.lens import lens
 
@@ -9,7 +9,7 @@ from ribosome.compute.ribosome_api import Ribo
 from chiasma.io.state import TS
 from myo.components.tmux.data import TmuxData
 from chiasma.util.id import Ident
-from chiasma.commands.pane import pane
+from chiasma.commands.pane import pane, parse_pane_id
 from chiasma.data.pane import Pane
 from chiasma.data.session import Session
 from chiasma.data.window import Window
@@ -27,7 +27,8 @@ def insert_vim_pane(
         override_id: Either[str, int],
         vim_pid: int,
 ) -> Do:
-    pane_data = yield TS.lift(override_id.cata(lambda err: discover_pane_by_pid(vim_pid), pane))
+    env_pane = env.get('TMUX_PANE').flat_map(parse_pane_id)
+    pane_data = yield TS.lift(override_id.o(env_pane).cata(lambda err: discover_pane_by_pid(vim_pid), pane))
     vim_pane = Pane.cons(ident, id=pane_data.id)
     yield TS.modify(
         lambda s:
