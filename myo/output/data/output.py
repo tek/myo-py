@@ -70,11 +70,4 @@ class OutputEvent(Generic[A], Dat['OutputEvent[A]']):
         self.head = head
 
 
-class ParseResult(Generic[A], Dat['ParseResult']):
-
-    def __init__(self, head: List[str], events: List[OutputEvent[A]]) -> None:
-        self.head = head
-        self.events = events
-
-
-__all__ = ('OutputLine', 'OutputEvent', 'ParseResult')
+__all__ = ('OutputLine', 'OutputEvent')

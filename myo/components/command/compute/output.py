@@ -18,11 +18,12 @@ from ribosome.data.mapping import Mapping
 from ribosome.compute.ribosome_api import Ribo
 
 from myo.components.command.data import CommandData, OutputData
-from myo.output.data.output import ParseResult, OutputLine, Location, OutputEvent
+from myo.output.data.output import OutputLine, Location, OutputEvent
 from myo.components.command.compute.tpe import CommandRibosome
 from myo.settings import auto_jump
 from myo.output.data.report import (ReportLine, parse_report, format_report, ParseReport, PlainReportLine,
                                     EventReportLine)
+from myo.output.main import ParseConfig
 
 log = module_log()
 D = TypeVar('D')
@@ -110,7 +111,7 @@ def select_event(index: int, jump: Boolean) -> Do:
 
 
 @do(NS[CommandRibosome, None])
-def render_parse_result(events: List[OutputEvent]) -> Do:
+def render_parse_result(events: List[OutputEvent], config: ParseConfig) -> Do:
     report = parse_report(events)
     scratch = yield NS.lift(show_in_scratch_buffer(format_report(report), CreateScratchBufferOptions.cons()))
     yield Ribo.modify_comp(lens.output.modify(__.copy(report=report, scratch=Just(scratch))))

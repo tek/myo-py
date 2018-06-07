@@ -1,4 +1,4 @@
-from kallikrein import Expectation, k, pending
+from kallikrein import Expectation, k
 from kallikrein.matchers.lines import have_lines
 from kallikrein.matchers import equal
 from kallikrein.matchers.tuple import tupled
