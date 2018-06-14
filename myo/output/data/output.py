@@ -3,6 +3,7 @@ from typing import Union, Generic, TypeVar, Tuple
 from amino import Path, List, Dat, Maybe, Nil, Nothing
 
 A = TypeVar('A')
+B = TypeVar('B')
 
 
 class OutputLine(Generic[A], Dat['OutputLine']):
@@ -11,23 +12,6 @@ class OutputLine(Generic[A], Dat['OutputLine']):
         self.text = text
         self.meta = meta
         self.indent = indent
-
-
-class OutputLineOld(Dat['OutputLineOld']):
-
-    def __init__(
-            self,
-            text: str,
-            target: Union[OutputLine, 'OutputEvent'],
-            entry: Maybe[OutputLine],
-            indent: int,
-            group: Maybe[str],
-    ) -> None:
-        self.text = text
-        self.target = target
-        self.entry = entry
-        self.indent = indent
-        self.group = group
 
 
 class Location(Dat['Location']):
@@ -54,17 +38,19 @@ class Location(Dat['Location']):
         return self.line, self.col
 
 
-class OutputEvent(Generic[A], Dat['OutputEvent[A]']):
+class OutputEvent(Generic[A, B], Dat['OutputEvent[A, B]']):
 
     @staticmethod
     def cons(
+            meta: B,
             lines: List[OutputLine[A]]=Nil,
             location: Maybe[Location]=Nothing,
             head: List[str]=Nil,
     ) -> 'OutputEvent[A]':
-        return OutputEvent(lines, location, head)
+        return OutputEvent(meta, lines, location, head)
 
-    def __init__(self, lines: List[OutputLine[A]], location: Maybe[Location], head: List[str]) -> None:
+    def __init__(self, meta: B, lines: List[OutputLine[A]], location: Maybe[Location], head: List[str]) -> None:
+        self.meta = meta
         self.lines = lines
         self.location = location
         self.head = head

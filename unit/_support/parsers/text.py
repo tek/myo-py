@@ -1,9 +1,13 @@
 from networkx import DiGraph
 
-from amino import Maybe, do, Nothing, Do, Nil, List, Dat, Regex
+from amino import Nothing, Nil, List, Dat, Regex
 
 from myo.output.data.output import OutputEvent, OutputLine
 from myo.output.parser.base import Parser, EdgeData
+
+
+class TextEvent(Dat['TextEvent']):
+    pass
 
 
 class TextLine(Dat['TextLine']):
@@ -28,11 +32,11 @@ def text_graph() -> DiGraph:
     return g
 
 
-def text_event(line: OutputLine[TextLine]) -> OutputEvent[TextLine]:
-    return OutputEvent.cons(List(line), Nothing, Nil)
+def text_event(line: OutputLine[TextLine]) -> OutputEvent[TextLine, TextEvent]:
+    return OutputEvent.cons(None, List(line), Nothing, Nil)
 
 
-def text_events(lines: List[OutputLine[TextLine]]) -> List[OutputEvent[TextLine]]:
+def text_events(lines: List[OutputLine[TextLine]]) -> List[OutputEvent[TextLine, TextEvent]]:
     return lines.map(text_event)
 
 

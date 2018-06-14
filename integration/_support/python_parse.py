@@ -9,4 +9,15 @@ RuntimeError: error
     wrong =
 SyntaxError: error'''
 
-__all__ = ('events',)
+formatted_events = '''/path/to/file  2 funcname
+    yield
+/path/to/file  3 funcname
+    yield
+RuntimeError: error
+/path/to/file  6 funcname
+    yield
+/path/to/file  7
+    wrong =
+SyntaxError: error'''
+
+__all__ = ('events', 'formatted_events',)

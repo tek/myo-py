@@ -2,7 +2,7 @@ from typing import Union
 
 from networkx import DiGraph
 
-from amino import List, Path, do, Either, Try, Do, Maybe, Regex, Nil, Nothing, ADT, Just
+from amino import List, Path, do, Either, Try, Do, Maybe, Regex, Nil, Nothing, ADT, Just, Dat
 from amino.util.numeric import parse_int
 
 from myo.output.data.output import OutputLine, OutputEvent, Location
@@ -75,27 +75,21 @@ col_edge = EdgeData.strict(
 )
 
 
-class ScalaOutputEvent(OutputEvent):
+class ScalaEvent(Dat['ScalaEvent']):
 
     @staticmethod
     def cons(
             file: FileLine,
-            head: List[str]=Nil,
-            lines: List[OutputLine[ScalaLine]]=Nil,
             col: Maybe[OutputLine[ColLine]]=Nothing,
     ) -> 'ScalaOutputEvent':
-        return ScalaOutputEvent(file, head, lines, col)
+        return ScalaEvent(file, col)
 
     def __init__(
             self,
             file: FileLine,
-            head: List[str],
-            lines: List[OutputLine[ScalaLine]],
             col: Maybe[OutputLine[ColLine]],
     ) -> None:
         self.file = file
-        self.head = head
-        self.lines = lines
         self.col = col
 
 
@@ -108,15 +102,15 @@ def scala_graph() -> DiGraph:
     return g
 
 
-@do(Maybe[OutputEvent[ScalaLine]])
+@do(Maybe[OutputEvent[ScalaLine, ScalaEvent]])
 def scala_event(lines: List[OutputLine[ScalaLine]]) -> Do:
     col = lines.find(lambda a: isinstance(a.meta, ColLine))
     file = yield lines.find(lambda a: isinstance(a.meta, FileLine))
     location = Location(file.meta.path, file.meta.line, col.map(lambda a: a.meta.col).get_or_strict(0))
-    return OutputEvent.cons(lines, Just(location), Nil)
+    return OutputEvent.cons(ScalaEvent(file, col), lines, Just(location), Nil)
 
 
-def scala_events(lines: List[OutputLine[ScalaLine]]) -> List[OutputEvent[ScalaLine]]:
+def scala_events(lines: List[OutputLine[ScalaLine]]) -> List[OutputEvent[ScalaLine, ScalaEvent]]:
     return scala_event(lines).to_list
 
 

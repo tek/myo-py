@@ -41,8 +41,9 @@ tmux_spec_config: Config = Config.cons(
     core_components=List('core'),
 )
 vars = Map(
+    myo_load_history=False,
     myo_tmux_socket=tmux_spec_socket,
-    myo_state_dir=str(temp_dir('history', 'state')),
+    ribosome_state_dir=str(temp_dir('history', 'state')),
 )
 
 

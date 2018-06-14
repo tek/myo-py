@@ -1,15 +1,13 @@
-from kallikrein import Expectation, k
-from kallikrein.matchers import contain
+from kallikrein import Expectation
 from kallikrein.matchers.length import have_length
 
 from amino import List, do, Do, Map
 from amino.test.spec import SpecBase
 
-from ribosome.nvim.api.ui import current_buffer_content
 from ribosome.nvim.io.compute import NvimIO
 from ribosome.nvim.api.command import nvim_command
-from ribosome.nvim.io.api import N
 from ribosome.test.integration.tmux import tmux_plugin_test
+from ribosome.test.klk.matchers.buffer import current_buffer_matches
 
 from myo import myo_config
 
@@ -25,9 +23,7 @@ test_config = tmux_test_config(myo_config, components=List('command'), extra_var
 @do(NvimIO[Expectation])
 def info_spec() -> Do:
     yield nvim_command('MyoInfo')
-    yield N.sleep(1)
-    lines = yield current_buffer_content()
-    return k(lines).must(contain(have_length(12)))
+    yield current_buffer_matches(have_length(12))
 
 
 class InfoSpec(SpecBase):

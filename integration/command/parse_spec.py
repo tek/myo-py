@@ -2,61 +2,38 @@ from kallikrein import Expectation, k
 from kallikrein.matchers.lines import have_lines
 from kallikrein.matchers import equal
 from kallikrein.matchers.tuple import tupled
+from kallikrein.matchers.maybe import be_just
 
 from chiasma.util.id import StrIdent
 
 from amino import List, Map, Nothing, Path, do, Do, Nil, Just
-from amino.test import fixture_path
 from amino.test.spec import SpecBase
-from amino.lenses.lens import lens
 
 from ribosome.nvim.api.ui import current_buffer_content, current_buffer_name, current_cursor
 from ribosome.compute.run import run_prog
 from ribosome.compute.api import prog
 from ribosome.nvim.io.state import NS
-from ribosome.data.plugin_state import PS
 from ribosome.test.integration.external import external_state_test
 
 from myo.data.command import Command, HistoryEntry
 from myo.components.command.compute.parse import parse, ParseOptions
 from myo.components.command.compute.output import render_parse_result, current_event_jump, next_event, prev_event
-from myo.output.data.output import OutputEvent, OutputLine
-from myo.output.parser.python import FileLine, ErrorLine, ColLine, CodeLine, python_event
+from myo.output.data.output import OutputEvent
+from myo.output.parser.python import PythonLine, PythonEvent
 from myo.settings import auto_jump
+from myo.components.command.compute.tpe import CommandRibosome
+from myo.config.plugin_state import MyoState
+from myo.components.command.compute.parsed_output import ParsedOutput
+from myo.components.command.compute.parse_handlers import ParseHandlers
+from myo.output.lang.python.report import python_report
 
 from test.command import update_command_data, command_spec_test_config
+from test.output.python import output_events, file_path, trace_file, line, col, parsed_output
 
-from integration._support.python_parse import events
-
-
-line, col = 2, 5
-line1 = 3
-line2 = 6
-line3 = 7
-file_path = fixture_path('command', 'parse', 'file.py')
-output_line = OutputLine(
-    f'  File "{file_path}", line {line}, in funcname',
-    FileLine(
-        Path(file_path),
-        line,
-        Just('funcname'),
-    )
-)
-col5 = Just(OutputLine('    ^', ColLine(5)))
-line_lens = lens.meta.line
-code = OutputLine('    yield', CodeLine('yield'))
-output_events = List(
-    python_event(output_line, Just(code), col5),
-    python_event(line_lens.set(line1)(output_line), Just(code), col5),
-    OutputEvent.cons(List(OutputLine('RuntimeError: error', ErrorLine('error', 'RuntimeError')))),
-    python_event(line_lens.set(line2)(output_line), Just(code), col5),
-    python_event(line_lens.set(line3)(output_line), Just(code), col5),
-    OutputEvent.cons(List(OutputLine('SyntaxError: error', ErrorLine('error', 'SyntaxError')))),
-)
-trace_file = fixture_path('tmux', 'python_parse', 'trace')
+from integration._support.python_parse import events, formatted_events
 
 
-@do(NS[PS, Expectation])
+@do(NS[MyoState, Expectation])
 def command_output_spec() -> Do:
     cmd_ident = StrIdent('commo')
     cmd = Command.cons(cmd_ident, langs=List('python'))
@@ -66,23 +43,23 @@ def command_output_spec() -> Do:
     yield NS.lift(auto_jump.update(False))
     yield run_prog(parse, List(ParseOptions.cons()))
     content = yield NS.lift(current_buffer_content())
-    return k(content).must(have_lines(events))
+    return k(content).must(have_lines(formatted_events))
 
 
-@do(NS[PS, Expectation])
+@do(NS[MyoState, Expectation])
 def jump_spec() -> Do:
     yield NS.lift(auto_jump.update(False))
-    yield run_prog(prog.result(render_parse_result), List(output_events))
+    yield run_prog(prog.result(render_parse_result), List(parsed_output))
     yield run_prog(current_event_jump, Nil)
     name = yield NS.lift(current_buffer_name())
     cursor = yield NS.lift(current_cursor())
     return (k(name) == str(file_path)) & (k(cursor) == (line, col))
 
 
-@do(NS[PS, Expectation])
-def next_spec() -> Do:
+@do(NS[MyoState, Expectation])
+def cycle_spec() -> Do:
     yield NS.lift(auto_jump.update(False))
-    yield run_prog(prog.result(render_parse_result), List(output_events))
+    yield run_prog(prog.result(render_parse_result), List(parsed_output))
     cursor1 = yield NS.lift(current_cursor())
     yield run_prog(next_event, Nil)
     cursor2 = yield NS.lift(current_cursor())
@@ -92,11 +69,40 @@ def next_spec() -> Do:
     return k((cursor1, cursor2, cursor3)).must(tupled(3)((equal((1, 0)), equal((3, 0)), equal((1, 0)))))
 
 
+def first_error(output: List[OutputEvent[PythonLine, PythonEvent]]) -> NS[CommandRibosome, int]:
+    return NS.pure(1)
+
+
+@do(NS[MyoState, Expectation])
+def first_error_spec() -> Do:
+    yield NS.lift(auto_jump.update(False))
+    parse_handlers = ParseHandlers.cons(first_error=Just(first_error))
+    yield run_prog(prog.result(render_parse_result), List(ParsedOutput(parse_handlers, Nil, output_events)))
+    name = yield NS.lift(current_buffer_name())
+    cursor = yield NS.lift(current_cursor())
+    return k(cursor) == (3, 0)
+
+
+def truncate_path(path: Path) -> NS[CommandRibosome, str]:
+    return NS.pure(path.name)
+
+
+@do(NS[MyoState, Expectation])
+def path_formatter_spec() -> Do:
+    yield NS.lift(auto_jump.update(False))
+    parse_handlers = ParseHandlers.cons(path_formatter=Just(truncate_path), reporter=Just(python_report))
+    yield run_prog(prog.result(render_parse_result), List(ParsedOutput(parse_handlers, Nil, output_events)))
+    content = yield NS.lift(current_buffer_content())
+    return k(content.head).must(be_just('file.py  2 funcname'))
+
+
 class ParseSpec(SpecBase):
     '''
     parse command output $command_output
     jump to current error $jump
-    cycle to next error $next
+    cycle to next and previous error $cycle
+    custom first error $first_error
+    custom path formatter $path_formatter
     '''
 
     def command_output(self) -> Expectation:
@@ -105,8 +111,14 @@ class ParseSpec(SpecBase):
     def jump(self) -> Expectation:
         return external_state_test(command_spec_test_config, jump_spec)
 
-    def next(self) -> Expectation:
-        return external_state_test(command_spec_test_config, next_spec)
+    def cycle(self) -> Expectation:
+        return external_state_test(command_spec_test_config, cycle_spec)
+
+    def first_error(self) -> Expectation:
+        return external_state_test(command_spec_test_config, first_error_spec)
+
+    def path_formatter(self) -> Expectation:
+        return external_state_test(command_spec_test_config, path_formatter_spec)
 
 
 __all__ = ('ParseSpec',)

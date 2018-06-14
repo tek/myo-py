@@ -1,10 +1,11 @@
-from typing import TypeVar, Callable
+from typing import TypeVar, Callable, Tuple
 
-from amino import do, _, Do, List, __, Just, Boolean, IO, Either, Left, Right
+from amino import do, _, Do, List, __, Just, Boolean, IO, Either, Left, Right, Lists
 from amino.boolean import true, false
 from amino.lenses.lens import lens
 from amino.logging import module_log
 from amino.case import Case
+from amino.state import State
 
 from ribosome.nvim.io.state import NS
 from ribosome.nvim.scratch import show_in_scratch_buffer, CreateScratchBufferOptions, ScratchBuffer
@@ -21,11 +22,13 @@ from myo.components.command.data import CommandData, OutputData
 from myo.output.data.output import OutputLine, Location, OutputEvent
 from myo.components.command.compute.tpe import CommandRibosome
 from myo.settings import auto_jump
-from myo.output.data.report import (ReportLine, parse_report, format_report, ParseReport, PlainReportLine,
-                                    EventReportLine)
-from myo.output.main import ParseConfig
+from myo.output.data.report import ReportLine, format_report, ParseReport, PlainReportLine, EventReportLine, event_index
+from myo.components.command.compute.parsed_output import ParsedOutput
+from myo.components.command.compute.parse_handlers import Reporter
 
 log = module_log()
+A = TypeVar('A')
+B = TypeVar('B')
 D = TypeVar('D')
 jump_mapping = Mapping.cons('output_jump', '<cr>', true)
 quit_mapping = Mapping.cons('output_quit', 'q', true)
@@ -97,7 +100,6 @@ def jump_to_location(scratch: ScratchBuffer, location: Location) -> Do:
     yield N.unit
 
 
-# FIXME lines can be identical, need uuid for lookup; or implement better model
 @do(NS[CommandData, None])
 def select_event(index: int, jump: Boolean) -> Do:
     yield NS.modify(__.set.current(index)).zoom(lens.output)
@@ -110,14 +112,37 @@ def select_event(index: int, jump: Boolean) -> Do:
         yield NS.lift(jump_to_location(scratch, location))
 
 
+def event_report(index: int, event: OutputEvent[A, B], lines: List[str]) -> List[ReportLine]:
+    return (
+        (event.head / PlainReportLine) +
+        (lines.map(lambda a: EventReportLine(a, index, event.location)))
+    )
+
+
+@do(NS[CommandRibosome, List[List[ReportLine]]])
+def events_report(output: ParsedOutput[A, B], reporter: Reporter) -> Do:
+    reports = yield output.filtered.traverse(lambda a: reporter(output.handlers.path_formatter, a), NS)
+    return Lists.range(len(reports)).zip(output.filtered, reports).map3(event_report)
+
+
+@do(NS[CommandRibosome, ParseReport])
+def parse_report(output: ParsedOutput[A, B]) -> Do:
+    events_lines = yield events_report(output, output.handlers.reporter)
+    lines = events_lines.join
+    event_indexes = events_lines.traverse(event_index, State).run_a(0).value
+    return ParseReport(lines, event_indexes)
+
+
 @do(NS[CommandRibosome, None])
-def render_parse_result(events: List[OutputEvent], config: ParseConfig) -> Do:
-    report = parse_report(events)
+def render_parse_result(output: ParsedOutput[A, B]) -> Do:
+    log.debug(f'rendering parse result')
+    report = yield parse_report(output)
     scratch = yield NS.lift(show_in_scratch_buffer(format_report(report), CreateScratchBufferOptions.cons()))
     yield Ribo.modify_comp(lens.output.modify(__.copy(report=report, scratch=Just(scratch))))
     yield List(jump_mapping, quit_mapping, prev_mapping, next_mapping).traverse(activate_mapping, NS).zoom(lens.state)
     jump = yield Ribo.setting(auto_jump)
-    yield Ribo.zoom_comp(select_event(0, jump))
+    first_error = yield output.handlers.first_error(output)
+    yield Ribo.zoom_comp(select_event(first_error, jump))
 
 
 @prog.comp

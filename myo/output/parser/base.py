@@ -11,21 +11,22 @@ from myo.output.data.output import OutputEvent, OutputLine
 
 log = module_log()
 A = TypeVar('A')
+B = TypeVar('B')
 
 
-class Parser(Generic[A], Dat['Parser']):
+class Parser(Generic[A, B], Dat['Parser[A, B]']):
 
     @staticmethod
     def cons(
             graph: DiGraph,
-            cons_events: Callable[[List[OutputLine[A]]], List[OutputEvent[A]]],
+            cons_events: Callable[[List[OutputLine[A]]], List[OutputEvent[A, B]]],
     ) -> 'Parser':
         return Parser(
             graph,
             cons_events,
         )
 
-    def __init__(self, graph: DiGraph, cons_events: Callable[[List[OutputLine[A]]], List[OutputEvent[A]]]) -> None:
+    def __init__(self, graph: DiGraph, cons_events: Callable[[List[OutputLine[A]]], List[OutputEvent[A, B]]]) -> None:
         self.graph = graph
         self.cons_events = cons_events
 
@@ -58,7 +59,7 @@ def cons_output_line(cons: Callable[..., Either[str, A]]) -> Callable[[Match], E
     return cons_output_line
 
 
-def simple_event(lines: List[OutputLine]) -> Maybe[OutputEvent]:
+def simple_event(lines: List[OutputLine[A]]) -> Maybe[OutputEvent[A, B]]:
     return Just(OutputEvent(lines=lines))
 
 
@@ -81,12 +82,12 @@ def match_edge(
 
 @tailrec
 def simple_parse_process(
-        parser: Parser[A],
+        parser: Parser[A, B],
         node: str,
         output: List[str],
-        result: List[OutputEvent[A]],
+        result: List[OutputEvent[A, B]],
         current: List[OutputLine[A]],
-) -> List[OutputEvent[A]]:
+) -> List[OutputEvent[A, B]]:
     '''
     Parse a list of output lines.
     The algorithm starts at the graph node 'start'
@@ -105,7 +106,7 @@ def simple_parse_process(
         9. recurse with 'start'
     10. add the last event and exit the recursion
     '''
-    def add_event() -> List[OutputEvent[A]]:
+    def add_event() -> List[OutputEvent[A, B]]:
         new = Nil if current.empty else parser.cons_events(current)
         return result + new
     def parse_line(line: str, rest: List[str]) -> Tuple[bool, tuple]:
@@ -126,7 +127,8 @@ def simple_parse_process(
     return output.detach_head.map2(parse_line) | quit
 
 
-def parse_events(parser: Parser[A], output: List[str]) -> Either[str, List[OutputEvent[A]]]:
+def parse_events(parser: Parser[A, B], output: List[str]) -> Either[str, List[OutputEvent[A, B]]]:
+    log.debug(f'parsing with {parser}')
     return Right(simple_parse_process(parser, 'start', output, Nil, Nil))
 
 

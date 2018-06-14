@@ -1,6 +1,7 @@
 from typing import Callable
 
 from amino import Maybe, do, Do, List, _, Either, Left, Right
+from amino.logging import module_log
 
 from myo.config.plugin_state import MyoState
 from myo.config.component import MyoComponent
@@ -11,6 +12,8 @@ from ribosome.nvim.io.state import NS
 from ribosome.nvim.io.api import N
 from ribosome.compute.prog import Prog
 
+log = module_log()
+
 
 @prog
 @do(NS[MyoState, List[Program]])
@@ -20,21 +23,27 @@ def find_handlers(pred: Callable[[MyoComponent], Maybe[Program]]) -> Do:
 
 
 @prog
-@do(NS[MyoState, Program])
+@do(NS[MyoState, Either[str, Program]])
 def select_handler(eligible: List[Program], desc: str) -> Do:
     def select(h: Program, t: List[Program]) -> Either[str, Program]:
         return (
             Right(h)
             if t.empty else
-            Left(f'multiple handlers for {desc}: {eligible}')
+            Left(f'multiple handlers for `{desc}`: {eligible}')
         )
-    yield NS.lift(eligible.detach_head.map2(select) | N.error(f'no handler for {desc}'))
+    yield NS.pure(eligible.detach_head.to_either(f'no handler for `{desc}`').flat_map2(select))
 
 
-@prog.do(None)
-def find_handler(pred: Callable[[MyoComponent], Maybe[Program]], desc: str) -> Do:
+@prog.do(Either[str, Program])
+def find_handler_e(pred: Callable[[MyoComponent], Maybe[Program]], desc: str) -> Do:
     eligible = yield find_handlers(pred)
     yield select_handler(eligible, desc)
 
 
-__all__ = ('find_handler', 'find_handlers')
+@prog.do(Program)
+def find_handler(pred: Callable[[MyoComponent], Maybe[Program]], desc: str) -> Do:
+    handler_e = yield find_handler_e(pred, desc)
+    yield Prog.e(handler_e)
+
+
+__all__ = ('find_handler', 'find_handlers', 'find_handler_e',)

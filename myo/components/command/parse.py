@@ -3,31 +3,26 @@ from typing import TypeVar, Callable
 from ribosome.nvim.io.state import NS
 from ribosome.compute.ribosome_api import Ribo
 
-from chiasma.util.id import Ident, IdentSpec
+from chiasma.util.id import Ident
 
-from amino import do, Do, List, Dat, __, Maybe, IO, Lists, Just, Nothing, Nil, _
+from amino import do, Do, List, __, Maybe, IO, Lists, Just, Nothing, Nil
 from amino.logging import module_log
 from amino.case import Case
 
 from myo.output.data.output import OutputEvent
 from myo.components.command.data import CommandData
 from myo.data.command import Command, Interpreter, ShellInterpreter, CommandConfig
-from myo.components.command.compute.output import render_parse_result
 from myo.components.command.compute.tpe import CommandRibosome
-from myo.settings import display_parse_result
 from myo.command.history import most_recent_command
-from myo.output.main import ParseConfig, parse_with_langs
-from myo.util.callback import resolve_callbacks
+from myo.output.main import parse_with_langs
+from myo.output.config import LangConfig, ParseConfig
+from myo.output.configs import default_lang_configs, global_config_defaults
+from myo.components.command.compute.parsed_output import ParsedOutput
+from myo.components.command.compute.parse_handlers import ParseHandlers
 
 log = module_log()
 A = TypeVar('A')
 D = TypeVar('D')
-
-
-def match_command_config(cmd: Command, shell: Maybe[Command]) -> Callable[[CommandConfig], bool]:
-    def match_command_config(conf: CommandConfig) -> bool:
-        return conf.ident == cmd.ident or shell.ident.contains(conf.ident)
-    return match_command_config
 
 
 def command_config_option(cmd: Maybe[CommandConfig], shell: Maybe[CommandConfig]
@@ -51,32 +46,43 @@ def command_conf_by_ident(ident: Ident) -> NS[CommandRibosome, Maybe[CommandConf
     return Ribo.inspect_comp(lambda a: a.command_configs.find(lambda b: b.ident == ident))
 
 
-@do(NS[CommandRibosome, None])
+def find_lang_config(configs: List[LangConfig], name: str) -> Maybe[ParseConfig]:
+    return configs.find(lambda a: a.name == name).map(lambda a: a.parse)
+
+
+@do(NS[CommandRibosome, Maybe[ParseConfig]])
+def lang_config(lang: str) -> Do:
+    configs = yield Ribo.inspect_comp(lambda a: a.lang_configs)
+    return find_lang_config(configs, lang).or_else_call(find_lang_config, default_lang_configs, lang)
+
+
+@do(NS[CommandRibosome, ParseConfig])
 def parse_config(cmd: Command, shell: Maybe[Command]) -> Do:
     cmd_conf = yield command_conf_by_ident(cmd.ident)
-    shell_conf = yield shell.map(lambda a: a.command_conf_by_ident(a.ident)).get_or(NS.pure, Nothing)
+    shell_conf = yield shell.map(lambda a: command_conf_by_ident(a.ident)).get_or(NS.pure, Nothing)
     shell_langs = shell.map(lambda a: a.langs).get_or_strict(Nil)
-    option = command_config_option(cmd_conf, shell_conf)
-    cmd_conf_langs = option(lambda a: a.parsers, lambda a, b: a + b).get_or_strict(Nil)
-    filter = option(lambda a: a.output_filter, lambda a, b: a + b).get_or_strict(Nil)
-    first_error = option(lambda a: a.output_first_error, lambda a, b: a)
-    path_truncator = option(lambda a: a.output_path_truncator, lambda a, b: a)
-    langs = (cmd.langs + shell_langs + cmd_conf_langs).distinct
-    yield NS.pure(ParseConfig(langs, filter, first_error, path_truncator))
+    langs = (cmd.langs + shell_langs).distinct
+    lang_confs = yield langs.flat_traverse(lang_config, NS)
+    cmd_lang_conf = ParseConfig.cons(langs=langs)
+    global_conf = global_config_defaults.parse
+    confs = (
+        List(cmd_conf + shell_conf).flat_map(lambda a: a.parse).cons(cmd_lang_conf) + lang_confs).cat(global_conf)
+    yield NS.pure(confs.fold(ParseConfig))
 
 
 @do(NS[CommandRibosome, List[OutputEvent]])
-def parse_with_config(output: List[str], config: ParseConfig) -> Do:
-    yield NS.e(parse_with_langs(output, config.langs))
+def parse_with_config(output: List[str], langs: List[str]) -> Do:
+    yield NS.e(parse_with_langs(output, langs))
 
 
-@do(NS[CommandRibosome, List[OutputEvent]])
+@do(NS[CommandRibosome, ParsedOutput])
 def parse_output(cmd: Command, output: List[str], shell: Maybe[Command]) -> Do:
     config = yield parse_config(cmd, shell)
-    log.debug(f'parsing output with {config}')
-    events = yield parse_with_config(output, config)
-    filters = yield NS.e(resolve_callbacks(config.filter))
-    yield filters.fold_m(NS.pure(events))(lambda z, f: f(z))
+    handlers = yield NS.e(ParseHandlers.from_config(config))
+    log.debug(f'parsing output with {handlers}')
+    events = yield parse_with_config(output, config.langs)
+    filtered = yield handlers.filter.fold_m(NS.pure(events))(lambda z, f: f(z))
+    return ParsedOutput(handlers, events, filtered)
 
 
 @do(NS[CommandData, List[str]])
@@ -97,13 +103,13 @@ class shell_for_command(Case[Interpreter, NS[CommandData, Maybe[Command]]], alg=
         return NS.pure(Nothing)
 
 
-@do(NS[CommandRibosome, None])
+@do(NS[CommandRibosome, ParsedOutput])
 def parse_command(cmd: Command, shell: Maybe[Command]) -> Do:
     output = yield Ribo.zoom_comp(cmd_output(cmd.ident))
     yield parse_output(cmd, output, shell)
 
 
-@do(NS[CommandRibosome, None])
+@do(NS[CommandRibosome, ParsedOutput])
 def parse_most_recent() -> Do:
     cmd = yield Ribo.zoom_comp(most_recent_command())
     shell = yield Ribo.zoom_comp(shell_for_command.match(cmd.interpreter))

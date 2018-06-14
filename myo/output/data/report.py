@@ -6,6 +6,7 @@ from amino.state import State
 from myo.output.data.output import OutputEvent, OutputLine, Location
 
 A = TypeVar('A')
+B = TypeVar('B')
 
 
 class ReportLine(ADT['ReportLine']):
@@ -59,7 +60,7 @@ def output_line_report(line: OutputLine[A], event: int, location: Maybe[Location
     return List(EventReportLine(line.text, event, location))
 
 
-def event_report(index: int, event: OutputEvent[A]) -> List[ReportLine]:
+def event_report(index: int, event: OutputEvent[A, B]) -> List[ReportLine]:
     return (
         (event.head / PlainReportLine) +
         (event.lines.flat_map(lambda a: output_line_report(a, index, event.location)))
@@ -74,15 +75,8 @@ def event_index(lines: List[ReportLine]) -> Do:
     return current
 
 
-def parse_report(events: List[OutputEvent[A]]) -> ParseReport:
-    events_lines = events.with_index.map2(event_report)
-    lines = events_lines.join
-    event_indexes = events_lines.traverse(event_index, State).run_a(0).value
-    return ParseReport(lines, event_indexes)
-
-
 def format_report(report: ParseReport) -> List[str]:
     return report.lines.map(lambda a: a.text)
 
 
-__all__ = ('ReportLine', 'parse_report', 'format_report',)
+__all__ = ('ReportLine', 'format_report', 'verbatim_report',)

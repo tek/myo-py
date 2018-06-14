@@ -5,9 +5,9 @@ from kallikrein.matcher import Matcher
 from kallikrein.matchers.length import have_length
 
 from chiasma.io.compute import TmuxIO
-from chiasma.commands.pane import all_panes
+from chiasma.commands.pane import all_panes, capture_pane
 
-from amino import do, Do
+from amino import do, Do, List
 
 from ribosome.nvim.io.compute import NvimIO
 from ribosome.test.klk.expectation import await_k
@@ -29,11 +29,15 @@ def tmux_await_k(
     def check() -> Do:
         result = yield tmux_to_nvim(io(*a, **kw))
         return k(result).must(matcher)
-    return await_k(check)
+    return await_k(check, timeout=timeout, interval=interval)
 
 
 def pane_count(count: int) -> NvimIO[Expectation]:
     return tmux_await_k(have_length(count), all_panes)
 
 
-__all__ = ('tmux_await_k', 'pane_count',)
+def pane_content_matches(matcher: Matcher[List[str]], id: int, **kw: Any) -> NvimIO[Expectation]:
+    return tmux_await_k(matcher, capture_pane, id, **kw)
+
+
+__all__ = ('tmux_await_k', 'pane_count', 'pane_content_matches',)

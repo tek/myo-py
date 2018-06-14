@@ -17,7 +17,7 @@ def store_history() -> NS[CommandData, None]:
     return store_json_state('history', _.history)
 
 
-def load_history() -> NS[CommandData, None]:
+def restore_history() -> NS[CommandData, None]:
     return load_json_state('history', lens.history)
 
 
@@ -34,4 +34,4 @@ def history() -> NS[CommandRibosome, List[HistoryEntry]]:
     return Ribo.inspect_comp(lambda a: a.history)
 
 
-__all__ = ('push_history', 'history',)
+__all__ = ('push_history', 'history', 'read_history', 'store_history',)

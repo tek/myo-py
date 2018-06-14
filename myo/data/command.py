@@ -1,6 +1,7 @@
 from amino import List, Maybe, Dat, ADT, Either, Map, Nil, Nothing, do, Do, Just
 
 from myo.util import Ident
+from myo.output.main import ParseConfig
 
 from chiasma.util.id import IdentSpec, ensure_ident_or_generate, optional_ident, StrIdent
 
@@ -63,32 +64,46 @@ class CommandConfig(Dat['CommandConfig']):
     @staticmethod
     def cons(
             ident: IdentSpec,
+            parsers: List[str]=None,
             output_filter: List[str]=None,
             output_first_error: str=None,
-            output_path_truncator: str=None,
-            parsers: List[str]=None,
+            output_path_formatter: str=None,
+            reporter: str=None,
     ) -> 'CommandConfig':
         return CommandConfig(
             ensure_ident_or_generate(ident),
+            Maybe.optional(parsers),
             Maybe.optional(output_filter),
             Maybe.optional(output_first_error),
-            Maybe.optional(output_path_truncator),
-            Maybe.optional(parsers),
+            Maybe.optional(output_path_formatter),
+            Maybe.optional(reporter),
         )
 
     def __init__(
             self,
             ident: Ident,
+            parsers: Maybe[List[str]],
             output_filter: Maybe[List[str]],
             output_first_error: Maybe[str],
-            output_path_truncator: Maybe[str],
-            parsers: Maybe[List[str]],
+            output_path_formatter: Maybe[str],
+            reporter: Maybe[str],
     ) -> None:
         self.ident = ident
+        self.parsers = parsers
         self.output_filter = output_filter
         self.output_first_error = output_first_error
-        self.output_path_truncator = output_path_truncator
-        self.parsers = parsers
+        self.output_path_formatter = output_path_formatter
+        self.reporter = reporter
+
+    @property
+    def parse(self) -> ParseConfig:
+        return ParseConfig(
+            self.parsers.get_or_strict(Nil),
+            self.output_filter.get_or_strict(Nil),
+            self.output_first_error,
+            self.output_path_formatter,
+            self.reporter,
+        )
 
 
 class Command(Dat['Command']):

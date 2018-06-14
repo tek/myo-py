@@ -37,7 +37,7 @@ def discover_spec() -> Do:
         yield N.from_maybe(pids.head, 'no pids')
     yield NS.sleep(.5)
     pid = yield NS.lift(run())
-    yield run_prog(create_vim_pane, List(ident, pid))
+    yield run_prog(create_vim_pane, List(ident, pid, False))
     state = yield NS.inspect(lambda s: s.data_by_type(TmuxData))
     return k(state) == TmuxData.cons(
         Views.cons(

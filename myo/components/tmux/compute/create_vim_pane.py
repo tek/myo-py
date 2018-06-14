@@ -24,11 +24,10 @@ log = module_log()
 @do(TS[TmuxData, None])
 def insert_vim_pane(
         ident: Ident,
-        override_id: Either[str, int],
+        pane_id: Either[str, int],
         vim_pid: int,
 ) -> Do:
-    env_pane = env.get('TMUX_PANE').flat_map(parse_pane_id)
-    pane_data = yield TS.lift(override_id.o(env_pane).cata(lambda err: discover_pane_by_pid(vim_pid), pane))
+    pane_data = yield TS.lift(pane_id.cata(lambda err: discover_pane_by_pid(vim_pid), pane))
     vim_pane = Pane.cons(ident, id=pane_data.id)
     yield TS.modify(
         lambda s:
@@ -42,9 +41,11 @@ def insert_vim_pane(
 
 @prog
 @do(NS[TmuxRibosome, None])
-def create_vim_pane(ident: Ident, vim_pid: int) -> Do:
+def create_vim_pane(ident: Ident, vim_pid: int, use_env_pane: bool) -> Do:
+    env_pane = env.get('TMUX_PANE').flat_map(parse_pane_id)
     override = yield Ribo.setting_e(vim_tmux_pane)
-    yield Ribo.zoom_comp(insert_vim_pane(ident, override, vim_pid).nvim)
+    strict = override.o(env_pane) if use_env_pane else override
+    yield Ribo.zoom_comp(insert_vim_pane(ident, strict, vim_pid).nvim)
 
 
 __all__ = ('create_vim_pane',)

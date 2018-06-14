@@ -1,15 +1,22 @@
-from kallikrein import k, Expectation, kf
+from kallikrein import k, Expectation
 from kallikrein.matchers.length import have_length
 from kallikrein.matchers.either import be_right
-from kallikrein.matchers.match_with import match_with
 
-from amino import Lists, do, Either, Do
+from test.command import command_spec_test_config
+
+from amino import Lists, do, Do
 from amino.test.spec import SpecBase
+
+from ribosome.nvim.io.state import NS
+from ribosome.test.unit import unit_test
 
 from myo.output.parser.scala import scala_parser
 from myo.output.parser.base import parse_events
-from myo.output.data.report import parse_report, ParseReport
-from myo.components.command.compute.output import report_line_number
+from myo.output.data.report import ParseReport
+from myo.components.command.compute.output import report_line_number, parse_report
+from myo.config.plugin_state import MyoState
+from myo.components.command.compute.parsed_output import ParsedOutput
+from myo.components.command.compute.parse_handlers import ParseHandlers
 
 output = '''[error] /path/to/file.scala:3:1: expected class or object definition
 [error] name
@@ -22,17 +29,23 @@ output = '''[error] /path/to/file.scala:3:1: expected class or object definition
 lines = Lists.lines(output)
 
 
-@do(Either[str, ParseReport])
+@do(NS[MyoState, ParseReport])
 def cons_report() -> Do:
-    events = yield parse_events(scala_parser, lines)
-    return parse_report(events)
+    events = yield NS.e(parse_events(scala_parser, lines))
+    output = ParsedOutput(ParseHandlers.cons(), events, events)
+    yield parse_report(output)
 
 
-@do(Either[str, Expectation])
+@do(NS[MyoState, Expectation])
+def error_spec() -> Do:
+    report = yield cons_report()
+    return k(report.lines).must(have_length(6))
+
+
+@do(NS[MyoState, Expectation])
 def line_number_spec() -> Do:
     report = yield cons_report()
-    line = yield report_line_number(1)(report)
-    return k(line) == 3
+    return k(report_line_number(1)(report)).must(be_right(3))
 
 
 class ScalaParseSpec(SpecBase):
@@ -42,10 +55,10 @@ class ScalaParseSpec(SpecBase):
     '''
 
     def error(self) -> Expectation:
-        return k(cons_report().map(lambda a: a.lines)).must(be_right(have_length(6)))
+        return unit_test(command_spec_test_config, error_spec)
 
     def event(self) -> Expectation:
-        return kf(line_number_spec).must(be_right(match_with(lambda a: a)))
+        return unit_test(command_spec_test_config, line_number_spec)
 
 
 __all__ = ('ScalaParseSpec',)

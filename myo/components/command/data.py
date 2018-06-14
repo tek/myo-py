@@ -5,6 +5,7 @@ from amino.list import replace_one
 
 from myo.data.command import Command, HistoryEntry, RunningCommand, CommandConfig
 from myo.output.data.report import ParseReport
+from myo.output.config import LangConfig
 
 from chiasma.util.id import Ident
 
@@ -43,6 +44,7 @@ class CommandData(Dat['CommandData']):
     def cons(
             commands: List[Command]=Nil,
             command_configs: List[CommandConfig]=Nil,
+            lang_configs: List[LangConfig]=Nil,
             logs: Map[Ident, Path]=Map(),
             uuid: UUID=None,
             history: List[HistoryEntry]=Nil,
@@ -52,6 +54,7 @@ class CommandData(Dat['CommandData']):
         return CommandData(
             commands,
             command_configs,
+            lang_configs,
             logs,
             uuid or uuid4(),
             history,
@@ -63,6 +66,7 @@ class CommandData(Dat['CommandData']):
             self,
             commands: List[Command],
             command_configs: List[CommandConfig],
+            lang_configs: List[LangConfig],
             logs: Map[Ident, Path],
             uuid: UUID,
             history: List[HistoryEntry],
@@ -70,12 +74,13 @@ class CommandData(Dat['CommandData']):
             running: List[RunningCommand]=Nil,
     ) -> None:
         self.commands = commands
+        self.command_configs = command_configs
+        self.lang_configs = lang_configs
         self.logs = logs
         self.uuid = uuid
         self.history = history
         self.output = output
         self.running = running
-        self.command_configs = command_configs
 
     def command_by_ident(self, ident: Ident) -> Either[str, Command]:
         return self.commands.find(_.ident == ident).to_either(f'no command `{ident}`')

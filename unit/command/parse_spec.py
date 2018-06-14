@@ -25,7 +25,7 @@ from myo.components.command.compute.tpe import CommandRibosome
 
 from test.command import update_command_data
 
-from unit._support.parsers.text import TextLine
+from unit._support.parsers.text import TextLine, TextEvent
 
 name = StrIdent('test')
 config = Config.cons(
@@ -39,7 +39,7 @@ trace_file = fixture_path('parse', 'trace', 'text')
 parsers = List('unit._support.parsers.text')
 
 
-@do(NS[MyoState, List[OutputEvent[TextLine]]])
+@do(NS[MyoState, List[OutputEvent[TextLine, TextEvent]]])
 def run_parser(command_config: CommandConfig) -> Do:
     cmd = Command.cons(name, VimInterpreter.default(), Nil, config=name)
     yield update_command_data(commands=List(cmd), command_configs=List(command_config))
@@ -51,7 +51,7 @@ def run_parser(command_config: CommandConfig) -> Do:
 def text_spec() -> Do:
     command_config = CommandConfig.cons(ident=name, parsers=parsers)
     result = yield run_parser(command_config)
-    return k(result).must(have_length(2))
+    return k(result.filtered).must(have_length(2))
 
 
 def filter_output(events: List[OutputEvent]) -> NS[CommandRibosome, List[OutputEvent]]:
@@ -63,7 +63,7 @@ def output_filter_spec() -> Do:
     command_config = CommandConfig.cons(ident=name, parsers=parsers,
                                         output_filter=List('unit.command.parse_spec.filter_output'))
     result = yield run_parser(command_config)
-    return k(result).must(have_length(1))
+    return k(result.filtered).must(have_length(1))
 
 
 class ParseSpec(SpecBase):

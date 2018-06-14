@@ -22,7 +22,7 @@ from test.test import mock_test_functions
 
 test_config = TestConfig.cons(myo_config, vars=Map(myo_test_ui='internal'))
 file = fixture_path('command', 'test', 'code.py')
-target = List('  File "<string>", line 1, in <module>', 'RuntimeError: No active exception to reraise')
+target = List('<string>  1 <module>', 'RuntimeError: No active exception to reraise')
 
 
 @do(NvimIO[Buffer])

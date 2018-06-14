@@ -10,10 +10,11 @@ from ribosome.nvim.io.compute import NvimIO
 from ribosome.nvim.api.function import nvim_call_tpe
 from ribosome.compute.ribosome_api import Ribo
 from ribosome.compute.prog import Prog
+from ribosome.compute.program import Program
 
 from myo.ui.data.ui_data import UiData
 from myo.ui.data.space import Space
-from myo.config.handler import find_handler
+from myo.config.handler import find_handler, find_handler_e
 from myo.ui.data.view import Pane, Layout
 from myo.ui.data.window import Window
 from myo.settings import init_default_ui
@@ -35,15 +36,28 @@ def insert_default_ui(ident: Ident, layout_ident: Ident, make_ident: Ident) -> D
     yield NS.modify(__.append1.spaces(Space.cons(ident, List(Window.cons(ident, layout=layout)))))
 
 
+def no_handler(error: str) -> Prog[None]:
+    log.error(error)
+    return Prog.unit
+
+
 @prog.do(None)
-def run_init() -> Do:
-    handler = yield find_handler(__.create_vim_pane(), 'insert_vim_pane')
+def init_vim_pane(handler: Program) -> Do:
     pid = yield Ribo.lift_nvimio(vim_pid())
     ident = StrIdent('vim')
     layout_ident = StrIdent('root')
     make_ident = StrIdent('make')
     yield Ribo.lift_comp(insert_default_ui(ident, layout_ident, make_ident), UiData)
-    yield handler(ident, pid)
+    yield handler(ident, pid, True)
+
+
+@prog.do(None)
+def run_init() -> Do:
+    handler = yield find_handler_e(__.create_vim_pane(), 'insert_vim_pane')
+    yield handler.cata(
+        no_handler,
+        init_vim_pane,
+    )
 
 
 @prog.do(None)

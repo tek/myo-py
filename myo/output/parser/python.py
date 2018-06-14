@@ -76,16 +76,6 @@ def python_graph() -> DiGraph:
     return g
 
 
-def python_event(
-        file: OutputLine[FileLine],
-        code: Maybe[OutputLine[CodeLine]],
-        col: Maybe[OutputLine[ColLine]],
-) -> OutputEvent:
-    lines = List(file).cat_m(code)
-    location = Location(file.meta.path, file.meta.line, col.map(lambda a: a.meta.col).get_or_strict(0))
-    return OutputEvent.cons(lines, Just(location))
-
-
 class EventData(Dat['EventData']):
 
     @staticmethod
@@ -115,8 +105,35 @@ class EventData(Dat['EventData']):
         self.col = col
 
 
+class PythonEvent(ADT['PythonEvent']):
+    pass
+
+
+class StackFrameEvent(PythonEvent):
+
+    def __init__(self, file: OutputLine[FileLine], code: Maybe[OutputLine[CodeLine]]) -> None:
+        self.file = file
+        self.code = code
+
+
+class ErrorEvent(PythonEvent):
+
+    def __init__(self, line: OutputLine[PythonLine]) -> None:
+        self.line = line
+
+
+def stack_frame_event(
+        file: OutputLine[FileLine],
+        code: Maybe[OutputLine[CodeLine]],
+        col: Maybe[OutputLine[ColLine]],
+) -> OutputEvent:
+    lines = List(file).cat_m(code)
+    location = Location(file.meta.path, file.meta.line, col.map(lambda a: a.meta.col).get_or_strict(0))
+    return OutputEvent.cons(StackFrameEvent(file, code), lines, Just(location))
+
+
 def push_event(data: EventData) -> EventData:
-    event = data.file.map(lambda a: python_event(a, data.code, data.col))
+    event = data.file.map(lambda a: stack_frame_event(a, data.code, data.col))
     new = event.cata(data.append1.output, data)
     return EventData.cons(output=new.output)
 
@@ -128,7 +145,7 @@ class update_event_data(Case[PythonLine, EventData], alg=PythonLine):
         self.line = line
 
     def error(self, meta: ErrorLine) -> EventData:
-        return push_event(self.current).append1.output(OutputEvent.cons(List(self.line)))
+        return push_event(self.current).append1.output(OutputEvent.cons(ErrorEvent(self.line), List(self.line)))
 
     def code(self, meta: CodeLine) -> EventData:
         return self.current.set.code(Just(self.line))
@@ -140,7 +157,7 @@ class update_event_data(Case[PythonLine, EventData], alg=PythonLine):
         return push_event(self.current).set.file(Just(self.line))
 
 
-def python_events(lines: List[OutputLine[PythonLine]]) -> List[OutputEvent[PythonLine]]:
+def python_events(lines: List[OutputLine[PythonLine]]) -> List[OutputEvent[PythonLine, PythonEvent]]:
     data = lines.fold_left(EventData.cons())(lambda z, a: update_event_data(z, a)(a.meta))
     return push_event(data).output
 
