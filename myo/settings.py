@@ -37,6 +37,9 @@ test_langs_help = '''When parsing the output of a command executed with `MyoVimT
 load_history_help = '''The history of executed commands is persisted to disk. This setting controls whether it is
 restored on startup.
 '''
+builtin_output_config_help = '''Command output parsing can be configured from multiple sources. If this setting is
+`true`, myo's built-in configuration is used in addition to command-specific config.
+'''
 
 
 tmux_watcher_interval = float_setting('tmux_watcher_interval', 'tmux process polling interval',
@@ -54,7 +57,10 @@ test_ui = str_setting('test_ui', 'ui for running tests', test_ui_help, True, Rig
 test_pane = str_setting('test_pane', 'pane for running tests', test_pane_help, True, Right('make'))
 test_langs = str_list_setting('test_langs', 'parsing langs for vim-test output', test_langs_help, True, Right(Nil))
 load_history = bool_setting('load_history', 'load command history', load_history_help, True, Right(True))
+builtin_output_config = bool_setting('builtin_output_config', 'use default output configs', builtin_output_config_help,
+                                     True, Right(True))
 
 
 __all__ = ('tmux_watcher_interval', 'tmux_socket', 'vim_tmux_pane', 'display_parse_result', 'auto_jump',
-           'vim_test_filename_modifier', 'init_default_ui', 'test_ui', 'test_pane', 'test_langs', 'load_history',)
+           'vim_test_filename_modifier', 'init_default_ui', 'test_ui', 'test_pane', 'test_langs', 'load_history',
+           'builtin_output_config',)

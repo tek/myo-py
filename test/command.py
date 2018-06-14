@@ -21,7 +21,10 @@ command_spec_config = Config.cons(
     state_ctor=Env.cons,
     components=Map(core=core, command=command),
 )
-command_spec_test_config = TestConfig.cons(command_spec_config, components=List('command'))
+vars = Map(
+    myo_builtin_output_config=False,
+)
+command_spec_test_config = TestConfig.cons(command_spec_config, components=List('command'), vars=vars)
 
 
 def update_command_data(**command_data: Any) -> NS[PS, None]:

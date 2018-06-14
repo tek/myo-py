@@ -43,7 +43,7 @@ def command_output_spec() -> Do:
     yield NS.lift(auto_jump.update(False))
     yield run_prog(parse, List(ParseOptions.cons()))
     content = yield NS.lift(current_buffer_content())
-    return k(content).must(have_lines(formatted_events))
+    return k(content).must(have_lines(events))
 
 
 @do(NS[MyoState, Expectation])
@@ -78,7 +78,6 @@ def first_error_spec() -> Do:
     yield NS.lift(auto_jump.update(False))
     parse_handlers = ParseHandlers.cons(first_error=Just(first_error))
     yield run_prog(prog.result(render_parse_result), List(ParsedOutput(parse_handlers, Nil, output_events)))
-    name = yield NS.lift(current_buffer_name())
     cursor = yield NS.lift(current_cursor())
     return k(cursor) == (3, 0)
 

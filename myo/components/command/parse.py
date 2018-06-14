@@ -19,6 +19,7 @@ from myo.output.config import LangConfig, ParseConfig
 from myo.output.configs import default_lang_configs, global_config_defaults
 from myo.components.command.compute.parsed_output import ParsedOutput
 from myo.components.command.compute.parse_handlers import ParseHandlers
+from myo.settings import builtin_output_config
 
 log = module_log()
 A = TypeVar('A')
@@ -50,23 +51,36 @@ def find_lang_config(configs: List[LangConfig], name: str) -> Maybe[ParseConfig]
     return configs.find(lambda a: a.name == name).map(lambda a: a.parse)
 
 
-@do(NS[CommandRibosome, Maybe[ParseConfig]])
-def lang_config(lang: str) -> Do:
-    configs = yield Ribo.inspect_comp(lambda a: a.lang_configs)
-    return find_lang_config(configs, lang).or_else_call(find_lang_config, default_lang_configs, lang)
+def lang_config(use_builtins: bool) -> Callable[[str], NS[CommandRibosome, Maybe[ParseConfig]]]:
+    @do(NS[CommandRibosome, Maybe[ParseConfig]])
+    def lang_config(lang: str) -> Do:
+        configs = yield Ribo.inspect_comp(lambda a: a.lang_configs)
+        specific = find_lang_config(configs, lang)
+        return (
+            specific.or_else_call(find_lang_config, default_lang_configs, lang)
+            if use_builtins else
+            specific
+        )
+    return lang_config
 
 
 @do(NS[CommandRibosome, ParseConfig])
 def parse_config(cmd: Command, shell: Maybe[Command]) -> Do:
+    use_builtins = yield Ribo.setting(builtin_output_config)
     cmd_conf = yield command_conf_by_ident(cmd.ident)
     shell_conf = yield shell.map(lambda a: command_conf_by_ident(a.ident)).get_or(NS.pure, Nothing)
     shell_langs = shell.map(lambda a: a.langs).get_or_strict(Nil)
     langs = (cmd.langs + shell_langs).distinct
-    lang_confs = yield langs.flat_traverse(lang_config, NS)
+    lang_confs = yield langs.flat_traverse((lang_config)(use_builtins), NS)
     cmd_lang_conf = ParseConfig.cons(langs=langs)
     global_conf = global_config_defaults.parse
+    local_confs = (cmd_conf.to_list + shell_conf.to_list).map(lambda a: a.parse)
+    nonglobal_confs = (local_confs + lang_confs).cons(cmd_lang_conf)
     confs = (
-        List(cmd_conf + shell_conf).flat_map(lambda a: a.parse).cons(cmd_lang_conf) + lang_confs).cat(global_conf)
+        nonglobal_confs.cat(global_conf)
+        if use_builtins else
+        nonglobal_confs
+    )
     yield NS.pure(confs.fold(ParseConfig))
 
 
