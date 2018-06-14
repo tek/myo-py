@@ -22,7 +22,7 @@ default_lang_configs = List(
 
 global_config_defaults = LangConfig.cons(
     'global',
-    output_path_formatter=project_relative_path,
+    output_path_formatter=qualified_name(project_relative_path),
 )
 
 __all__ = ('default_lang_configs', 'global_config_defaults',)
