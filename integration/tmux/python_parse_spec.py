@@ -12,8 +12,6 @@ from ribosome.test.rpc import json_cmd
 from ribosome.test.integration.tmux import tmux_plugin_test
 from ribosome.test.klk.expectation import await_k
 from ribosome.test.klk.matchers.buffer import buffer_count_is
-from ribosome.nvim.io.api import N
-from ribosome.nvim.api.command import nvim_command_output, nvim_command
 
 from myo import myo_config
 
@@ -34,30 +32,19 @@ statements = List(
     f'''print(pathlib.Path('{file}').read_text())''',
 )
 
+
 @do(NvimIO[Expectation])
 def buffer_content() -> Do:
     lines = yield current_buffer_content()
     return k(lines).must(have_lines(formatted_events))
 
 
-def myo_syntax(lines: List[str]) -> List[str]:
-    return lines.filter(lambda a: a.startswith('Myo'))
-
-
 @do(NvimIO[Expectation])
 def parse_spec(run: Callable[[], NvimIO[None]]) -> Do:
-    yield nvim_command('highlight Error cterm=bold ctermfg=1')
-    yield nvim_command('highlight Directory ctermfg=4')
-    yield nvim_command('highlight Type ctermfg=3')
-    yield nvim_command('highlight Statement ctermfg=2')
     yield json_cmd('MyoAddSystemCommand', ident='python', line='python', target=pane_ident, langs=List('python'))
     yield run()
     yield json_cmd('MyoParse')
-    content = yield await_k(buffer_content, timeout=5)
-    yield N.sleep(.5)
-    s = yield nvim_command_output('syntax')
-    h = yield nvim_command_output('highlight')
-    yield N.sleep(5)
+    content = yield await_k(buffer_content)
     yield send_input('q')
     count = yield buffer_count_is(1)
     return content & count

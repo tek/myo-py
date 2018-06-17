@@ -40,7 +40,7 @@ class python_report_event(Case[PythonEvent, NS[CommandRibosome, List[DisplayLine
 def python_report(
         path_formatter: PathFormatter,
         output: OutputEvent[PythonLine, PythonEvent]
-) -> NS[CommandRibosome, List[List[str]]]:
+) -> NS[CommandRibosome, List[DisplayLine]]:
     return python_report_event(path_formatter, output)(output.meta)
 
 

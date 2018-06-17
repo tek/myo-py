@@ -31,6 +31,7 @@ from myo.output.lang.python.syntax import python_syntax
 
 from test.command import update_command_data, command_spec_test_config
 from test.output.python import output_events, file_path, trace_file, line, col, parsed_output
+from test.output.util import myo_syntax
 
 from integration._support.python_parse import events
 
@@ -65,7 +66,6 @@ def cycle_spec() -> Do:
     cursor1 = yield NS.lift(current_cursor())
     yield run_prog(next_event, Nil)
     cursor2 = yield NS.lift(current_cursor())
-    a = yield NS.lift(current_buffer_content())
     yield run_prog(prev_event, Nil)
     cursor3 = yield NS.lift(current_cursor())
     return k((cursor1, cursor2, cursor3)).must(tupled(3)((equal((1, 0)), equal((3, 0)), equal((1, 0)))))
@@ -95,10 +95,6 @@ def path_formatter_spec() -> Do:
     yield run_prog(prog.result(render_parse_result), List(ParsedOutput(parse_handlers, Nil, output_events)))
     content = yield NS.lift(current_buffer_content())
     return k(content.head).must(be_just('file.py  2 funcname'))
-
-
-def myo_syntax(lines: List[str]) -> List[str]:
-    return lines.filter(lambda a: a.startswith('Myo')).rstrip
 
 
 target_syntax = '''MyoPath        xxx match /^.*\ze\( .*$\)\@=/  contained containedin=MyoLocation

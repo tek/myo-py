@@ -143,7 +143,8 @@ def setup_syntax(cons: SyntaxCons, window: int) -> Do:
     cmds = (
         syntax.syntax.map(syntax_item_cmd.match) +
         syntax.highlight.map(highlight_cmd) +
-        syntax.links.map(hi_link_cmd)
+        syntax.links.map(hi_link_cmd) +
+        List('setlocal conceallevel=2')
     )
     win_cmds = cmds.map(lambda a: format_windo(a, window, Nothing))
     yield NS.lift(nvim_atomic_commands(win_cmds))

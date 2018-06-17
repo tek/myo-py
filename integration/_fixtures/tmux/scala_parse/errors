@@ -2,6 +2,6 @@
 [error] name
 [error] ^
 [error] /path/to/other_file.scala:7:2: terrible mistake
-[error] x.otherName
+[error] x.otherName[Data]
 [error]   ^
 [error] one error found
