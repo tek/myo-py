@@ -1,6 +1,6 @@
-from typing import TypeVar, Callable, Tuple
+from typing import TypeVar, Callable
 
-from amino import do, _, Do, List, __, Just, Boolean, IO, Either, Left, Right, Lists
+from amino import do, Do, List, Just, Boolean, IO, Either, Left, Lists, Nothing
 from amino.boolean import true, false
 from amino.lenses.lens import lens
 from amino.logging import module_log
@@ -12,19 +12,23 @@ from ribosome.nvim.scratch import show_in_scratch_buffer, CreateScratchBufferOpt
 from ribosome.compute.api import prog
 from ribosome.nvim.io.compute import NvimIO
 from ribosome.nvim.api.ui import (window_line, focus_window, edit_file, set_local_cursor, set_line, window_buffer_name,
-                                  close_buffer)
+                                  close_buffer, window_number)
 from ribosome.nvim.io.api import N
 from ribosome.components.internal.mapping import activate_mapping
 from ribosome.data.mapping import Mapping
 from ribosome.compute.ribosome_api import Ribo
+from ribosome.nvim.syntax.cmd import syntax_item_cmd, highlight_cmd, hi_link_cmd
+from ribosome.nvim.api.command import nvim_atomic_commands
+from ribosome.nvim.api.util import format_windo
 
 from myo.components.command.data import CommandData, OutputData
 from myo.output.data.output import OutputLine, Location, OutputEvent
 from myo.components.command.compute.tpe import CommandRibosome
 from myo.settings import auto_jump
-from myo.output.data.report import ReportLine, format_report, ParseReport, PlainReportLine, EventReportLine, event_index
+from myo.output.data.report import (ReportLine, format_report, ParseReport, PlainReportLine, EventReportLine,
+                                    event_index, DisplayLine)
 from myo.components.command.compute.parsed_output import ParsedOutput
-from myo.components.command.compute.parse_handlers import Reporter
+from myo.components.command.compute.parse_handlers import Reporter, SyntaxCons
 
 log = module_log()
 A = TypeVar('A')
@@ -37,15 +41,15 @@ next_mapping = Mapping.cons('output_next', '<m-=>', false)
 
 
 def output_data() -> NS[CommandData, OutputData]:
-    return NS.inspect(_.output)
+    return NS.inspect(lambda a: a.output)
 
 
 def scratch_buffer() -> NS[CommandData, ScratchBuffer]:
-    return NS.inspect_either(__.output.scratch.to_either('no scratch buffer set'))
+    return NS.inspect_either(lambda a: a.output.scratch.to_either('no scratch buffer set'))
 
 
 def output_entry_at(index: int) -> NS[CommandData, OutputLine]:
-    return NS.inspect_maybe(__.output.locations.lift(index), lambda: f'invalid output entry index {index}')
+    return NS.inspect_maybe(lambda a: a.output.locations.lift(index), lambda: f'invalid output entry index {index}')
 
 
 def report_line_number(event: int) -> Callable[[ParseReport], Either[str, int]]:
@@ -102,19 +106,18 @@ def jump_to_location(scratch: ScratchBuffer, location: Location) -> Do:
 
 @do(NS[CommandData, None])
 def select_event(index: int, jump: Boolean) -> Do:
-    yield NS.modify(__.set.current(index)).zoom(lens.output)
+    yield NS.modify(lambda a: a.set.current(index)).zoom(lens.output)
     line = yield inspect_report_line_number_by_event_index(index)
     scratch = yield scratch_buffer()
     yield NS.lift(set_line(scratch.ui.window, line + 1))
-    yield NS.modify(__.set.current(index)).zoom(lens.output)
+    yield NS.modify(lambda a: a.set.current(index)).zoom(lens.output)
     if jump:
         location = yield inspect_line_location(line)
         yield NS.lift(jump_to_location(scratch, location))
 
 
-def event_report(index: int, event: OutputEvent[A, B], lines: List[str]) -> List[ReportLine]:
+def event_report(index: int, event: OutputEvent[A, B], lines: List[DisplayLine]) -> List[ReportLine]:
     return (
-        (event.head / PlainReportLine) +
         (lines.map(lambda a: EventReportLine(a, index, event.location)))
     )
 
@@ -133,13 +136,28 @@ def parse_report(output: ParsedOutput[A, B]) -> Do:
     return ParseReport(lines, event_indexes)
 
 
+# TODO use language syntax embedding for code lines
+@do(NS[CommandRibosome, None])
+def setup_syntax(cons: SyntaxCons, window: int) -> Do:
+    syntax = yield cons()
+    cmds = (
+        syntax.syntax.map(syntax_item_cmd.match) +
+        syntax.highlight.map(highlight_cmd) +
+        syntax.links.map(hi_link_cmd)
+    )
+    win_cmds = cmds.map(lambda a: format_windo(a, window, Nothing))
+    yield NS.lift(nvim_atomic_commands(win_cmds))
+
+
 @do(NS[CommandRibosome, None])
 def render_parse_result(output: ParsedOutput[A, B]) -> Do:
     log.debug(f'rendering parse result')
     report = yield parse_report(output)
     scratch = yield NS.lift(show_in_scratch_buffer(format_report(report), CreateScratchBufferOptions.cons()))
-    yield Ribo.modify_comp(lens.output.modify(__.copy(report=report, scratch=Just(scratch))))
+    scratch_number = yield NS.lift(window_number(scratch.ui.window))
+    yield Ribo.modify_comp(lens.output.modify(lambda a: a.copy(report=report, scratch=Just(scratch))))
     yield List(jump_mapping, quit_mapping, prev_mapping, next_mapping).traverse(activate_mapping, NS).zoom(lens.state)
+    yield setup_syntax(output.handlers.syntax, scratch_number)
     jump = yield Ribo.setting(auto_jump)
     first_error = yield output.handlers.first_error(output)
     yield Ribo.zoom_comp(select_event(first_error, jump))
@@ -164,7 +182,7 @@ def quit_output() -> Do:
 @prog
 @do(NS[CommandRibosome, None])
 def prev_event() -> Do:
-    current = yield Ribo.inspect_comp(_.output.current)
+    current = yield Ribo.inspect_comp(lambda a: a.output.current)
     jump = yield Ribo.setting(auto_jump)
     if current > 0:
         yield Ribo.zoom_comp(select_event(current - 1, jump))
@@ -173,8 +191,8 @@ def prev_event() -> Do:
 @prog
 @do(NS[CommandRibosome, None])
 def next_event() -> Do:
-    current = yield Ribo.inspect_comp(_.output.current)
-    count = yield Ribo.inspect_comp(_.output.report.event_indexes.length)
+    current = yield Ribo.inspect_comp(lambda a: a.output.current)
+    count = yield Ribo.inspect_comp(lambda a: a.output.report.event_indexes.length)
     if current < count - 1:
         jump = yield Ribo.setting(auto_jump)
         yield Ribo.zoom_comp(select_event(current + 1, jump))

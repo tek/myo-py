@@ -68,7 +68,8 @@ class CommandConfig(Dat['CommandConfig']):
             output_filter: List[str]=None,
             output_first_error: str=None,
             output_path_formatter: str=None,
-            reporter: str=None,
+            output_reporter: str=None,
+            output_syntax: str=None,
     ) -> 'CommandConfig':
         return CommandConfig(
             ensure_ident_or_generate(ident),
@@ -76,7 +77,8 @@ class CommandConfig(Dat['CommandConfig']):
             Maybe.optional(output_filter),
             Maybe.optional(output_first_error),
             Maybe.optional(output_path_formatter),
-            Maybe.optional(reporter),
+            Maybe.optional(output_reporter),
+            Maybe.optional(output_syntax),
         )
 
     def __init__(
@@ -86,14 +88,16 @@ class CommandConfig(Dat['CommandConfig']):
             output_filter: Maybe[List[str]],
             output_first_error: Maybe[str],
             output_path_formatter: Maybe[str],
-            reporter: Maybe[str],
+            output_reporter: Maybe[str],
+            output_syntax: Maybe[str],
     ) -> None:
         self.ident = ident
         self.parsers = parsers
         self.output_filter = output_filter
         self.output_first_error = output_first_error
         self.output_path_formatter = output_path_formatter
-        self.reporter = reporter
+        self.output_reporter = output_reporter
+        self.output_syntax = output_syntax
 
     @property
     def parse(self) -> ParseConfig:
@@ -102,7 +106,8 @@ class CommandConfig(Dat['CommandConfig']):
             self.output_filter.get_or_strict(Nil),
             self.output_first_error,
             self.output_path_formatter,
-            self.reporter,
+            self.output_reporter,
+            self.output_syntax,
         )
 
 

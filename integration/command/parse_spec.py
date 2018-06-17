@@ -14,6 +14,7 @@ from ribosome.compute.run import run_prog
 from ribosome.compute.api import prog
 from ribosome.nvim.io.state import NS
 from ribosome.test.integration.external import external_state_test
+from ribosome.nvim.api.command import nvim_command_output
 
 from myo.data.command import Command, HistoryEntry
 from myo.components.command.compute.parse import parse, ParseOptions
@@ -26,11 +27,12 @@ from myo.config.plugin_state import MyoState
 from myo.components.command.compute.parsed_output import ParsedOutput
 from myo.components.command.compute.parse_handlers import ParseHandlers
 from myo.output.lang.python.report import python_report
+from myo.output.lang.python.syntax import python_syntax
 
 from test.command import update_command_data, command_spec_test_config
 from test.output.python import output_events, file_path, trace_file, line, col, parsed_output
 
-from integration._support.python_parse import events, formatted_events
+from integration._support.python_parse import events
 
 
 @do(NS[MyoState, Expectation])
@@ -95,6 +97,39 @@ def path_formatter_spec() -> Do:
     return k(content.head).must(be_just('file.py  2 funcname'))
 
 
+def myo_syntax(lines: List[str]) -> List[str]:
+    return lines.filter(lambda a: a.startswith('Myo')).rstrip
+
+
+target_syntax = '''MyoPath        xxx match /^.*\ze\( .*$\)\@=/  contained containedin=MyoLocation
+MyoLineNumber  xxx match /\( \)\@<=\zs\d\+\ze/  contained containedin=MyoLocation
+MyoFunction    xxx match /\( \d\+ \)\@<=\zs.*$/  contained containedin=MyoLocation
+MyoCode        xxx match /^    .*$/  contained contains=@python
+MyoLocation    xxx match /^.*.*$/  contains=MyoPath,MyoLineNumber,MyoFunction nextgroup=MyoCode skipwhite skipnl
+MyoException   xxx match /^\w\+:/  contained containedin=MyoError
+MyoError       xxx match /^\w\+: .*$/  contains=MyoException
+'''
+
+target_highlight = '''MyoPath        xxx links to Directory
+MyoLineNumber  xxx links to Directory
+MyoFunction    xxx links to Type
+MyoCode        xxx cleared
+MyoLocation    xxx cleared
+MyoException   xxx links to Error
+MyoError       xxx cleared
+'''
+
+
+@do(NS[MyoState, Expectation])
+def syntax_spec() -> Do:
+    yield NS.lift(auto_jump.update(False))
+    parse_handlers = ParseHandlers.cons(syntax=Just(python_syntax), reporter=Just(python_report))
+    yield run_prog(prog.result(render_parse_result), List(ParsedOutput(parse_handlers, Nil, output_events)))
+    syn = yield NS.lift(nvim_command_output('syntax'))
+    hi = yield NS.lift(nvim_command_output('highlight'))
+    return k(myo_syntax(syn)).must(have_lines(target_syntax)) & k(myo_syntax(hi)).must(have_lines(target_highlight))
+
+
 class ParseSpec(SpecBase):
     '''
     parse command output $command_output
@@ -102,6 +137,7 @@ class ParseSpec(SpecBase):
     cycle to next and previous error $cycle
     custom first error $first_error
     custom path formatter $path_formatter
+    apply syntax rules $syntax
     '''
 
     def command_output(self) -> Expectation:
@@ -118,6 +154,9 @@ class ParseSpec(SpecBase):
 
     def path_formatter(self) -> Expectation:
         return external_state_test(command_spec_test_config, path_formatter_spec)
+
+    def syntax(self) -> Expectation:
+        return external_state_test(command_spec_test_config, syntax_spec)
 
 
 __all__ = ('ParseSpec',)

@@ -45,15 +45,13 @@ class OutputEvent(Generic[A, B], Dat['OutputEvent[A, B]']):
             meta: B,
             lines: List[OutputLine[A]]=Nil,
             location: Maybe[Location]=Nothing,
-            head: List[str]=Nil,
     ) -> 'OutputEvent[A]':
-        return OutputEvent(meta, lines, location, head)
+        return OutputEvent(meta, lines, location)
 
-    def __init__(self, meta: B, lines: List[OutputLine[A]], location: Maybe[Location], head: List[str]) -> None:
+    def __init__(self, meta: B, lines: List[OutputLine[A]], location: Maybe[Location]) -> None:
         self.meta = meta
         self.lines = lines
         self.location = location
-        self.head = head
 
 
 __all__ = ('OutputLine', 'OutputEvent')

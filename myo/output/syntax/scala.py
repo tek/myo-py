@@ -33,7 +33,7 @@ class Syntax(OutputSyntax):
     def _file(self):
         path = '.\+\ze '
         line = ' \zs\d\+'
-        return (self._cont('MyoPath', path, 'MyoFile') +
-                self._cont('MyoPath', line, 'MyoFile'))
+        return (self._cont('MyoPath', path, 'MyoLocation') +
+                self._cont('MyoPath', line, 'MyoLocation'))
 
 __all__ = ('Syntax',)

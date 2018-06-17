@@ -33,7 +33,7 @@ def text_graph() -> DiGraph:
 
 
 def text_event(line: OutputLine[TextLine]) -> OutputEvent[TextLine, TextEvent]:
-    return OutputEvent.cons(None, List(line), Nothing, Nil)
+    return OutputEvent.cons(None, List(line), Nothing)
 
 
 def text_events(lines: List[OutputLine[TextLine]]) -> List[OutputEvent[TextLine, TextEvent]]:

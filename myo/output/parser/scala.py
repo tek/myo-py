@@ -107,7 +107,7 @@ def scala_event(lines: List[OutputLine[ScalaLine]]) -> Do:
     col = lines.find(lambda a: isinstance(a.meta, ColLine))
     file = yield lines.find(lambda a: isinstance(a.meta, FileLine))
     location = Location(file.meta.path, file.meta.line, col.map(lambda a: a.meta.col).get_or_strict(0))
-    return OutputEvent.cons(ScalaEvent(file, col), lines, Just(location), Nil)
+    return OutputEvent.cons(ScalaEvent(file, col), lines, Just(location))
 
 
 def scala_events(lines: List[OutputLine[ScalaLine]]) -> List[OutputEvent[ScalaLine, ScalaEvent]]:

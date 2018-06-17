@@ -11,6 +11,7 @@ class ParseConfig(Dat['ParseConfig']):
             first_error: str=None,
             path_formatter: str=None,
             reporter: str=None,
+            syntax: str=None,
     ) -> 'ParseConfig':
         return ParseConfig(
             langs,
@@ -18,6 +19,7 @@ class ParseConfig(Dat['ParseConfig']):
             Maybe.optional(first_error),
             Maybe.optional(path_formatter),
             Maybe.optional(reporter),
+            Maybe.optional(syntax),
         )
 
     def __init__(
@@ -27,12 +29,14 @@ class ParseConfig(Dat['ParseConfig']):
             first_error: Maybe[str],
             path_formatter: Maybe[str],
             reporter: Maybe[str],
+            syntax: Maybe[str],
     ) -> None:
         self.langs = langs
         self.filter = filter
         self.first_error = first_error
         self.path_formatter = path_formatter
         self.reporter = reporter
+        self.syntax = syntax
 
 
 class Monoid_ParseConfig(Monoid, tpe=ParseConfig):
@@ -48,6 +52,7 @@ class Monoid_ParseConfig(Monoid, tpe=ParseConfig):
             a.first_error.o(b.first_error),
             a.path_formatter.o(b.path_formatter),
             a.reporter.o(b.reporter),
+            a.syntax.o(b.syntax),
         )
 
 
@@ -60,6 +65,7 @@ class LangConfig(Dat['LangConfig']):
             output_first_error: str=None,
             output_path_formatter: str=None,
             output_reporter: str=None,
+            output_syntax: str=None,
     ) -> 'LangConfig':
         return LangConfig(
             name,
@@ -67,6 +73,7 @@ class LangConfig(Dat['LangConfig']):
             Maybe.optional(output_first_error),
             Maybe.optional(output_path_formatter),
             Maybe.optional(output_reporter),
+            Maybe.optional(output_syntax),
         )
 
     def __init__(
@@ -76,12 +83,14 @@ class LangConfig(Dat['LangConfig']):
             output_first_error: Maybe[str],
             output_path_formatter: Maybe[str],
             output_reporter: Maybe[str],
+            output_syntax: Maybe[str],
     ) -> None:
         self.name = name
         self.output_filter = output_filter
         self.output_first_error = output_first_error
         self.output_path_formatter = output_path_formatter
         self.output_reporter = output_reporter
+        self.output_syntax = output_syntax
 
     @property
     def parse(self) -> ParseConfig:
@@ -91,6 +100,7 @@ class LangConfig(Dat['LangConfig']):
             self.output_first_error,
             self.output_path_formatter,
             self.output_reporter,
+            self.output_syntax,
         )
 
 

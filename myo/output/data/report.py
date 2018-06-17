@@ -2,11 +2,29 @@ from typing import TypeVar
 
 from amino import Dat, List, ADT, do, Do, Maybe
 from amino.state import State
+from amino.case import Case
 
 from myo.output.data.output import OutputEvent, OutputLine, Location
 
 A = TypeVar('A')
 B = TypeVar('B')
+
+
+class DisplayLine(ADT['DisplayLine']):
+    pass
+
+
+class PlainDisplayLine(DisplayLine):
+
+    def __init__(self, text: str) -> None:
+        self.text = text
+
+
+class SyntaxDisplayLine(DisplayLine):
+
+    def __init__(self, text: str, syntax: str) -> None:
+        self.text = text
+        self.syntax = syntax
 
 
 class ReportLine(ADT['ReportLine']):
@@ -23,18 +41,18 @@ class EventReportLine(ReportLine):
 
     @staticmethod
     def cons(
-            text: str,
+            line: DisplayLine,
             event: int,
             location: Location=None,
     ) -> 'EventReportLine':
         return EventReportLine(
-            text,
+            line,
             event,
             Maybe.optional(location),
         )
 
-    def __init__(self, text: str, event: int, location: Maybe[Location]) -> None:
-        self.text = text
+    def __init__(self, line: DisplayLine, event: int, location: Maybe[Location]) -> None:
+        self.line = line
         self.event = event
         self.location = location
 
@@ -75,8 +93,17 @@ def event_index(lines: List[ReportLine]) -> Do:
     return current
 
 
+class line_report(Case[DisplayLine, str], alg=DisplayLine):
+
+    def plain(self, line: PlainDisplayLine) -> str:
+        return line.text
+
+    def syntax(self, line: SyntaxDisplayLine) -> str:
+        return line.text
+
+
 def format_report(report: ParseReport) -> List[str]:
-    return report.lines.map(lambda a: a.text)
+    return report.lines.map(lambda a: line_report.match(a.line))
 
 
-__all__ = ('ReportLine', 'format_report', 'verbatim_report',)
+__all__ = ('ReportLine', 'format_report',)

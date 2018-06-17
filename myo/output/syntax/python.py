@@ -12,9 +12,9 @@ class Syntax(OutputSyntax):
         line = ' \zs\d\+\ze'
         fun = '\( \d\+ \)\@<=\zs.*'
         return (
-            self._cont('MyoPath', path, 'MyoFile') +
-            self._cont('MyoPath', line, 'MyoFile') +
-            self._cont('MyoFunction', fun, 'MyoFile')
+            self._cont('MyoPath', path, 'MyoLocation') +
+            self._cont('MyoPath', line, 'MyoLocation') +
+            self._cont('MyoFunction', fun, 'MyoLocation')
         )
 
     @property
