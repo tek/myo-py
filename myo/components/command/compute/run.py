@@ -205,9 +205,17 @@ def run(ident_spec: IdentSpec, options: RunCommandOptions) -> Do:
 
 class RunLineOptions(Dat['RunLineOptions']):
 
-    def __init__(self, pane: Maybe[Ident], shell: Maybe[Ident], lines: List[str], langs: Maybe[List[str]]) -> None:
+    def __init__(
+            self,
+            pane: Maybe[Ident],
+            shell: Maybe[Ident],
+            line: Maybe[str],
+            lines: Maybe[List[str]],
+            langs: Maybe[List[str]],
+    ) -> None:
         self.pane = pane
         self.shell = shell
+        self.line = line
         self.lines = lines
         self.langs = langs
 
@@ -215,7 +223,12 @@ class RunLineOptions(Dat['RunLineOptions']):
 @prog.do(None)
 def run_line(options: RunLineOptions) -> Do:
     interpreter = options.shell.cata_f(ShellInterpreter, lambda: SystemInterpreter(options.pane))
-    cmd = Command.cons(Ident.generate(), interpreter, lines=options.lines, langs=options.langs | Nil)
+    cmd = Command.cons(
+        Ident.generate(),
+        interpreter,
+        lines=options.lines.o(options.line / List) | Nil,
+        langs=options.langs | Nil,
+    )
     yield run_command(cmd)
 
 
