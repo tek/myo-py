@@ -31,7 +31,7 @@ from myo.output.lang.python.syntax import python_syntax
 
 from test.command import update_command_data, command_spec_test_config
 from test.output.python import output_events, file_path, trace_file, line, col, parsed_output
-from test.output.util import myo_syntax
+from test.output.util import myo_syntax, myo_highlight
 
 from integration._support.python_parse import events
 
@@ -121,9 +121,9 @@ def syntax_spec() -> Do:
     yield NS.lift(auto_jump.update(False))
     parse_handlers = ParseHandlers.cons(syntax=Just(python_syntax), reporter=Just(python_report))
     yield run_prog(prog.result(render_parse_result), List(ParsedOutput(parse_handlers, Nil, output_events)))
-    syn = yield NS.lift(nvim_command_output('syntax'))
-    hi = yield NS.lift(nvim_command_output('highlight'))
-    return k(myo_syntax(syn)).must(have_lines(target_syntax)) & k(myo_syntax(hi)).must(have_lines(target_highlight))
+    syn = yield NS.lift(myo_syntax())
+    hi = yield NS.lift(myo_highlight())
+    return k(syn).must(have_lines(target_syntax)) & k(hi).must(have_lines(target_highlight))
 
 
 class ParseSpec(SpecBase):

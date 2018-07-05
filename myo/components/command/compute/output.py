@@ -136,7 +136,6 @@ def parse_report(output: ParsedOutput[A, B]) -> Do:
     return ParseReport(lines, event_indexes)
 
 
-# TODO use language syntax embedding for code lines
 @do(NS[CommandRibosome, None])
 def setup_syntax(cons: SyntaxCons, window: int) -> Do:
     syntax = yield cons()

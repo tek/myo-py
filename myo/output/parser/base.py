@@ -31,13 +31,13 @@ class Parser(Generic[A, B], Dat['Parser[A, B]']):
         self.cons_events = cons_events
 
 
-class EdgeData(Generic[A], Dat['EdgeData']):
+class EdgeData(Generic[A], Dat['EdgeData[A]']):
 
     @staticmethod
     def strict(regex: Regex, cons_output_line: Callable[..., A]) -> 'EdgeData[A]':
         return EdgeData(regex, lambda *a, **kw: Right(cons_output_line(*a, **kw)))
 
-    def __init__(self, regex: Regex, cons_output_line: Callable[..., Either[str, OutputLine[A]]]) -> None:
+    def __init__(self, regex: Regex, cons_output_line: Callable[..., Either[str, A]]) -> None:
         self.regex = regex
         self.cons_output_line = cons_output_line
 

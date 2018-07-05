@@ -14,14 +14,14 @@ from ribosome.test.klk.matchers.buffer import current_buffer_contains
 from ribosome.nvim.io.state import NS
 from ribosome.compute.run import run_prog
 from ribosome.compute.api import prog
-from ribosome.nvim.api.command import nvim_command_output, nvim_command
+from ribosome.nvim.api.command import nvim_command
 from ribosome.test.integration.external import external_state_test
 
 from myo import myo_config
 from myo.settings import auto_jump
 from myo.components.command.compute.parse_handlers import ParseHandlers
 from myo.output.lang.scala.syntax import scala_syntax
-from myo.output.lang.scala.report import scala_report, col_marker
+from myo.output.lang.scala.report import scala_report, col_marker, found_marker, separator_marker, req_marker
 from myo.components.command.compute.output import render_parse_result
 from myo.components.command.compute.parsed_output import ParsedOutput
 from myo.config.plugin_state import MyoState
@@ -30,7 +30,7 @@ from test.klk.tmux import pane_content_matches
 from test.tmux import tmux_test_config
 from test.output.scala import scala_output_events
 from test.command import command_spec_test_config
-from test.output.util import myo_syntax
+from test.output.util import myo_syntax, myo_highlight
 
 vars = Map(
     myo_auto_jump=0,
@@ -50,7 +50,14 @@ expected class or object definition
   {col_marker}name
 /path/to/other_file.scala  7
 terrible mistake
-  x.{col_marker}otherName[Data]'''
+  !I param: Type
+  Foo.bar invalid because
+  !I param2: Class
+  {col_marker}implicitly[Class]
+/path/to/file.scala  3
+type mismatch
+  Type[{found_marker}Int{separator_marker} | List[String]{req_marker}]
+  func(†param)'''
 
 
 @do(NvimIO[Expectation])
@@ -64,29 +71,61 @@ def parse_spec() -> Do:
     return executed
 
 
+@do(NvimIO[None])
+def test_highlights() -> Do:
+    yield nvim_command('highlight Error cterm=bold ctermfg=1')
+    yield nvim_command('highlight Statement ctermfg=2')
+    yield nvim_command('highlight Type ctermfg=3')
+    yield nvim_command('highlight Search cterm=reverse ctermfg=3')
+
+
 @do(NvimIO[Expectation])
 def report_spec() -> Do:
+    # yield test_highlights()
     executed = yield parse_spec()
     content = yield current_buffer_contains(target)
-    yield N.sleep(3)
     return executed & content
 
 
 target_syntax = '''MyoPath        xxx match /^.*\ze\( .*$\)\@=/  contained containedin=MyoLocation
 MyoLineNumber  xxx match /\( \)\@<=\zs\d\+\ze/  contained containedin=MyoLocation
-MyoError       xxx match /^.*$/  contained nextgroup=MyoCode skipwhite skipnl
+MyoError       xxx start=/^./ end=/\ze.*\(\|†\)/  contained contains=MyoSplain,MyoSplainFoundReq nextgroup=MyoCode skipwhite skipnl
 MyoLocation    xxx match /^.*.*$/  contains=MyoPath,MyoLineNumber nextgroup=MyoError skipwhite skipnl
-MyoCode        xxx match /^  .*$/  contained contains=@scala,MyoColMarker
-MyoColMarker   xxx match /†/  contained conceal containedin=MyoCode nextgroup=MyoCol
-MyoCol         xxx match /./  contained'''
+MyoCode        xxx match /.*/  contained contains=@scala,MyoColMarker
+MyoSplain      xxx start=/\s*!I/ end=/\ze.*\(\|†\)/  contained contains=MyoSplainParam,MyoSplainCandidate nextgroup=MyoCode skipwhite skipnl
+MyoSplainFoundReq xxx match /^.*+.\{-}< | .\{-}-.*$/  contained contains=MyoSplainFound,MyoSplainReq
+MyoColMarker   xxx match /†/  contained conceal nextgroup=MyoCol
+MyoCol         xxx match /./  contained
+MyoSplainParam xxx match /^\s*!I.*/  contained contains=MyoSplainParamMarker containedin=MyoSplain
+MyoSplainCandidate xxx match /\S\+\ze invalid because/  contained containedin=MyoSplain
+MyoSplainParamMarker xxx match /!I/  contained contains=MyoSplainParamMarkerBang nextgroup=MyoSplainParamName
+MyoSplainParamName xxx match /[^:]\+\ze:/  contained nextgroup=MyoSplainParamType
+MyoSplainParamMarkerBang xxx match /!/  contained nextgroup=MyoSplainParamMarkerI
+MyoSplainParamMarkerI xxx match /I/  contained nextgroup=MyoSplainParamName skipwhite
+MyoSplainParamType xxx start=/./ end=/\ze.*\(invalid because\|†\)/  contained
+MyoSplainFound xxx match /+.\{-}</  contained contains=MyoSplainFoundReqMarker nextgroup=MyoSplainReq
+MyoSplainReq   xxx match / | \zs.\{-}\ze-/  contained nextgroup=MyoSplainFoundReqMarker
+MyoSplainFoundReqMarker xxx match /+\|<\|-/  contained conceal'''
 
 target_highlight = '''MyoPath        xxx links to Directory
 MyoLineNumber  xxx links to Directory
 MyoError       xxx links to Error
 MyoLocation    xxx cleared
 MyoCode        xxx cleared
+MyoSplain      xxx cleared
+MyoSplainFoundReq xxx cleared
 MyoColMarker   xxx cleared
-MyoCol         xxx links to Search'''
+MyoCol         xxx links to Search
+MyoSplainParam xxx cleared
+MyoSplainCandidate xxx links to Error
+MyoSplainParamMarker xxx cleared
+MyoSplainParamName xxx links to Type
+MyoSplainParamMarkerBang xxx links to Error
+MyoSplainParamMarkerI xxx links to Directory
+MyoSplainParamType xxx links to Statement
+MyoSplainFound xxx links to Error
+MyoSplainReq   xxx links to Statement
+MyoSplainFoundReqMarker xxx cleared'''
 
 
 @do(NS[MyoState, Expectation])
@@ -94,9 +133,9 @@ def syntax_spec() -> Do:
     yield NS.lift(auto_jump.update(False))
     parse_handlers = ParseHandlers.cons(syntax=Just(scala_syntax), reporter=Just(scala_report))
     yield run_prog(prog.result(render_parse_result), List(ParsedOutput(parse_handlers, Nil, scala_output_events)))
-    syn = yield NS.lift(nvim_command_output('syntax'))
-    hi = yield NS.lift(nvim_command_output('highlight'))
-    return k(myo_syntax(syn)).must(have_lines(target_syntax)) & k(myo_syntax(hi)).must(have_lines(target_highlight))
+    syn = yield NS.lift(myo_syntax())
+    hi = yield NS.lift(myo_highlight())
+    return k(syn).must(have_lines(target_syntax)) & k(hi).must(have_lines(target_highlight))
 
 
 class ScalaParseSpec(SpecBase):

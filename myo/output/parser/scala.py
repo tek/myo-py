@@ -40,21 +40,30 @@ class FileLine(ScalaLine):
         self.tag = tag
 
 
-class CodeLine(ScalaLine):
+class InfoLine(ScalaLine):
 
     @staticmethod
-    def cons(code: str, tag: str='') -> 'CodeLine':
-        return CodeLine(code, tag)
+    def cons(message: str, ws: str='', tag: str='') -> 'InfoLine':
+        return InfoLine(message, len(ws), tag)
 
-    def __init__(self, code: str, tag: str) -> None:
+    def __init__(self, message: str, indent: int, tag: str) -> None:
+        self.message = message
+        self.indent = indent
+        self.tag = tag
+
+
+class CodeLine(ScalaLine):
+
+    def __init__(self, code: str, indent: int, tag: str) -> None:
         self.code = code
+        self.indent = indent
         self.tag = tag
 
 
 class ColLine(ScalaLine):
 
     @staticmethod
-    def cons(ws: str, tag: str='') -> 'CodeLine':
+    def cons(ws: str, tag: str='') -> 'ColLine':
         return ColLine(len(ws), tag)
 
     def __init__(self, col: int, tag: str) -> None:
@@ -63,13 +72,13 @@ class ColLine(ScalaLine):
 
 
 _msg_type = '\[(?P<tag>\w+)\] '
-file_edge = EdgeData(
+file_edge: EdgeData[FileLine] = EdgeData(
     regex=Regex(f'^{_msg_type}\s*(?P<path>[^:]+):(?P<line>\d+):((?P<col>\d+):)?\s*(?P<error>.*?);?$'),
     cons_output_line=FileLine.cons,
 )
-code_edge = EdgeData.strict(
-    regex=Regex(f'^{_msg_type}(?P<code>\s*.+)'),
-    cons_output_line=CodeLine.cons,
+info_edge = EdgeData.strict(
+    regex=Regex(f'^{_msg_type}(?P<ws>\s*)(?P<message>\s*.+)'),
+    cons_output_line=InfoLine.cons,
 )
 col_edge = EdgeData.strict(
     regex=Regex(f'^{_msg_type}(?P<ws>\s*)\^\s*'),
@@ -82,18 +91,21 @@ class ScalaEvent(Dat['ScalaEvent']):
     @staticmethod
     def cons(
             file: OutputLine[FileLine],
-            code: List[OutputLine[CodeLine]]=Nil,
+            info: List[OutputLine[InfoLine]]=Nil,
+            code: Maybe[OutputLine[CodeLine]]=Nothing,
             col: Maybe[OutputLine[ColLine]]=Nothing,
     ) -> 'ScalaOutputEvent':
-        return ScalaEvent(file, code, col)
+        return ScalaEvent(file, info, code, col)
 
     def __init__(
             self,
             file: OutputLine[FileLine],
-            code: List[OutputLine[CodeLine]],
+            info: List[OutputLine[InfoLine]],
+            code: Maybe[OutputLine[CodeLine]],
             col: Maybe[OutputLine[ColLine]],
     ) -> None:
         self.file = file
+        self.info = info
         self.code = code
         self.col = col
 
@@ -101,9 +113,9 @@ class ScalaEvent(Dat['ScalaEvent']):
 def scala_graph() -> DiGraph:
     g = DiGraph()
     g.add_edge('start', 'file', data=file_edge)
-    g.add_edge('file', 'error', data=code_edge)
-    g.add_edge('error', 'error', data=code_edge)
-    g.add_edge('error', 'col', data=col_edge, weight=1)
+    g.add_edge('file', 'info', data=info_edge)
+    g.add_edge('info', 'info', data=info_edge)
+    g.add_edge('info', 'col', data=col_edge, weight=1)
     return g
 
 
@@ -111,9 +123,14 @@ def scala_graph() -> DiGraph:
 def scala_event(lines: List[OutputLine[ScalaLine]]) -> Do:
     col = lines.find(lambda a: isinstance(a.meta, ColLine))
     file = yield lines.find(lambda a: isinstance(a.meta, FileLine))
-    code = lines.filter(lambda a: isinstance(a.meta, CodeLine))
+    info = lines.filter(lambda a: isinstance(a.meta, InfoLine))
+    code, infos = (
+        info.detach_last
+        .map2(lambda c, e: (Just(OutputLine(c.text, CodeLine(c.meta.message, c.meta.indent, c.meta.tag), c.indent)), e))
+        .get_or_strict((Nothing, Nil))
+    )
     location = Location(file.meta.path, file.meta.line, col.map(lambda a: a.meta.col).get_or_strict(0))
-    return OutputEvent.cons(ScalaEvent(file, code, col), lines, Just(location))
+    return OutputEvent.cons(ScalaEvent(file, infos, code, col), lines, Just(location))
 
 
 def scala_events(lines: List[OutputLine[ScalaLine]]) -> List[OutputEvent[ScalaLine, ScalaEvent]]:

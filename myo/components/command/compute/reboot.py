@@ -1,5 +1,3 @@
-from typing import TypeVar, Generic
-
 from amino import Do, Maybe, Nothing
 from amino.case import Case
 
@@ -15,10 +13,8 @@ from myo.components.command.compute.run import command_by_ident, run_command
 from myo.data.command import Command, Interpreter, SystemInterpreter
 from myo.components.ui.compute.close_pane import close_pane
 
-D = TypeVar('D')
 
-
-class target_pane(Generic[D], Case[Interpreter, Maybe[Ident]], alg=Interpreter):
+class target_pane(Case[Interpreter, Maybe[Ident]], alg=Interpreter):
 
     def system_interpreter(self, interpreter: SystemInterpreter) -> Maybe[Ident]:
         return interpreter.target

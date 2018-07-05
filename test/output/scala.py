@@ -1,7 +1,7 @@
 from amino import List, Just, Nil
 
 from myo.output.data.output import OutputEvent, OutputLine, Location
-from myo.output.parser.scala import ScalaEvent, FileLine, CodeLine, ColLine
+from myo.output.parser.scala import ScalaEvent, FileLine, ColLine, CodeLine
 
 path = '/path/to/other_file.scala'
 loc_line = '[error] /path/to/other_file.scala:7:2: terrible mistake'
@@ -11,7 +11,8 @@ scala_output_events = List(
     OutputEvent.cons(
         ScalaEvent.cons(
             OutputLine(loc_line, FileLine(path, 7, 6, 'terrible mistake', '')),
-            List(OutputLine(code_line, CodeLine.cons('x.otherName[Data]'))),
+            Nil,
+            Just(OutputLine(code_line, CodeLine('x.otherName[Data]', 0, 'error'))),
             Just(OutputLine(col_line, ColLine(6, ''))),
         ),
         Nil,
