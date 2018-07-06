@@ -8,7 +8,7 @@ from amino.case import Case
 from amino.state import State
 
 from ribosome.nvim.io.state import NS
-from ribosome.nvim.scratch import show_in_scratch_buffer, CreateScratchBufferOptions, ScratchBuffer
+from ribosome.nvim.scratch import show_in_scratch_buffer_default, ScratchBuffer
 from ribosome.compute.api import prog
 from ribosome.nvim.io.compute import NvimIO
 from ribosome.nvim.api.ui import (window_line, focus_window, edit_file, set_local_cursor, set_line, window_buffer_name,
@@ -153,7 +153,7 @@ def setup_syntax(cons: SyntaxCons, window: int) -> Do:
 def render_parse_result(output: ParsedOutput[A, B]) -> Do:
     log.debug(f'rendering parse result')
     report = yield parse_report(output)
-    scratch = yield NS.lift(show_in_scratch_buffer(format_report(report), CreateScratchBufferOptions.cons()))
+    scratch = yield NS.lift(show_in_scratch_buffer_default(format_report(report), max_height=Just(.3)))
     scratch_number = yield NS.lift(window_number(scratch.ui.window))
     yield Ribo.modify_comp(lens.output.modify(lambda a: a.copy(report=report, scratch=Just(scratch))))
     yield List(jump_mapping, quit_mapping, prev_mapping, next_mapping).traverse(activate_mapping, NS).zoom(lens.state)

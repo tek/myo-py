@@ -16,6 +16,7 @@ from ribosome.compute.run import run_prog
 from ribosome.compute.api import prog
 from ribosome.nvim.api.command import nvim_command
 from ribosome.test.integration.external import external_state_test
+from ribosome.nvim.api.option import option_set
 
 from myo import myo_config
 from myo.settings import auto_jump
@@ -82,6 +83,7 @@ def test_highlights() -> Do:
 @do(NvimIO[Expectation])
 def report_spec() -> Do:
     # yield test_highlights()
+    yield option_set('splitbelow', True)
     executed = yield parse_spec()
     content = yield current_buffer_contains(target)
     return executed & content
