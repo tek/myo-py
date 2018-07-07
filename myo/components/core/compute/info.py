@@ -1,4 +1,4 @@
-from amino import do, Do, List, _, Nil
+from amino import do, Do, List, _, Nil, Just
 
 from ribosome.nvim.scratch import show_in_scratch_buffer_default
 from ribosome.compute.api import prog
@@ -14,7 +14,7 @@ from myo.env import Env
 
 @do(NS[Env, None])
 def display_info(widgets: List[InfoWidget]) -> Do:
-    yield NS.lift(show_in_scratch_buffer_default(widgets // _.lines))
+    yield NS.lift(show_in_scratch_buffer_default(widgets // _.lines, Just(.5)))
 
 
 @prog.do(None)
