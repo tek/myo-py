@@ -24,6 +24,7 @@ from myo.env import Env
 from myo.config.component import MyoComponent
 from myo.ui.data.ui_data import UiData
 from myo.ui.data.view_tree import MyoViewTree
+from myo.ui.ui import Ui
 
 
 @curried
@@ -43,7 +44,7 @@ def config_uis() -> Do:
     yield State.pure(components // _.config // _.ui)
 
 
-@prog.do(None)
+@prog.do(Tuple[Space, Window, Ui])
 def view_owners(ident: Ident) -> Do:
     view_path_m = yield Ribo.lift_comp(view_path_by_ident(ident).nvim, UiData)
     space, window, view = yield Prog.from_maybe(view_path_m, f'no view with ident `{ident}`')

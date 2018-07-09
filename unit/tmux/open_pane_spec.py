@@ -6,10 +6,11 @@ from kallikrein.matchers import equal, contain
 
 from chiasma.test.tmux_spec import TmuxSpec
 from chiasma.io.compute import TmuxIO
-from chiasma.commands.pane import parse_pane_id, parse_bool, all_panes
+from chiasma.commands.pane import parse_pane_id, parse_bool, all_panes, close_pane_id
 from chiasma.command import tmux_data_cmd, TmuxCmdData, simple_tmux_cmd_attr
 from chiasma.data.view_tree import ViewTree
 from chiasma.data.pane import Pane as TPane
+from chiasma.io.state import TS
 
 from test.klk.tmux import tmux_await_k, pane_count
 
@@ -113,12 +114,26 @@ def pinned_spec() -> Do:
     yield NS.lift(pane_count(2))
 
 
+@do(NS[MyoState, Expectation])
+def manually_closed_spec() -> Do:
+    yield two_panes()
+    yield request('open_pane', 'one', '{}')
+    yield request('open_pane', 'two', '{}')
+    count1 = yield NS.lift(pane_count(2))
+    yield TS.lift(close_pane_id(1)).nvim
+    count2 = yield NS.lift(pane_count(1))
+    yield request('open_pane', 'two', '{}')
+    count3 = yield NS.lift(pane_count(2))
+    return count1 & count2 & count3
+
+
 class OpenPaneSpec(TmuxSpec):
     '''
     open a tmux pane $open_pane
     keep focus on vim $focus
     open pinned pane when opening sibling $pinned_sibling
     open pinned pane without opening others $pinned
+    reopen manually closed pane $manually_closed
     '''
 
     def open_pane(self) -> Expectation:
@@ -132,6 +147,9 @@ class OpenPaneSpec(TmuxSpec):
 
     def pinned(self) -> Expectation:
         return unit_test(tmux_default_test_config(), pinned_spec)
+
+    def manually_closed(self) -> Expectation:
+        return unit_test(tmux_default_test_config(), manually_closed_spec)
 
 
 __all__ = ('OpenPaneSpec',)
