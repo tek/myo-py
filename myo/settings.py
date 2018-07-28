@@ -31,6 +31,10 @@ The default target pane will be positioned to the right of vim.
 test_ui_help = '''Tests run with vim-test will be executed in this ui. Can be `tmux` or `internal`.
 '''
 test_pane_help = '''Tests run with vim-test will be executed in this pane.
+Defaults to `make`.
+'''
+test_shell_help = '''Tests run with vim-test will be executed in this shell.
+Takes precedence over `test_pane`.
 '''
 test_langs_help = '''When parsing the output of a command executed with `MyoVimTest`, these languages are expected.
 '''
@@ -55,6 +59,7 @@ init_default_ui = bool_setting('init_default_ui', 'initialize vim and make panes
                                Right(true))
 test_ui = str_setting('test_ui', 'ui for running tests', test_ui_help, True, Right('tmux'))
 test_pane = str_setting('test_pane', 'pane for running tests', test_pane_help, True, Right('make'))
+test_shell = str_setting('test_shell', 'shell for running tests', test_shell_help, True)
 test_langs = str_list_setting('test_langs', 'parsing langs for vim-test output', test_langs_help, True, Right(Nil))
 load_history = bool_setting('load_history', 'load command history', load_history_help, True, Right(True))
 builtin_output_config = bool_setting('builtin_output_config', 'use default output configs', builtin_output_config_help,
@@ -63,4 +68,4 @@ builtin_output_config = bool_setting('builtin_output_config', 'use default outpu
 
 __all__ = ('tmux_watcher_interval', 'tmux_socket', 'vim_tmux_pane', 'display_parse_result', 'auto_jump',
            'vim_test_filename_modifier', 'init_default_ui', 'test_ui', 'test_pane', 'test_langs', 'load_history',
-           'builtin_output_config',)
+           'builtin_output_config', 'test_shell',)

@@ -186,6 +186,7 @@ def run_command(cmd: Command) -> Do:
     task = RunTask(cmd, cmd_log, task_details)
     handler = yield find_handler(__.run(task), str(task))
     log.debug(f'running `{task}` with `{handler}`')
+    yield Ribo.autocmd_prog('MyoRunCommand')
     pid = yield handler(task)
     yield Ribo.lift(store_running_command(cmd, pid, is_system_task(task_details)), CommandData)
     yield push_history(cmd, cmd.interpreter)
