@@ -1,7 +1,10 @@
 from amino import Right, Nil
 from amino.boolean import true
 
-from ribosome.config.setting import float_setting, str_setting, int_setting, bool_setting, str_list_setting
+from chiasma.ui.view_geometry import ViewGeometry
+
+from ribosome.config.setting import (float_setting, str_setting, int_setting, bool_setting, str_list_setting,
+                                     json_setting)
 
 state_dir_help = f'''
 Stored data consists of:
@@ -44,6 +47,20 @@ restored on startup.
 builtin_output_config_help = '''Command output parsing can be configured from multiple sources. If this setting is
 `true`, myo's built-in configuration is used in addition to command-specific config.
 '''
+vim_pane_geometry_help = '''The vim pane is autodetected and -created, so its size, weight and position can be
+overridden here. The format is:
+```{
+  "min_size": 50,
+  "max_size": 50,
+  "fixed_size": 50,
+  "minimized_size": 50,
+  "weight": 0.5,
+  "position": 50,
+}
+```
+Since the vim pane is wrapped in a vertical layout, these settings are actually applied to that, not the pane itself.
+All settings are optional; the default is a weight of 0.5.
+'''
 
 
 tmux_watcher_interval = float_setting('tmux_watcher_interval', 'tmux process polling interval',
@@ -64,8 +81,10 @@ test_langs = str_list_setting('test_langs', 'parsing langs for vim-test output',
 load_history = bool_setting('load_history', 'load command history', load_history_help, True, Right(True))
 builtin_output_config = bool_setting('builtin_output_config', 'use default output configs', builtin_output_config_help,
                                      True, Right(True))
+vim_pane_geometry = json_setting(ViewGeometry)('vim_pane_geometry', 'geometry overrides for the vim pane',
+                                               vim_pane_geometry_help, True, Right(ViewGeometry.cons(weight=0.5)))
 
 
 __all__ = ('tmux_watcher_interval', 'tmux_socket', 'vim_tmux_pane', 'display_parse_result', 'auto_jump',
            'vim_test_filename_modifier', 'init_default_ui', 'test_ui', 'test_pane', 'test_langs', 'load_history',
-           'builtin_output_config', 'test_shell',)
+           'builtin_output_config', 'test_shell', 'vim_pane_geometry',)

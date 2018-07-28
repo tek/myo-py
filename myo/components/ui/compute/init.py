@@ -14,10 +14,10 @@ from ribosome.compute.program import Program
 
 from myo.ui.data.ui_data import UiData
 from myo.ui.data.space import Space
-from myo.config.handler import find_handler, find_handler_e
+from myo.config.handler import find_handler_e
 from myo.ui.data.view import Pane, Layout
 from myo.ui.data.window import Window
-from myo.settings import init_default_ui
+from myo.settings import init_default_ui, vim_pane_geometry
 
 log = module_log()
 
@@ -28,8 +28,9 @@ def vim_pid() -> NvimIO[int]:
 
 @do(NS[UiData, None])
 def insert_default_ui(ident: Ident, layout_ident: Ident, make_ident: Ident) -> Do:
+    vim_geometry = yield NS.lift(vim_pane_geometry.value_or_default())
     pane: ViewTree[Layout, Pane] = ViewTree.pane(Pane.cons(ident=ident, open=True))
-    vim_layout = ViewTree.layout(Layout.cons(ident, vertical=True), sub=List(pane))
+    vim_layout = ViewTree.layout(Layout.cons(ident, vertical=True, geometry=vim_geometry), sub=List(pane))
     make = ViewTree.pane(Pane.cons(ident=make_ident, pin=True))
     make_layout = ViewTree.layout(Layout.cons(make_ident, vertical=True), sub=List(make))
     layout = ViewTree.layout(Layout.cons(layout_ident, vertical=False), sub=List(vim_layout, make_layout))
