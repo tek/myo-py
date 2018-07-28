@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 version_parts = (1, 0, 0, 'a', 16)
 version = '.'.join(map(str, version_parts))
 
-setup(
+setup(  # type: ignore
     name='myo',
     description='command and layout management for neovim',
     version=version,
@@ -14,7 +14,7 @@ setup(
     packages=find_packages(exclude=['unit', 'unit.*', 'integration', 'integration.*', 'test', 'test.*']),
     install_requires=[
         'ribosome~=13.0.0a68',
-        'chiasma~=0.1.0.a25',
+        'chiasma~=0.1.0.a27',
         'psutil==5.3.1',
         'networkx==2.0',
     ],
