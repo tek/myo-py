@@ -159,7 +159,7 @@ def render_parse_result(output: ParsedOutput[A, B]) -> Do:
     yield List(jump_mapping, quit_mapping, prev_mapping, next_mapping).traverse(activate_mapping, NS).zoom(lens.state)
     yield setup_syntax(output.handlers.syntax, scratch_number)
     jump = yield Ribo.setting(auto_jump)
-    first_error = yield output.handlers.first_error(output)
+    first_error = yield output.handlers.first_error(output.filtered)
     yield Ribo.zoom_comp(select_event(first_error, jump))
 
 

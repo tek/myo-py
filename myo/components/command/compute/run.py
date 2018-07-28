@@ -189,7 +189,7 @@ def run_command(cmd: Command) -> Do:
     yield Ribo.autocmd_prog('MyoRunCommand')
     pid = yield handler(task)
     yield Ribo.lift(store_running_command(cmd, pid, is_system_task(task_details)), CommandData)
-    yield push_history(cmd, cmd.interpreter)
+    yield push_history(cmd, cmd.interpreter) if cmd.history else Prog.unit
 
 
 @prog
@@ -213,12 +213,14 @@ class RunLineOptions(Dat['RunLineOptions']):
             line: Maybe[str],
             lines: Maybe[List[str]],
             langs: Maybe[List[str]],
+            history: Maybe[bool],
     ) -> None:
         self.pane = pane
         self.shell = shell
         self.line = line
         self.lines = lines
         self.langs = langs
+        self.history = history
 
 
 @prog.do(None)
@@ -229,6 +231,7 @@ def run_line(options: RunLineOptions) -> Do:
         interpreter,
         lines=options.lines.o(options.line / List) | Nil,
         langs=options.langs | Nil,
+        history=options.history | True,
     )
     yield run_command(cmd)
 

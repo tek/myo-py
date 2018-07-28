@@ -64,11 +64,21 @@ def command_spec() -> Do:
     yield parse_spec(run)
 
 
+@do(NvimIO[Expectation])
+def first_error_spec() -> Do:
+    @do(NvimIO[None])
+    def run() -> Do:
+        yield json_cmd('MyoAddShellCommand', ident='print', lines=statements, target='python')
+        yield json_cmd('MyoRun', 'print')
+    yield parse_spec(run)
+
+
 class PythonParseSpec(SpecBase):
     '''
     parse a python traceback
     from line $line
     from command $command
+    first error $first_error
     '''
 
     def line(self) -> Expectation:
@@ -76,6 +86,9 @@ class PythonParseSpec(SpecBase):
 
     def command(self) -> Expectation:
         return tmux_plugin_test(test_config, command_spec)
+
+    def first_error(self) -> Expectation:
+        return tmux_plugin_test(test_config, first_error_spec)
 
 
 __all__ = ('PythonParseSpec',)

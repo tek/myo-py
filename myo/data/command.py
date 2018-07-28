@@ -121,6 +121,7 @@ class Command(Dat['Command']):
             langs: List[str]=Nil,
             signals: List[str]=Nil,
             config: CommandConfig=None,
+            history: bool=True,
     ) -> 'Command':
         return Command(
             ensure_ident_or_generate(ident),
@@ -129,6 +130,7 @@ class Command(Dat['Command']):
             langs,
             signals,
             Maybe.optional(config),
+            history
         )
 
     def __init__(
@@ -139,6 +141,7 @@ class Command(Dat['Command']):
             langs: List[str],
             signals: List[str],
             config: Maybe[CommandConfig],
+            history: bool,
     ) -> None:
         self.ident = ident
         self.interpreter = interpreter
@@ -146,6 +149,7 @@ class Command(Dat['Command']):
         self.langs = langs
         self.signals = signals
         self.config = config
+        self.history = history
 
 
 class Execute(Dat['Execute']):
