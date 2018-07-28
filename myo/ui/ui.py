@@ -23,6 +23,7 @@ class Ui(Dat['Ui']):
             open_space: Program=None,
             kill_pane: Program[bool]=None,
             window_pane_open: Program[bool]=None,
+            focus_pane: Program[None]=None,
     ) -> 'Ui':
         return Ui(
             owns_view,
@@ -32,6 +33,7 @@ class Ui(Dat['Ui']):
             Maybe.optional(open_space),
             Maybe.optional(kill_pane),
             Maybe.optional(window_pane_open),
+            Maybe.optional(focus_pane),
         )
 
     def __init__(
@@ -43,6 +45,7 @@ class Ui(Dat['Ui']):
             open_space: Maybe[Program],
             kill_pane: Maybe[Program[bool]],
             window_pane_open: Maybe[Program[bool]],
+            focus_pane: Maybe[Program[None]],
     ) -> None:
         self.owns_view = owns_view
         self.render = render
@@ -51,6 +54,7 @@ class Ui(Dat['Ui']):
         self.open_space = open_space
         self.kill_pane = kill_pane
         self.window_pane_open = window_pane_open
+        self.focus_pane = focus_pane
 
 
 __all__ = ('Ui',)

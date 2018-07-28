@@ -17,6 +17,7 @@ from myo.components.tmux.compute.info import tmux_info
 from myo.components.tmux.compute.quit import tmux_quit
 from myo.components.tmux.compute.kill_pane import tmux_kill_pane
 from myo.components.tmux.compute.pane_open import tmux_window_pane_open
+from myo.components.tmux.compute.focus import tmux_focus_pane
 
 
 def run_handler_for(task: RunTask) -> Maybe[Program]:
@@ -27,7 +28,8 @@ def create_vim_pane_handler() -> Maybe[Program]:
     return Just(create_vim_pane)
 
 
-tmux_ui = Ui.cons(tmux_owns_view, tmux_render, kill_pane=tmux_kill_pane, window_pane_open=tmux_window_pane_open)
+tmux_ui = Ui.cons(tmux_owns_view, tmux_render, kill_pane=tmux_kill_pane, window_pane_open=tmux_window_pane_open,
+                  focus_pane=tmux_focus_pane)
 tmux: Component[TmuxData, MyoComponent] = Component.cons(
     'tmux',
     state_type=TmuxData,

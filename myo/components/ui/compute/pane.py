@@ -1,8 +1,8 @@
-from typing import Tuple
+from typing import Tuple, Callable
 
-from amino import do, Do, curried, Boolean, Maybe, Just, Nothing, _
+from amino import do, Do, curried, Maybe, Just, Nothing, _
 
-from chiasma.data.view_tree import PaneNode, ViewTree
+from chiasma.data.view_tree import ViewTree
 from amino.state import State
 from amino.lenses.lens import lens
 from amino.util.tuple import lift_tuple
@@ -60,6 +60,12 @@ def view_owners(ident: Ident) -> Do:
     yield Prog.pure((space, window, owner))
 
 
+@prog.do(Program)
+def view_prog(ident: Ident, prog: Callable[[Ui], Maybe[Program]], desc: str) -> Do:
+    space, window, owner = yield view_owners(ident)
+    yield Prog.m(prog(owner), lambda: '{type(owner)} has no handler for `{desc}`')
+
+
 @prog.do(None)
 def render_view(ident: Ident) -> Do:
     space, window, owner = yield view_owners(ident)
@@ -81,4 +87,4 @@ def ui_pane_by_ident(ident: Ident) -> Do:
     yield NS.e(pane)
 
 
-__all__ = ('config_uis', 'pane_owners', 'render_pane')
+__all__ = ('config_uis', 'pane_owners', 'render_pane', 'view_prog',)

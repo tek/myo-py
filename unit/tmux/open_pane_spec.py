@@ -1,20 +1,19 @@
 import os
 
-from kallikrein import Expectation, k
-from kallikrein.matchers.length import have_length
+from kallikrein import Expectation
 from kallikrein.matchers import equal, contain
 
 from chiasma.test.tmux_spec import TmuxSpec
 from chiasma.io.compute import TmuxIO
-from chiasma.commands.pane import parse_pane_id, parse_bool, all_panes, close_pane_id
-from chiasma.command import tmux_data_cmd, TmuxCmdData, simple_tmux_cmd_attr
+from chiasma.commands.pane import close_pane_id
+from chiasma.command import simple_tmux_cmd_attr
 from chiasma.data.view_tree import ViewTree
 from chiasma.data.pane import Pane as TPane
 from chiasma.io.state import TS
 
 from test.klk.tmux import tmux_await_k, pane_count
 
-from amino import do, Do, Dat, Either, List, IO
+from amino import do, Do, List, IO
 from amino.test.path import pkg_dir
 from amino.test import temp_dir
 from amino.lenses.lens import lens
@@ -26,37 +25,7 @@ from ribosome.test.prog import request
 from myo.config.plugin_state import MyoState
 from myo.ui.data.view import Layout, Pane
 
-from test.tmux import two_panes, tmux_default_test_config, init_tmux_data, update_views
-
-
-class PaneFocusData(Dat['PaneFocusData']):
-
-    @staticmethod
-    @do(Either[str, 'PaneFocusData'])
-    def cons(
-            pane_id: int,
-            pane_active: bool,
-    ) -> Do:
-        id = yield parse_pane_id(pane_id)
-        active = yield parse_bool(pane_active)
-        return PaneFocusData(
-            id,
-            active,
-        )
-
-    def __init__(self, id: int, active: bool) -> None:
-        self.id = id
-        self.active = active
-
-
-cmd_data_fdata = TmuxCmdData.from_cons(PaneFocusData.cons)
-
-
-@do(TmuxIO[bool])
-def pane_zero_focus() -> Do:
-    data = yield tmux_data_cmd('list-panes', List('-a'), cmd_data_fdata)
-    pane0 = yield TmuxIO.from_maybe(data.find(lambda a: a.id == 0), 'no pane 0')
-    return pane0.active
+from test.tmux import two_panes, tmux_default_test_config, init_tmux_data, update_views, pane_zero_focus
 
 
 def pane_cwds() -> TmuxIO[List[str]]:
@@ -80,6 +49,7 @@ def open_pane_spec() -> Do:
 def focus_spec() -> Do:
     yield two_panes()
     yield request('open_pane', 'one', '{}')
+    yield request('open_pane', 'two', '{}')
     yield NS.lift(tmux_await_k(equal(True), pane_zero_focus))
 
 

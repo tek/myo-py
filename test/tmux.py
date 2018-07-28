@@ -8,9 +8,11 @@ from chiasma.io.compute import TmuxIO
 from chiasma.ui.view_geometry import ViewGeometry
 from chiasma.data.pane import Pane as TPane
 from chiasma.data.tmux import Views
+from chiasma.commands.pane import parse_pane_id, parse_bool
+from chiasma.command import TmuxCmdData, tmux_data_cmd
 from myo.components.tmux.data import TmuxData
 
-from amino import List, __, Map, do, Do, Nil
+from amino import List, __, Map, do, Do, Nil, Dat, Either
 from amino.boolean import true
 from amino.lenses.lens import lens
 from amino.test import temp_dir
@@ -164,5 +166,40 @@ def vertical_left_vertical_right() -> Do:
     return window, space
 
 
+class PaneFocusData(Dat['PaneFocusData']):
+
+    @staticmethod
+    @do(Either[str, 'PaneFocusData'])
+    def cons(
+            pane_id: int,
+            pane_active: bool,
+    ) -> Do:
+        id = yield parse_pane_id(pane_id)
+        active = yield parse_bool(pane_active)
+        return PaneFocusData(
+            id,
+            active,
+        )
+
+    def __init__(self, id: int, active: bool) -> None:
+        self.id = id
+        self.active = active
+
+
+cmd_data_fdata = TmuxCmdData.from_cons(PaneFocusData.cons)
+
+
+@do(TmuxIO[bool])
+def pane_focus(id: int) -> Do:
+    data = yield tmux_data_cmd('list-panes', List('-a'), cmd_data_fdata)
+    pane0 = yield TmuxIO.from_maybe(data.find(lambda a: a.id == id), f'no pane {id}')
+    return pane0.active
+
+
+def pane_zero_focus() -> TmuxIO[bool]:
+    return pane_focus(0)
+
+
 __all__ = ('tmux_spec_config', 'init_tmux_data', 'tmux_default_test_config', 'two_panes', 'two_open_panes',
-           'tmux_test_config', 'pane_left_vertical_right', 'vertical_left_vertical_right',)
+           'tmux_test_config', 'pane_left_vertical_right', 'vertical_left_vertical_right', 'pane_focus',
+           'pane_zero_focus',)
