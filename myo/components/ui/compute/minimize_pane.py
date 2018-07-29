@@ -10,6 +10,7 @@ from amino.lenses.lens import lens
 from ribosome.compute.api import prog
 from ribosome.config.component import ComponentData
 from ribosome.compute.prog import Prog
+from ribosome.nvim.io.state import NS
 
 from myo.util import Ident
 from myo.ui.data.ui_data import UiData
@@ -20,15 +21,14 @@ from myo.components.ui.compute.pane import render_view
 from myo.util.id import ensure_ident_prog
 
 
-@do(EitherState[UiData, Window])
-def ui_minimize_pane(ident: Ident) -> Do:
-    yield ui_modify_pane(ident, lens.state.minimized.set(true))
+def ui_minimize_pane(ident: Ident) -> EitherState[str, UiData, Window]:
+    return ui_modify_pane(ident, lens.state.minimized.set(true))
 
 
 @prog
-@do(EitherState[ComponentData[Env, UiData], Window])
+@do(NS[ComponentData[Env, UiData], Window])
 def ui_minimize_pane_prog(ident: Ident) -> Do:
-    yield ui_minimize_pane(ident).zoom(lens.comp)
+    yield ui_minimize_pane(ident).nvim.zoom(lens.comp)
 
 
 @prog.do(None)

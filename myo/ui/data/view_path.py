@@ -68,7 +68,7 @@ def pane_path_space(ident: Ident, space: Space) -> Maybe[ViewPath]:
     return space.windows.find_map(lambda a: pane_path_view(ident, Nil, a, space)(a.layout))
 
 
-@do(EitherState[UiData, ViewPath])
+@do(EitherState[str, UiData, ViewPath])
 def pane_path(ident: Ident) -> Do:
     spaces = yield EitherState.inspect(_.spaces)
     path_m = spaces.find_map(L(pane_path_space)(ident, _))

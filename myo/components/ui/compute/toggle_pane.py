@@ -16,7 +16,7 @@ from myo.components.ui.compute.pane import render_view
 log = module_log()
 
 
-@do(EitherState[UiData, Window])
+@do(EitherState[str, UiData, Window])
 def ui_toggle_pane(ident: Ident) -> Do:
     yield map_window_trees(lambda a: open_or_toggle_pane(ident)(a).get_or_strict(a)).nvim
 

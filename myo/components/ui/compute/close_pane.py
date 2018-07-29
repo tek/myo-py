@@ -7,6 +7,7 @@ from chiasma.util.id import Ident, IdentSpec, ensure_ident_or_generate
 
 from ribosome.compute.api import prog
 from ribosome.config.component import ComponentData
+from ribosome.nvim.io.state import NS
 
 from myo.ui.data.ui_data import UiData
 from myo.ui.data.window import Window
@@ -15,16 +16,14 @@ from myo.env import Env
 from myo.components.ui.compute.pane import render_view
 
 
-@do(EitherState[UiData, Window])
-def ui_close_pane(ident: Ident) -> Do:
-    yield ui_modify_pane(ident, lens.open.set(false))
+def ui_close_pane(ident: Ident) -> EitherState[str, UiData, Window]:
+    return ui_modify_pane(ident, lens.open.set(false))
 
 
 @prog
-@do(EitherState[ComponentData[Env, UiData], Window])
-def ui_close_pane_prog(ident_spec: IdentSpec) -> Do:
+def ui_close_pane_prog(ident_spec: IdentSpec) -> NS[ComponentData[Env, UiData], Window]:
     ident = ensure_ident_or_generate(ident_spec)
-    yield ui_close_pane(ident).zoom(lens.comp)
+    return ui_close_pane(ident).nvim.zoom(lens.comp)
 
 
 @prog.do(None)

@@ -52,45 +52,45 @@ spaces_layout_lens = lens.Each().windows.Each().layout
 uidata_layout_lens = lens.spaces & spaces_layout_lens
 
 
-def map_window_trees(mod: Callable[[MyoViewTree], MyoViewTree]) -> EitherState[UiData, None]:
+def map_window_trees(mod: Callable[[MyoViewTree], MyoViewTree]) -> EitherState[str, UiData, None]:
     return EitherState.modify(uidata_layout_lens.modify(mod))
 
 
 def ui_modify_layout_nodes(
         pred: Callable[[MyoLayoutNode], bool],
         mod: Callable[[MyoLayoutNode], MyoLayoutNode],
-) -> EitherState[UiData, None]:
+) -> EitherState[str, UiData, None]:
     return map_window_trees(map_layout_nodes(pred, mod))
 
 
 def ui_modify_pane_nodes(
         pred: Callable[[Pane], bool],
         mod: Callable[[MyoPaneNode], MyoPaneNode],
-) -> EitherState[UiData, None]:
+) -> EitherState[str, UiData, None]:
     return map_window_trees(map_pane_nodes(pred, mod))
 
 
-def ui_modify_layout_node(ident: Ident, mod: Callable[[MyoLayoutNode], MyoLayoutNode]) -> EitherState[UiData, Window]:
+def ui_modify_layout_node(ident: Ident, mod: Callable[[MyoLayoutNode], MyoLayoutNode]) -> EitherState[str, UiData, Window]:
     return ui_modify_layout_nodes(lambda a: has_ident(ident)(a.data), mod)
 
 
-def ui_modify_pane_node(ident: Ident, mod: Callable[[MyoPaneNode], MyoPaneNode]) -> EitherState[UiData, Window]:
+def ui_modify_pane_node(ident: Ident, mod: Callable[[MyoPaneNode], MyoPaneNode]) -> EitherState[str, UiData, Window]:
     return ui_modify_pane_nodes(lambda a: has_ident(ident)(a.data), mod)
 
 
-def ui_modify_layouts(pred: Callable[[Layout], bool], mod: Callable[[Layout], Layout]) -> EitherState[UiData, None]:
+def ui_modify_layouts(pred: Callable[[Layout], bool], mod: Callable[[Layout], Layout]) -> EitherState[str, UiData, None]:
     return map_window_trees(map_layouts(pred, mod))
 
 
-def ui_modify_panes(pred: Callable[[Pane], bool], mod: Callable[[Pane], Pane]) -> EitherState[UiData, None]:
+def ui_modify_panes(pred: Callable[[Pane], bool], mod: Callable[[Pane], Pane]) -> EitherState[str, UiData, None]:
     return map_window_trees(map_panes(pred, mod))
 
 
-def ui_modify_layout(ident: Ident, mod: Callable[[Layout], Layout]) -> EitherState[UiData, Window]:
+def ui_modify_layout(ident: Ident, mod: Callable[[Layout], Layout]) -> EitherState[str, UiData, Window]:
     return ui_modify_layouts(has_ident(ident), mod)
 
 
-def ui_modify_pane(ident: Ident, mod: Callable[[Pane], Pane]) -> EitherState[UiData, Window]:
+def ui_modify_pane(ident: Ident, mod: Callable[[Pane], Pane]) -> EitherState[str, UiData, Window]:
     return ui_modify_panes(has_ident(ident), mod)
 
 
