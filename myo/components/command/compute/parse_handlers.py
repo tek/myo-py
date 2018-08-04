@@ -13,7 +13,7 @@ from myo.output.data.report import DisplayLine, PlainDisplayLine
 A = TypeVar('A')
 B = TypeVar('B')
 OutputFilter = Callable[[List[OutputEvent[A, B]]], List[OutputEvent[A, B]]]
-FirstError = Callable[[OutputEvent[A, B]], NS[CommandRibosome, int]]
+FirstError = Callable[[List[OutputEvent[A, B]]], NS[CommandRibosome, int]]
 PathFormatter = Callable[[Path], NS[CommandRibosome, str]]
 Reporter = Callable[[PathFormatter, OutputEvent[A, B]], NS[CommandRibosome, List[List[DisplayLine]]]]
 SyntaxCons = Callable[[], NS[CommandRibosome, Syntax]]

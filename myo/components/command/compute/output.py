@@ -12,7 +12,7 @@ from ribosome.nvim.scratch import show_in_scratch_buffer_default, ScratchBuffer
 from ribosome.compute.api import prog
 from ribosome.nvim.io.compute import NvimIO
 from ribosome.nvim.api.ui import (window_line, focus_window, edit_file, set_local_cursor, set_line, window_buffer_name,
-                                  close_buffer, window_number)
+                                  close_buffer, window_number, close_window)
 from ribosome.nvim.io.api import N
 from ribosome.components.internal.mapping import activate_mapping
 from ribosome.data.mapping import Mapping
@@ -22,7 +22,7 @@ from ribosome.nvim.api.command import nvim_atomic_commands
 from ribosome.nvim.api.util import format_windo
 
 from myo.components.command.data import CommandData, OutputData
-from myo.output.data.output import OutputLine, Location, OutputEvent
+from myo.output.data.output import Location, OutputEvent
 from myo.components.command.compute.tpe import CommandRibosome
 from myo.settings import auto_jump
 from myo.output.data.report import (ReportLine, format_report, ParseReport, PlainReportLine, EventReportLine,
@@ -46,10 +46,6 @@ def output_data() -> NS[CommandData, OutputData]:
 
 def scratch_buffer() -> NS[CommandData, ScratchBuffer]:
     return NS.inspect_either(lambda a: a.output.scratch.to_either('no scratch buffer set'))
-
-
-def output_entry_at(index: int) -> NS[CommandData, OutputLine]:
-    return NS.inspect_maybe(lambda a: a.output.locations.lift(index), lambda: f'invalid output entry index {index}')
 
 
 def report_line_number(event: int) -> Callable[[ParseReport], Either[str, int]]:
@@ -106,11 +102,11 @@ def jump_to_location(scratch: ScratchBuffer, location: Location) -> Do:
 
 @do(NS[CommandData, None])
 def select_event(index: int, jump: Boolean) -> Do:
-    yield NS.modify(lambda a: a.set.current(index)).zoom(lens.output)
+    yield NS.s(CommandData).modify(lambda a: a.set.current(index)).zoom(lens.output)
     line = yield inspect_report_line_number_by_event_index(index)
     scratch = yield scratch_buffer()
     yield NS.lift(set_line(scratch.ui.window, line + 1))
-    yield NS.modify(lambda a: a.set.current(index)).zoom(lens.output)
+    yield NS.s(CommandData).modify(lambda a: a.set.current(index)).zoom(lens.output)
     if jump:
         location = yield inspect_line_location(line)
         yield NS.lift(jump_to_location(scratch, location))
@@ -149,10 +145,22 @@ def setup_syntax(cons: SyntaxCons, window: int) -> Do:
     yield NS.lift(nvim_atomic_commands(win_cmds))
 
 
+@do(NvimIO[None])
+def close_scratch_buffer(scratch: ScratchBuffer) -> Do:
+    yield close_window(scratch.ui.window)
+    yield close_buffer(scratch.buffer)
+
+
+def terminate_scratch() -> NS[CommandRibosome, None]:
+    scratch = yield NS.inspect_comp(lambda a: a.output.scratch)
+    yield NS.lift(scratch.cata(close_scratch_buffer, N.unit))
+
+
 @do(NS[CommandRibosome, None])
 def render_parse_result(output: ParsedOutput[A, B]) -> Do:
     log.debug(f'rendering parse result')
     report = yield parse_report(output)
+    yield terminate_scratch()
     scratch = yield NS.lift(show_in_scratch_buffer_default(format_report(report), max_height=Just(.3)))
     scratch_number = yield NS.lift(window_number(scratch.ui.window))
     yield Ribo.modify_comp(lens.output.modify(lambda a: a.copy(report=report, scratch=Just(scratch))))
