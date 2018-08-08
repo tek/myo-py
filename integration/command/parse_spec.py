@@ -15,6 +15,7 @@ from ribosome.compute.api import prog
 from ribosome.nvim.io.state import NS
 from ribosome.test.integration.external import external_state_test
 from ribosome.nvim.api.command import nvim_command_output
+from ribosome.test.klk.matchers.buffer import buffer_count_is
 
 from myo.data.command import Command, HistoryEntry
 from myo.components.command.compute.parse import parse, ParseOptions
@@ -126,6 +127,14 @@ def syntax_spec() -> Do:
     return k(syn).must(have_lines(target_syntax)) & k(hi).must(have_lines(target_highlight))
 
 
+@do(NS[MyoState, Expectation])
+def twice_spec() -> Do:
+    yield NS.lift(auto_jump.update(False))
+    yield run_prog(prog.result(render_parse_result), List(parsed_output))
+    yield run_prog(prog.result(render_parse_result), List(parsed_output))
+    yield NS.lift(buffer_count_is(2))
+
+
 class ParseSpec(SpecBase):
     '''
     parse command output $command_output
@@ -134,6 +143,7 @@ class ParseSpec(SpecBase):
     custom first error $first_error
     custom path formatter $path_formatter
     apply syntax rules $syntax
+    render twice $twice
     '''
 
     def command_output(self) -> Expectation:
@@ -153,6 +163,9 @@ class ParseSpec(SpecBase):
 
     def syntax(self) -> Expectation:
         return external_state_test(command_spec_test_config, syntax_spec)
+
+    def twice(self) -> Expectation:
+        return external_state_test(command_spec_test_config, twice_spec)
 
 
 __all__ = ('ParseSpec',)

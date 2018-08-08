@@ -148,12 +148,12 @@ def setup_syntax(cons: SyntaxCons, window: int) -> Do:
 @do(NvimIO[None])
 def close_scratch_buffer(scratch: ScratchBuffer) -> Do:
     yield close_window(scratch.ui.window)
-    yield close_buffer(scratch.buffer)
+    yield N.ignore_failure(close_buffer(scratch.buffer))
 
 
 @do(NS[CommandRibosome, None])
 def terminate_scratch() -> Do:
-    scratch = yield NS.inspect_comp(lambda a: a.output.scratch)
+    scratch = yield Ribo.inspect_comp(lambda a: a.output.scratch)
     yield NS.lift(scratch.cata(close_scratch_buffer, N.unit))
 
 
