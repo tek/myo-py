@@ -151,7 +151,8 @@ def close_scratch_buffer(scratch: ScratchBuffer) -> Do:
     yield close_buffer(scratch.buffer)
 
 
-def terminate_scratch() -> NS[CommandRibosome, None]:
+@do(NS[CommandRibosome, None])
+def terminate_scratch() -> Do:
     scratch = yield NS.inspect_comp(lambda a: a.output.scratch)
     yield NS.lift(scratch.cata(close_scratch_buffer, N.unit))
 
