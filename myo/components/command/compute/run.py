@@ -190,6 +190,7 @@ def run_command(cmd: Command) -> Do:
     pid = yield handler(task)
     yield Ribo.lift(store_running_command(cmd, pid, is_system_task(task_details)), CommandData)
     yield push_history(cmd, cmd.interpreter) if cmd.history else Prog.unit
+    yield Prog.unit
 
 
 @prog
