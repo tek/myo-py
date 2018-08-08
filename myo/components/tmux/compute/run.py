@@ -24,7 +24,9 @@ from myo.tmux.pid import process_pid
 log = module_log()
 
 
-# FIXME wait for pid?
+# FIXME waiting for the pid here is not practical. if the pane was created while executing the command, the shell
+# startup time may be very long, while very short commands like `print` may be terminated before the first check is
+# done.
 @do(TS[ComponentData[Env, TmuxData], Maybe[Pid]])
 def run_system_task(cmd: Command, pane: Pane, log_path: Maybe[Path]) -> Do:
     tpane = yield pane_by_ident(pane.ident).zoom(lens.comp.views)
@@ -33,7 +35,7 @@ def run_system_task(cmd: Command, pane: Pane, log_path: Maybe[Path]) -> Do:
     yield TS.lift(send_keys(id, cmd.lines))
     yield TS.lift(TmuxIO.flush())
     yield TS.lift(
-        tmuxio_repeat_timeout(lambda: process_pid(id), lambda a: a.present, '', timeout=3.)
+        tmuxio_repeat_timeout(lambda: process_pid(id), lambda a: a.present, '', timeout=1.)
         .recover_error(lambda a: Nothing)
     )
 

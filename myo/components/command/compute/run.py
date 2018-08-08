@@ -5,7 +5,7 @@ from typing import TypeVar
 
 from psutil import Process
 
-from chiasma.util.id import IdentSpec, ensure_ident_or_generate
+from chiasma.util.id import IdentSpec
 
 from amino import do, Do, Maybe, __, _, Path, IO, L, List, Boolean, Lists, Nil
 from amino.dat import Dat
