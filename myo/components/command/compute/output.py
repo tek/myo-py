@@ -18,7 +18,7 @@ from ribosome.components.internal.mapping import activate_mapping
 from ribosome.data.mapping import Mapping
 from ribosome.compute.ribosome_api import Ribo
 from ribosome.nvim.syntax.cmd import syntax_item_cmd, highlight_cmd, hi_link_cmd
-from ribosome.nvim.api.command import nvim_atomic_commands
+from ribosome.nvim.api.command import nvim_atomic_commands, nvim_command
 from ribosome.nvim.api.util import format_windo
 
 from myo.components.command.data import CommandData, OutputData
@@ -97,6 +97,7 @@ def jump_to_location(scratch: ScratchBuffer, location: Location) -> Do:
     if location_exists:
         yield edit_file(location.path) if current_file != location.path else N.unit
         yield set_local_cursor(location.coords)
+        yield nvim_command('normal! zv')
     yield N.unit
 
 
