@@ -95,7 +95,7 @@ def jump_to_location(scratch: ScratchBuffer, location: Location) -> Do:
     current_file = yield window_buffer_name(window)
     location_exists = yield N.from_io(IO.delay(location.path.exists))
     if location_exists:
-        yield edit_file(location.path) if current_file != location.path else N.unit
+        yield edit_file(location.path) if current_file != str(location.path) else N.unit
         yield set_local_cursor(location.coords)
         yield nvim_command('normal! zv')
     yield N.unit
