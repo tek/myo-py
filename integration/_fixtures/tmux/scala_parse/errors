@@ -11,4 +11,8 @@
 [error]   Type[Int | List[String]]
 [error]   func(param)
 [error]        ^
+[error] /path/to/file.scala:3:1: type mismatch
+[error]   Vector[Int] | List[String]
+[error]   func(param)
+[error]        ^
 [error] one error found

@@ -15,7 +15,7 @@ from ribosome.nvim.io.state import NS
 
 log = module_log()
 col_marker = '†'
-foundreq_separator = ' | '
+foundreq_separator = '|'
 found_marker = '+'
 separator_marker = '<'
 req_marker = '-'
@@ -97,7 +97,7 @@ def opening_bracket(line: str, index: int) -> int:
 def closing_bracket(line: str, index: int) -> int:
     chars = Lists.wrap(line[index:])
     result = limiting_bracket(chars, (']', '[', ')', '('))
-    return result.map(lambda a: index + a).get_or_strict(0)
+    return result.map(lambda a: index + a).get_or_strict(len(line))
 
 
 def foundreq_boundaries(line: str, index: int) -> Tuple[int, int, int]:

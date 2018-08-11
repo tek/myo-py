@@ -7,6 +7,7 @@ from ribosome.nvim.syntax.expr import SyntaxMatch, HiLink, SyntaxLiteral, Syntax
 from myo.components.command.compute.tpe import CommandRibosome
 from myo.output.lang.scala.report import col_marker, found_marker, separator_marker, foundreq_separator, req_marker
 
+
 def conceal(name: str, pattern: str, *a: str, **kw: str) -> SyntaxMatch:
     return SyntaxMatch.cons(
         name,
