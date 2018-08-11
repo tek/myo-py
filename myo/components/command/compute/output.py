@@ -148,7 +148,7 @@ def setup_syntax(cons: SyntaxCons, window: int) -> Do:
 
 @do(NvimIO[None])
 def close_scratch_buffer(scratch: ScratchBuffer) -> Do:
-    yield close_window(scratch.ui.window)
+    yield N.ignore_failure(close_window(scratch.ui.window))
     yield N.ignore_failure(close_buffer(scratch.buffer))
 
 

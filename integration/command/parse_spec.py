@@ -9,12 +9,12 @@ from chiasma.util.id import StrIdent
 from amino import List, Map, Nothing, Path, do, Do, Nil, Just
 from amino.test.spec import SpecBase
 
-from ribosome.nvim.api.ui import current_buffer_content, current_buffer_name, current_cursor
+from ribosome.nvim.api.ui import (current_buffer_content, current_buffer_name, current_cursor, current_window,
+                                  close_window)
 from ribosome.compute.run import run_prog
 from ribosome.compute.api import prog
 from ribosome.nvim.io.state import NS
 from ribosome.test.integration.external import external_state_test
-from ribosome.nvim.api.command import nvim_command_output
 from ribosome.test.klk.matchers.buffer import buffer_count_is
 
 from myo.data.command import Command, HistoryEntry
@@ -135,6 +135,16 @@ def twice_spec() -> Do:
     yield NS.lift(buffer_count_is(2))
 
 
+@do(NS[MyoState, Expectation])
+def reopen_spec() -> Do:
+    yield NS.lift(auto_jump.update(False))
+    yield run_prog(prog.result(render_parse_result), List(parsed_output))
+    window = yield NS.lift(current_window())
+    yield NS.lift(close_window(window))
+    yield run_prog(prog.result(render_parse_result), List(parsed_output))
+    yield NS.lift(buffer_count_is(2))
+
+
 class ParseSpec(SpecBase):
     '''
     parse command output $command_output
@@ -144,6 +154,7 @@ class ParseSpec(SpecBase):
     custom path formatter $path_formatter
     apply syntax rules $syntax
     render twice $twice
+    reopen $reopen
     '''
 
     def command_output(self) -> Expectation:
@@ -166,6 +177,9 @@ class ParseSpec(SpecBase):
 
     def twice(self) -> Expectation:
         return external_state_test(command_spec_test_config, twice_spec)
+
+    def reopen(self) -> Expectation:
+        return external_state_test(command_spec_test_config, reopen_spec)
 
 
 __all__ = ('ParseSpec',)
