@@ -11,6 +11,7 @@ from amino import do, Do, Maybe, __, _, Path, IO, L, List, Boolean, Lists, Nil
 from amino.dat import Dat
 from amino.case import Case
 from amino.logging import module_log
+from amino.util.numeric import parse_int
 
 from ribosome.compute.api import prog
 from ribosome.compute.program import Program
@@ -238,7 +239,8 @@ def run_line(options: RunLineOptions) -> Do:
 
 
 @prog.do(None)
-def rerun(index: int=0) -> Do:
+def rerun(index_spec: int=None) -> Do:
+    index = yield Prog.e(parse_int(index_spec or 0).lmap(lambda a: f'invalid history index: {a}'))
     entry = yield Ribo.lift_comp(history_entry(index), CommandData)
     yield run_command(entry.cmd)
 
