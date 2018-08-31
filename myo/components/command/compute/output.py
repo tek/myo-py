@@ -20,6 +20,7 @@ from ribosome.compute.ribosome_api import Ribo
 from ribosome.nvim.syntax.cmd import syntax_item_cmd, highlight_cmd, hi_link_cmd
 from ribosome.nvim.api.command import nvim_atomic_commands, nvim_command
 from ribosome.nvim.api.util import format_windo
+from ribosome import ribo_log
 
 from myo.components.command.data import CommandData, OutputData
 from myo.output.data.output import Location, OutputEvent
@@ -97,7 +98,7 @@ def jump_to_location(scratch: ScratchBuffer, location: Location) -> Do:
     if location_exists:
         yield edit_file(location.path) if current_file != str(location.path) else N.unit
         yield set_local_cursor(location.coords)
-        yield nvim_command('normal! zv')
+        yield nvim_command('normal! zvzz')
     yield N.unit
 
 
@@ -159,9 +160,13 @@ def terminate_scratch() -> Do:
 
 
 @do(NS[CommandRibosome, None])
-def render_parse_result(output: ParsedOutput[A, B]) -> Do:
-    log.debug(f'rendering parse result')
-    report = yield parse_report(output)
+def empty_report() -> Do:
+    ribo_log.error('no events in command output')
+    yield NS.unit
+
+
+@do(NS[CommandRibosome, None])
+def render_report(output: ParsedOutput[A, B], report: ParseReport) -> Do:
     yield terminate_scratch()
     scratch = yield NS.lift(show_in_scratch_buffer_default(format_report(report), max_height=Just(.3)))
     scratch_number = yield NS.lift(window_number(scratch.ui.window))
@@ -171,6 +176,13 @@ def render_parse_result(output: ParsedOutput[A, B]) -> Do:
     jump = yield Ribo.setting(auto_jump)
     first_error = yield output.handlers.first_error(output.filtered)
     yield Ribo.zoom_comp(select_event(first_error, jump))
+
+
+@do(NS[CommandRibosome, None])
+def render_parse_result(output: ParsedOutput[A, B]) -> Do:
+    log.debug(f'rendering parse result')
+    report = yield parse_report(output)
+    yield empty_report() if report.event_indexes.empty else render_report(output, report)
 
 
 @prog.comp

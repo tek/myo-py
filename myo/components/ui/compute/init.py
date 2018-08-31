@@ -11,6 +11,7 @@ from ribosome.nvim.api.function import nvim_call_tpe
 from ribosome.compute.ribosome_api import Ribo
 from ribosome.compute.prog import Prog
 from ribosome.compute.program import Program
+from ribosome import ribo_log
 
 from myo.ui.data.ui_data import UiData
 from myo.ui.data.space import Space
@@ -38,7 +39,7 @@ def insert_default_ui(ident: Ident, layout_ident: Ident, make_ident: Ident) -> D
 
 
 def no_handler(error: str) -> Prog[None]:
-    log.error(error)
+    ribo_log.error(error)
     return Prog.unit
 
 
