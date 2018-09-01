@@ -70,7 +70,7 @@ terrible mistake
   †implicitly[Class]
 /path/to/file.scala  3
 type mismatch
-  Type[{found_marker}Int{separator_marker} | List[String]{req_marker}]
+  Type[{found_marker}Int {separator_marker}| List[String]{req_marker}]
   func(†param)'''
 
 

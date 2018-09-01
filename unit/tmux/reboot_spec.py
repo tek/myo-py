@@ -1,6 +1,4 @@
 from kallikrein import Expectation
-from kallikrein.matchers.maybe import be_nothing, be_just
-from kallikrein.matchers import contain
 from kallikrein.matchers.comparison import eq
 
 from amino import do, Do, List, Lists
