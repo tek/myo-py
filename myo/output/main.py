@@ -1,86 +1,36 @@
-import abc
-from typing import Callable
+from types import ModuleType
+from typing import TypeVar
 
-from amino import List, Path, Either, __, L, _, Just, Maybe, Map, Empty
-from amino.io import IO
-from amino.lazy import lazy
+from amino import List, Either, do, Do
+from amino.logging import module_log
+from amino.mod import instance_from_module
 
-from ribosome import NvimFacade
-from ribosome.machine.state import RunScratchMachine, IfUnhandled
-from ribosome.machine.messages import Nop
-from ribosome.machine.message_base import Message
-from ribosome.util.callback import VimCallback
+from myo.output.data.output import OutputEvent
+from myo.output.parser.base import Parser, parse_events
+from myo.output.config import ParseConfig
 
-from myo.logging import Logging
-from myo.output.data import ParseResult
-from myo.output.machine import OutputMachine, SetResult
-
-
-class OutputHandler(Logging, metaclass=abc.ABCMeta):
-
-    @abc.abstractmethod
-    def parse(self, output: List[str], errfile: Path) -> IO[ParseResult]:
-        ...
-
-    @abc.abstractmethod
-    def display(self, result: ParseResult, jump: Maybe[Callable]
-                ) -> IO[List[Message]]:
-        ...
+log = module_log()
+parsers_module = 'myo.output.parser'
+A = TypeVar('A')
+B = TypeVar('B')
 
 
-# TODO in `display`, return message like `DispalayCustomOutput` and move the
-# `IfUnhandled` part to the core machine, using transition priorities
-class CustomOutputHandler(OutputHandler):
-
-    def __init__(self, vim: NvimFacade, handler: Callable[[str], ParseResult]
-                 ) -> None:
-        self.vim = vim
-        self.handler = handler
-
-    def parse(self, output: List[str], errfile: Path):
-        return IO.call(self.handler, output)
-
-    def display(self, result: ParseResult, options: Map[str, str]):
-        ctor = L(OutputMachine)(self.vim, _, result, _, options)
-        size = self.vim.vars.p('scratch_size') | 10
-        msg = SetResult(result, options)
-        opt = Map(use_tab=False, size=Just(size), wrap=True, init=msg)
-        run = RunScratchMachine(ctor, options=opt)
-        return IO.just(IfUnhandled(msg, run).pub)
+def resolve_parsers(langs: List[str]) -> List[Parser]:
+    def imp(mod: str) -> List[ModuleType]:
+        return Either.import_module(f'{parsers_module}.{mod}').or_else_call(Either.import_module, mod).to_list
+    modules = langs.flat_map(imp)
+    return modules.traverse(lambda a: instance_from_module(a, Parser), Either)
 
 
-class VimCompiler(OutputHandler, VimCallback):
-
-    def __call__(self, data):
-        return Empty()
-
-    def parse(self, output: List[str], errfile: Path):
-        r = ParseResult(head=List('errorformat'))
-        return (IO.call(self.vim.cmd_sync, 'cgetfile {}'.format(errfile))
-                .replace(r))
-
-    def display(self, result, jump):
-        copen = IO.call(self.vim.cmd_sync, 'copen')
-        cfirst = IO.call(self.vim.cmd_sync, 'cfirst')
-        return (copen + cfirst).replace(Just(Nop()))
+@do(Either[str, List[OutputEvent[A, B]]])
+def parsers_events(parsers: List[Parser[A, B]], output: List[str]) -> Do:
+    yield parsers.flat_traverse(lambda a: parse_events(a, output), Either)
 
 
-class Parsing(CustomOutputHandler):
+@do(Either[str, List[OutputEvent[A, B]]])
+def parse_with_langs(output: List[str], langs: List[str]) -> Do:
+    parsers = yield resolve_parsers(langs)
+    yield parsers_events(parsers, output)
 
-    def __init__(self, vim: NvimFacade, langs: List[str]) -> None:
-        self.vim = vim
-        self.langs = langs
 
-    @lazy
-    def parsers(self):
-        mod = 'myo.output.parser'
-        def create(lang):
-            return Either.import_name('{}.{}'.format(mod, lang),
-                                      'Parser').to_list
-        return self.langs // create / (lambda a: a())
-
-    def parse(self, output: List[str], errfile: Path):
-        events = self.parsers // __.events(output)
-        return IO.now(ParseResult(events=events, langs=self.langs))
-
-__all__ = ('CustomOutputHandler', 'VimCompiler', 'Parsing')
+__all__ = ('parsers_events', 'parse_with_langs', 'ParseConfig',)

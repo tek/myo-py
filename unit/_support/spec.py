@@ -20,4 +20,5 @@ class TmuxUnitSpec(UnitSpec, TmuxSpecBase):
         super().teardown()
         self._teardown_server()
 
+
 __all__ = ('UnitSpec', 'TmuxUnitSpec')

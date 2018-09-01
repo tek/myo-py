@@ -1,13 +1,7 @@
-from amino import Right, Left, Map, Maybe, __
+from amino import Map, Maybe, __
+from amino.util.numeric import parse_int
 
-from myo.util.ident import Ident, ident_field
-
-
-def parse_int(i):
-    return Right(i) if isinstance(i, int) else (
-        Right(int(i)) if isinstance(i, str) and i.isdigit() else
-        Left('could not parse int {}'.format(i))
-    )
+from chiasma.util.id import Ident
 
 
 def parse_id(value, rex, desc):
@@ -22,4 +16,5 @@ def parse_id(value, rex, desc):
 def amend_options(opt: Map, key: str, value: Maybe):
     return value / (lambda a: opt + (key, a)) | opt
 
-__all__ = ('parse_int', 'parse_id', 'Ident', 'ident_field')
+
+__all__ = ('parse_int', 'parse_id', 'Ident')

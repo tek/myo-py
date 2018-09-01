@@ -1,6 +1,6 @@
 from myo.output.reifier.base import Reifier as ReifierBase
-from myo.output.data import OutputLine, EmptyLine
-from myo.output.parser.python import FileEntry, PyErrorEntry
+from myo.output.data.output import OutputLineOld, EmptyLine
+from myo.output.parser.python import FileEntry, ErrorEntry
 
 from amino import List, Just, __
 
@@ -21,7 +21,7 @@ class Reifier(ReifierBase):
         code = entry.code / __.format_lines(Just(entry), self._format_code) | List() / __.set(indent=2)
         return entry.format_lines(Just(entry), self._format_file) + code
 
-    def _error(self, event, entry: PyErrorEntry):
+    def _error(self, event, entry: ErrorEntry):
         return (entry.format_lines(Just(event), self._format_error) +
                 List(EmptyLine.create(event)))
 
@@ -31,12 +31,12 @@ class Reifier(ReifierBase):
                 self._file(event, entry)
                 if isinstance(entry, FileEntry) else
                 self._error(event, entry)
-                if isinstance(entry, PyErrorEntry) else
+                if isinstance(entry, ErrorEntry) else
                 List()
             )
-        return event.entries // dispatch
+        return event.lines // dispatch
 
-    def __call__(self, result) -> List[OutputLine]:
+    def __call__(self, result) -> List[OutputLineOld]:
         return result.events // self._event
 
 __all__ = ('Reifier',)
