@@ -3,6 +3,7 @@ from amino.boolean import true
 
 from ribosome.config.component import Component
 from ribosome.rpc.api import rpc
+from ribosome.util.doc.data import DocBlock
 
 from myo.config.component import MyoComponent
 from myo.ui.data.ui_data import UiData
@@ -17,11 +18,15 @@ from myo.components.ui.compute.toggle_layout import toggle_layout
 from myo.components.ui.compute.kill_pane import kill_pane
 from myo.components.ui.compute.focus import focus
 
+create_pane_help = '''Configure a new pane that can be spawned with `MyoOpenPane`.
+'''
+
 
 ui = Component.cons(
     'ui',
     state_type=UiData,
     rpc=List(
+        # rpc.write(create_pane).conf(json=true, help=DocBlock.string(create_pane_help)),
         rpc.write(create_pane).conf(json=true),
         rpc.write(open_pane).conf(json=true),
         rpc.write(close_pane),
