@@ -12,7 +12,7 @@ from ribosome.nvim.api.command import nvim_command
 from ribosome.test.integration.tmux import tmux_plugin_test
 
 from myo import myo_config
-from myo.settings import vim_pane_geometry
+from myo.config.settings import vim_pane_geometry
 
 from test.klk.tmux import tmux_await_k
 

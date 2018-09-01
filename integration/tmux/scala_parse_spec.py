@@ -19,7 +19,7 @@ from ribosome.test.integration.external import external_state_test
 from ribosome.nvim.api.option import option_set
 
 from myo import myo_config
-from myo.settings import auto_jump
+from myo.config.settings import auto_jump
 from myo.components.command.compute.parse_handlers import ParseHandlers
 from myo.output.lang.scala.syntax import scala_syntax
 from myo.output.lang.scala.report import scala_report, col_marker, found_marker, separator_marker, req_marker

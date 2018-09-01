@@ -19,7 +19,7 @@ from ribosome.test.integration.tmux import tmux_plugin_test
 from ribosome.nvim.api.function import define_function
 
 from myo import myo_config
-from myo.settings import test_shell
+from myo.config.settings import test_shell
 from myo.tmux.io import tmux_to_nvim
 
 from test.test import mock_test_functions

@@ -9,7 +9,7 @@ from amino.logging import module_log
 
 from myo.components.command.compute.output import render_parse_result
 from myo.components.command.compute.tpe import CommandRibosome
-from myo.settings import display_parse_result
+from myo.config.settings import display_parse_result
 from myo.components.command.parse import parse_most_recent
 
 log = module_log()

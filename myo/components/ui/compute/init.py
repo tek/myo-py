@@ -18,7 +18,7 @@ from myo.ui.data.space import Space
 from myo.config.handler import find_handler_e
 from myo.ui.data.view import Pane, Layout
 from myo.ui.data.window import Window
-from myo.settings import init_default_ui, vim_pane_geometry
+from myo.config.settings import init_default_ui, vim_pane_geometry
 
 log = module_log()
 

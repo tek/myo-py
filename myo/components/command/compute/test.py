@@ -14,7 +14,7 @@ from myo.components.command.compute.run import run, RunCommandOptions
 from myo.data.command import Command, SystemInterpreter, ShellInterpreter
 from myo.components.command.compute.vim_test import vim_test_line
 from myo.components.command.compute.tpe import CommandRibosome
-from myo.settings import test_pane, test_ui, test_langs, test_shell
+from myo.config.settings import test_pane, test_ui, test_langs, test_shell
 
 log = module_log()
 D = TypeVar('D')

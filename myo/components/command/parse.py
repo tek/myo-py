@@ -19,7 +19,7 @@ from myo.output.config import LangConfig, ParseConfig
 from myo.output.configs import default_lang_configs, global_config_defaults
 from myo.components.command.compute.parsed_output import ParsedOutput
 from myo.components.command.compute.parse_handlers import ParseHandlers
-from myo.settings import builtin_output_config
+from myo.config.settings import builtin_output_config
 
 log = module_log()
 A = TypeVar('A')

@@ -25,7 +25,7 @@ from ribosome import ribo_log
 from myo.components.command.data import CommandData, OutputData
 from myo.output.data.output import Location, OutputEvent
 from myo.components.command.compute.tpe import CommandRibosome
-from myo.settings import auto_jump
+from myo.config.settings import auto_jump
 from myo.output.data.report import (ReportLine, format_report, ParseReport, PlainReportLine, EventReportLine,
                                     event_index, DisplayLine)
 from myo.components.command.compute.parsed_output import ParsedOutput

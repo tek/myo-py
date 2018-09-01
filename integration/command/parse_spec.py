@@ -22,7 +22,7 @@ from myo.components.command.compute.parse import parse, ParseOptions
 from myo.components.command.compute.output import render_parse_result, current_event_jump, next_event, prev_event
 from myo.output.data.output import OutputEvent
 from myo.output.parser.python import PythonLine, PythonEvent
-from myo.settings import auto_jump
+from myo.config.settings import auto_jump
 from myo.components.command.compute.tpe import CommandRibosome
 from myo.config.plugin_state import MyoState
 from myo.components.command.compute.parsed_output import ParsedOutput

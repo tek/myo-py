@@ -6,7 +6,7 @@ from ribosome.compute.ribosome_api import Ribo
 
 from myo.components.command.compute.tpe import CommandRibosome
 from myo.components.command.compute.history import restore_history
-from myo.settings import load_history
+from myo.config.settings import load_history
 
 
 @prog

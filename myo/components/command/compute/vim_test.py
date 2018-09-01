@@ -12,7 +12,7 @@ from amino import _, Either, do, Do, Dat
 from amino.json import encode_json
 
 from myo.components.command.compute.tpe import CommandRibosome
-from myo.settings import vim_test_filename_modifier
+from myo.config.settings import vim_test_filename_modifier
 
 A = TypeVar('A')
 D = TypeVar('D')

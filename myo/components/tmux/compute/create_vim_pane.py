@@ -16,7 +16,7 @@ from chiasma.data.window import Window
 from chiasma.util.pid import discover_pane_by_pid
 
 from myo.components.tmux.tpe import TmuxRibosome
-from myo.settings import vim_tmux_pane
+from myo.config.settings import vim_tmux_pane
 
 log = module_log()
 
