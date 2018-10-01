@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version_parts = (1, 0, 0, 'a', 22)
+version_parts = (1, 0, 0, 'a', 23)
 version = '.'.join(map(str, version_parts))
 
 setup(  # type: ignore
@@ -13,7 +13,7 @@ setup(  # type: ignore
     url='https://github.com/tek/myo',
     packages=find_packages(exclude=['unit', 'unit.*', 'integration', 'integration.*', 'test', 'test.*']),
     install_requires=[
-        'ribosome~=13.0.0a73',
+        'ribosome~=13.0.0a75',
         'chiasma~=0.1.0.a28',
         'psutil==5.3.1',
         'networkx==2.0',
