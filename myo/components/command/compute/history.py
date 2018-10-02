@@ -1,4 +1,5 @@
-from amino import do, Do, __, Maybe, _, List
+from amino import do, Do, Maybe, List
+from amino.logging import module_log
 from amino.lenses.lens import lens
 
 from chiasma.util.id import Ident
@@ -12,9 +13,11 @@ from myo.data.command import Command, HistoryEntry
 from myo.components.command.data import CommandData
 from myo.components.command.compute.tpe import CommandRibosome
 
+log = module_log()
+
 
 def store_history() -> NS[CommandData, None]:
-    return store_json_state('history', _.history)
+    return store_json_state('history', lambda a: a.history)
 
 
 def restore_history() -> NS[CommandData, None]:
@@ -25,7 +28,7 @@ def restore_history() -> NS[CommandData, None]:
 @do(NS[CommandRibosome, None])
 def push_history(cmd: Command, target: Maybe[Ident]) -> Do:
     entry = HistoryEntry(cmd, target)
-    yield Ribo.modify_comp(__.append1.history(entry))
+    yield Ribo.modify_comp(lambda a: a.append1.history(entry))
     yield Ribo.zoom_comp(store_history())
 
 
@@ -34,4 +37,4 @@ def history() -> NS[CommandRibosome, List[HistoryEntry]]:
     return Ribo.inspect_comp(lambda a: a.history)
 
 
-__all__ = ('push_history', 'history', 'read_history', 'store_history',)
+__all__ = ('push_history', 'history', 'store_history', 'restore_history',)

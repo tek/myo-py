@@ -21,6 +21,7 @@ from myo.components.command.compute.kill import kill
 from myo.components.command.compute.reboot import reboot
 from myo.components.command.compute.history import history
 from myo.components.command.compute.init import command_init
+from myo.components.command.compute.history_menu import history_menu
 
 
 def run_handler_for(task: RunTask) -> Maybe[Program]:
@@ -45,6 +46,7 @@ command: Component[CommandData, MyoComponent] = Component.cons(
         rpc.write(vim_test).conf(json=true),
         rpc.write(kill),
         rpc.write(reboot),
+        rpc.write(history_menu),
         rpc.read(history),
         rpc.read(test_determine_runner),
         rpc.read(test_executable),
