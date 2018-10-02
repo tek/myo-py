@@ -2,7 +2,7 @@ from typing import Callable, Any, TypeVar
 
 from ribosome.nvim.io.compute import NvimIO
 from ribosome.nvim.io.state import NS
-from ribosome.nvim.api.function import nvim_call_cons
+from ribosome.nvim.api.function import nvim_call_cons_strict
 from ribosome.nvim.api.ui import current_cursor
 from ribosome.nvim.api.util import cons_decode_str, cons_decode_str_list
 from ribosome.nvim.io.api import N
@@ -10,20 +10,22 @@ from ribosome.compute.ribosome_api import Ribo
 
 from amino import _, Either, do, Do, Dat
 from amino.json import encode_json
+from amino.logging import module_log
 
 from myo.components.command.compute.tpe import CommandRibosome
 from myo.config.settings import vim_test_filename_modifier
 
+log = module_log()
 A = TypeVar('A')
 D = TypeVar('D')
 
 
 def vim_test_call(cons: Callable[[Any], Either[str, A]], fun: str, *args: str) -> NvimIO[str]:
-    return nvim_call_cons(cons, f'test#{fun}', *args)
+    return nvim_call_cons_strict(cons, f'test#{fun}', *args)
 
 
 def vim_test_call_wrap(cons: Callable[[Any], Either[str, A]], fun: str, *args: str) -> NvimIO[str]:
-    return nvim_call_cons(cons, f'MyoTest{fun}', *args)
+    return nvim_call_cons_strict(cons, f'MyoTest{fun}', *args)
 
 
 class VimTestPosition(Dat['VimTestPosition']):
@@ -37,7 +39,7 @@ class VimTestPosition(Dat['VimTestPosition']):
 @do(NS[CommandRibosome, VimTestPosition])
 def vim_test_position() -> Do:
     fn_mod = yield Ribo.setting(vim_test_filename_modifier)
-    file = yield NS.lift(nvim_call_cons(cons_decode_str, 'expand', f'%{fn_mod}'))
+    file = yield NS.lift(nvim_call_cons_strict(cons_decode_str, 'expand', f'%{fn_mod}'))
     line, col = yield NS.lift(current_cursor())
     return VimTestPosition(file, line, col)
 
