@@ -11,7 +11,6 @@ from ribosome.test.integration.tmux import tmux_plugin_test, screenshot
 from ribosome.nvim.api.ui import send_input
 from ribosome.nvim.io.compute import NvimIO
 from ribosome.util.persist import store_json_data
-from ribosome.nvim.io.api import N
 
 from myo import myo_config
 from myo.data.command import HistoryEntry, Command, SystemInterpreter

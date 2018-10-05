@@ -30,7 +30,7 @@ def history_menu_selected() -> Do:
 @do(NS[CommandRibosome, Menu[AutoState[None, HistoryEntry, None], HistoryEntry, None]])
 def setup_history_menu() -> Do:
     history = yield Ribo.inspect_comp(lambda a: a.history)
-    lines = history.map(lambda a: MenuLine.cons(a.cmd.ident.str, a))
+    lines = history.map(lambda a: MenuLine.cons(f'[{a.cmd.ident.str}] {a.cmd.lines.head.get_or_strict("")}', a))
     return auto_menu(
         None,
         MenuContent.cons(lines),
