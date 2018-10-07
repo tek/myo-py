@@ -24,11 +24,19 @@ def restore_history() -> NS[CommandData, None]:
     return load_json_state('history', lens.history)
 
 
+def insert_history_entry(history: List[HistoryEntry], entry: HistoryEntry) -> List[HistoryEntry]:
+    return (
+        history
+        if history.exists(lambda a: a.cmd.ident == entry.cmd.ident and a.cmd.lines == entry.cmd.lines) else
+        history.cat(entry)
+    )
+
+
 @prog
 @do(NS[CommandRibosome, None])
 def push_history(cmd: Command, target: Maybe[Ident]) -> Do:
     entry = HistoryEntry(cmd, target)
-    yield Ribo.modify_comp(lambda a: a.append1.history(entry))
+    yield Ribo.modify_comp(lens.history.modify(lambda a: insert_history_entry(a, entry)))
     yield Ribo.zoom_comp(store_history())
 
 

@@ -4,7 +4,7 @@ from amino.logging import module_log
 from ribosome.compute.api import prog
 from ribosome.nvim.io.state import NS
 from ribosome.compute.ribosome_api import Ribo
-from ribosome.util.menu.data import MenuLine, MenuContent, MenuQuitWith, MenuUnit, Menu
+from ribosome.util.menu.data import MenuLine, MenuContent, MenuQuitWith, MenuUnit, Menu, MenuConfig
 from ribosome.util.menu.auto.run import auto_menu, selected_menu_lines
 from ribosome.util.menu.auto.data import AutoS, AutoState
 from ribosome.util.menu.run import run_menu_prog
@@ -33,8 +33,8 @@ def setup_history_menu() -> Do:
     lines = history.map(lambda a: MenuLine.cons(f'[{a.cmd.ident.str}] {a.cmd.lines.head.get_or_strict("")}', a))
     return auto_menu(
         None,
-        MenuContent.cons(lines),
-        'myo command history',
+        lines,
+        MenuConfig.cons('myo command history', insert=False),
         Map({'<cr>': history_menu_selected}),
     )
 

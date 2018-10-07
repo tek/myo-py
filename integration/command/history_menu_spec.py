@@ -27,7 +27,6 @@ history = List(HistoryEntry.cons(cmd1), HistoryEntry.cons(cmd2))
 def history_menu_spec() -> Do:
     yield send_input(':call MyoHistoryMenu()<cr>')
     shot1 = yield screenshot('command', 'history', 'menu', 'menu')
-    yield send_input('<esc>')
     yield send_input('j')
     yield send_input('<cr>')
     shot2 = yield screenshot('command', 'history', 'menu', 'final')

@@ -1,5 +1,4 @@
-[cmd1] echo cmd1
-[cmd2] echo cmd2
+
 [94m~
 ~
 ~
@@ -32,9 +31,7 @@
 ~
 ~
 ~
-[1;7m[39mmyo command history                                                                                                                                                                                                                                            1,1            All
-
-[0m[94m[49m~
+~
 ~
 ~
 ~
@@ -67,3 +64,6 @@
 ~
 ~
 [7m[39m[No Name]                                                                                                                                                                                                                                                      0,0-1          All
+[0m[39m[49m[cmd2] echo cmd2
+[cmd1] echo cmd1
+[1;7mmyo command history                                                                                                                                                                                                                                            2,1            All
