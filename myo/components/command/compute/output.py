@@ -1,4 +1,4 @@
-from typing import TypeVar, Callable
+from typing import TypeVar, Callable, Tuple
 
 from amino import do, Do, List, Just, Boolean, IO, Either, Left, Lists, Nothing
 from amino.boolean import true, false
@@ -64,6 +64,12 @@ def inspect_report_line_number_by_event_index(index: int) -> Do:
     )
 
 
+@do(NS[CommandData, int])
+def line_event_index(line: int) -> Do:
+    indexes = yield NS.inspect(lambda a: a.output.report.event_indexes)
+    return indexes.index_where(lambda a: a > line + 1).get_or_strict(len(indexes)) - 1
+
+
 no_associated_location = 'no location associated with this event'
 
 
@@ -102,22 +108,29 @@ def jump_to_location(scratch: ScratchBuffer, location: Location) -> Do:
     yield N.unit
 
 
+def store_event_index(index: int) -> NS[CommandData, None]:
+    return NS.s(CommandData).modify(lambda a: a.set.current(index)).zoom(lens.output)
+
+
 @do(NS[CommandData, None])
 def select_event(index: int, jump: Boolean) -> Do:
-    yield NS.s(CommandData).modify(lambda a: a.set.current(index)).zoom(lens.output)
+    yield store_event_index(index)
     line = yield inspect_report_line_number_by_event_index(index)
     scratch = yield scratch_buffer()
     yield NS.lift(set_line(scratch.ui.window, line + 1))
-    yield NS.s(CommandData).modify(lambda a: a.set.current(index)).zoom(lens.output)
     if jump:
         location = yield inspect_line_location(line)
         yield NS.lift(jump_to_location(scratch, location))
 
 
+@do(NS[CommandData, None])
+def select_line_event(line: int) -> Do:
+    index = yield line_event_index(line - 1)
+    yield store_event_index(index)
+
+
 def event_report(index: int, event: OutputEvent[A, B], lines: List[DisplayLine]) -> List[ReportLine]:
-    return (
-        (lines.map(lambda a: EventReportLine(a, index, event.location)))
-    )
+    return lines.map(lambda a: EventReportLine(a, index, event.location))
 
 
 @do(NS[CommandRibosome, List[List[ReportLine]]])
@@ -185,12 +198,19 @@ def render_parse_result(output: ParsedOutput[A, B]) -> Do:
     yield empty_report() if report.event_indexes.empty else render_report(output, report)
 
 
-@prog.comp
-@do(NS[CommandData, None])
-def current_event_jump() -> Do:
-    scratch = yield scratch_buffer()
+@do(NS[CommandRibosome, Tuple[ScratchBuffer, int]])
+def select_cursor_event() -> Do:
+    scratch = yield Ribo.zoom_comp(scratch_buffer())
     line = yield NS.lift(window_line(scratch.ui.window))
-    location = yield inspect_line_location(line)
+    yield Ribo.zoom_comp(select_line_event(line))
+    return scratch, line
+
+
+@prog.comp
+@do(NS[CommandRibosome, None])
+def current_event_jump() -> Do:
+    scratch, line = select_cursor_event()
+    location = yield Ribo.zoom_comp(inspect_line_location(line))
     yield NS.lift(jump_to_location(scratch, location))
 
 
@@ -205,8 +225,8 @@ def quit_output() -> Do:
 @do(NS[CommandRibosome, None])
 def prev_event() -> Do:
     current = yield Ribo.inspect_comp(lambda a: a.output.current)
-    jump = yield Ribo.setting(auto_jump)
     if current > 0:
+        jump = yield Ribo.setting(auto_jump)
         yield Ribo.zoom_comp(select_event(current - 1, jump))
 
 

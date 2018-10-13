@@ -10,16 +10,18 @@ from amino import List, Map, Nothing, Path, do, Do, Nil, Just
 from amino.test.spec import SpecBase
 
 from ribosome.nvim.api.ui import (current_buffer_content, current_buffer_name, current_cursor, current_window,
-                                  close_window)
+                                  close_window, set_local_line)
 from ribosome.compute.run import run_prog
 from ribosome.compute.api import prog
 from ribosome.nvim.io.state import NS
 from ribosome.test.integration.external import external_state_test
 from ribosome.test.klk.matchers.buffer import buffer_count_is
+from ribosome.compute.ribosome_api import Ribo
 
 from myo.data.command import Command, HistoryEntry
 from myo.components.command.compute.parse import parse, ParseOptions
-from myo.components.command.compute.output import render_parse_result, current_event_jump, next_event, prev_event
+from myo.components.command.compute.output import (render_parse_result, current_event_jump, next_event, prev_event,
+                                                   select_cursor_event)
 from myo.output.data.output import OutputEvent
 from myo.output.parser.python import PythonLine, PythonEvent
 from myo.config.settings import auto_jump
@@ -29,6 +31,7 @@ from myo.components.command.compute.parsed_output import ParsedOutput
 from myo.components.command.compute.parse_handlers import ParseHandlers
 from myo.output.lang.python.report import python_report
 from myo.output.lang.python.syntax import python_syntax
+from myo.components.command.data import CommandData
 
 from test.command import update_command_data, command_spec_test_config
 from test.output.python import output_events, file_path, trace_file, line, col, parsed_output
@@ -70,6 +73,18 @@ def cycle_spec() -> Do:
     yield run_prog(prev_event, Nil)
     cursor3 = yield NS.lift(current_cursor())
     return k((cursor1, cursor2, cursor3)).must(tupled(3)((equal((1, 0)), equal((3, 0)), equal((1, 0)))))
+
+
+@do(NS[MyoState, Expectation])
+def select_cycle_spec() -> Do:
+    yield NS.lift(auto_jump.update(False))
+    yield run_prog(prog.result(render_parse_result), List(parsed_output))
+    cursor1 = yield NS.lift(current_cursor())
+    yield NS.lift(set_local_line(6))
+    yield run_prog(prog.result(select_cursor_event), Nil)
+    yield run_prog(next_event, Nil)
+    cursor2 = yield NS.lift(current_cursor())
+    return k((cursor1, cursor2)).must(tupled(2)((equal((1, 0)), equal((8, 0)))))
 
 
 def first_error(output: List[OutputEvent[PythonLine, PythonEvent]]) -> NS[CommandRibosome, int]:
@@ -150,6 +165,7 @@ class ParseSpec(SpecBase):
     parse command output $command_output
     jump to current error $jump
     cycle to next and previous error $cycle
+    cycle after selecting error $select_cycle
     custom first error $first_error
     custom path formatter $path_formatter
     apply syntax rules $syntax
@@ -165,6 +181,9 @@ class ParseSpec(SpecBase):
 
     def cycle(self) -> Expectation:
         return external_state_test(command_spec_test_config, cycle_spec)
+
+    def select_cycle(self) -> Expectation:
+        return external_state_test(command_spec_test_config, select_cycle_spec)
 
     def first_error(self) -> Expectation:
         return external_state_test(command_spec_test_config, first_error_spec)
