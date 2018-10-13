@@ -1,4 +1,4 @@
-ribosome~=13.0.1a1
+ribosome==13.0.1a2
 chiasma~=0.1.0.a28
 psutil==5.3.1
 networkx==2.0
