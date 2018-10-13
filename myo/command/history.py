@@ -8,7 +8,7 @@ from myo.data.command import HistoryEntry, Command
 
 def history_entry(index: int) -> NS[CommandData, HistoryEntry]:
     return NS.inspect_maybe(
-        lambda s: s.history.lift(len(s.history) - 1 - index),
+        lambda s: s.history.lift(index),
         lambda: f'no history entry for index `{index}`'
     )
 

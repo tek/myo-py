@@ -25,11 +25,7 @@ def restore_history() -> NS[CommandData, None]:
 
 
 def insert_history_entry(history: List[HistoryEntry], entry: HistoryEntry) -> List[HistoryEntry]:
-    return (
-        history
-        if history.exists(lambda a: a.cmd.ident == entry.cmd.ident and a.cmd.lines == entry.cmd.lines) else
-        history.cat(entry)
-    )
+    return history.cons(entry).distinct_by(lambda a: (a.cmd.ident, a.cmd.lines))
 
 
 @prog
