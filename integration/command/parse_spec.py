@@ -64,6 +64,17 @@ def jump_spec() -> Do:
 
 
 @do(NS[MyoState, Expectation])
+def jump_last_line_spec() -> Do:
+    yield NS.lift(auto_jump.update(False))
+    yield NS.lift(set_local_line(1))
+    yield run_prog(prog.result(render_parse_result), List(parsed_output))
+    yield run_prog(current_event_jump, Nil)
+    name = yield NS.lift(current_buffer_name())
+    cursor = yield NS.lift(current_cursor())
+    return (k(name) == str(file_path)) & (k(cursor) == (line, col))
+
+
+@do(NS[MyoState, Expectation])
 def cycle_spec() -> Do:
     yield NS.lift(auto_jump.update(False))
     yield run_prog(prog.result(render_parse_result), List(parsed_output))
@@ -164,6 +175,7 @@ class ParseSpec(SpecBase):
     '''
     parse command output $command_output
     jump to current error $jump
+    jump to current error with cursor on last line of the event $jump_last_line
     cycle to next and previous error $cycle
     cycle after selecting error $select_cycle
     custom first error $first_error
@@ -178,6 +190,9 @@ class ParseSpec(SpecBase):
 
     def jump(self) -> Expectation:
         return external_state_test(command_spec_test_config, jump_spec)
+
+    def jump_last_line(self) -> Expectation:
+        return external_state_test(command_spec_test_config, jump_last_line_spec)
 
     def cycle(self) -> Expectation:
         return external_state_test(command_spec_test_config, cycle_spec)

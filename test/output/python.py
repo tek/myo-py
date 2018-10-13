@@ -13,7 +13,7 @@ line2 = 6
 line3 = 7
 file_path = fixture_path('command', 'parse', 'file.py')
 output_line = OutputLine(
-    f'  File "{file_path}", line {line}, in funcname',
+    f'  File "{file_path}", line {line + 1}, in funcname',
     FileLine(
         Path(file_path),
         line,

@@ -31,7 +31,7 @@ class FileLine(PythonLine):
     ) -> Do:
         path_p = yield Try(Path, path)
         line_i = yield parse_int(line)
-        return FileLine(path_p, line_i, Maybe.optional(fun))
+        return FileLine(path_p, line_i - 1, Maybe.optional(fun))
 
     def __init__(self, path: Path, line: int, fun: Maybe[str]) -> None:
         self.path = path

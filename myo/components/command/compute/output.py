@@ -206,10 +206,10 @@ def select_cursor_event() -> Do:
     return scratch, line
 
 
-@prog.comp
+@prog
 @do(NS[CommandRibosome, None])
 def current_event_jump() -> Do:
-    scratch, line = select_cursor_event()
+    scratch, line = yield select_cursor_event()
     location = yield Ribo.zoom_comp(inspect_line_location(line))
     yield NS.lift(jump_to_location(scratch, location))
 
