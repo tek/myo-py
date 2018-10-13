@@ -117,7 +117,7 @@ def select_event(index: int, jump: Boolean) -> Do:
     yield store_event_index(index)
     line = yield inspect_report_line_number_by_event_index(index)
     scratch = yield scratch_buffer()
-    yield NS.lift(set_line(scratch.ui.window, line + 1))
+    yield NS.lift(set_line(scratch.ui.window, line))
     if jump:
         location = yield inspect_line_location(line)
         yield NS.lift(jump_to_location(scratch, location))
@@ -125,7 +125,7 @@ def select_event(index: int, jump: Boolean) -> Do:
 
 @do(NS[CommandData, None])
 def select_line_event(line: int) -> Do:
-    index = yield line_event_index(line - 1)
+    index = yield line_event_index(line)
     yield store_event_index(index)
 
 

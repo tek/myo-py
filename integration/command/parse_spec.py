@@ -80,11 +80,11 @@ def select_cycle_spec() -> Do:
     yield NS.lift(auto_jump.update(False))
     yield run_prog(prog.result(render_parse_result), List(parsed_output))
     cursor1 = yield NS.lift(current_cursor())
-    yield NS.lift(set_local_line(6))
+    yield NS.lift(set_local_line(5))
     yield run_prog(prog.result(select_cursor_event), Nil)
     yield run_prog(next_event, Nil)
     cursor2 = yield NS.lift(current_cursor())
-    return k((cursor1, cursor2)).must(tupled(2)((equal((1, 0)), equal((8, 0)))))
+    return k((cursor1, cursor2)).must(tupled(2)((equal((0, 0)), equal((7, 0)))))
 
 
 def first_error(output: List[OutputEvent[PythonLine, PythonEvent]]) -> NS[CommandRibosome, int]:
@@ -97,7 +97,7 @@ def first_error_spec() -> Do:
     parse_handlers = ParseHandlers.cons(first_error=Just(first_error))
     yield run_prog(prog.result(render_parse_result), List(ParsedOutput(parse_handlers, Nil, output_events)))
     cursor = yield NS.lift(current_cursor())
-    return k(cursor) == (3, 0)
+    return k(cursor) == (2, 0)
 
 
 def truncate_path(path: Path) -> NS[CommandRibosome, str]:
