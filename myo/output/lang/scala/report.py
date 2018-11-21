@@ -24,7 +24,7 @@ req_marker = '-'
 @do(NS[CommandRibosome, List[DisplayLine]])
 def format_location(location: Location, path_formatter: PathFormatter) -> Do:
     path = yield path_formatter(location.path)
-    return List(PlainDisplayLine(f'{path}  {location.line}'))
+    return List(PlainDisplayLine(f'{path}  {location.line + 1}'))
 
 
 def inject_col_marker(code_line: CodeLine, col_line: Maybe[OutputLine[ColLine]]) -> str:
