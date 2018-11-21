@@ -99,7 +99,7 @@ MyoError       xxx start=/^./ end=/\ze.*\(\|†\)/  contained contains=MyoSpl
 MyoLocation    xxx match /^.*.*$/  contains=MyoPath,MyoLineNumber nextgroup=MyoError skipwhite skipnl
 MyoCode        xxx match /.*/  contained contains=@scala,MyoColMarker
 MyoSplain      xxx start=/\s*!I/ end=/\ze.*\(\|†\)/  contained contains=MyoSplainParam,MyoSplainCandidate nextgroup=MyoCode skipwhite skipnl
-MyoSplainFoundReq xxx match /^.*+.\{-}< | .\{-}-.*$/  contained contains=MyoSplainFound,MyoSplainReq
+MyoSplainFoundReq xxx match /^.*+.\{-}<|.\{-}-.*$/  contained contains=MyoSplainFound,MyoSplainReq
 MyoColMarker   xxx match /†/  contained conceal nextgroup=MyoCol
 MyoCol         xxx match /./  contained
 MyoSplainParam xxx match /^\s*!I.*/  contained contains=MyoSplainParamMarker containedin=MyoSplain
@@ -110,7 +110,7 @@ MyoSplainParamMarkerBang xxx match /!/  contained nextgroup=MyoSplainParamMarker
 MyoSplainParamMarkerI xxx match /I/  contained nextgroup=MyoSplainParamName skipwhite
 MyoSplainParamType xxx start=/./ end=/\ze.*\(invalid because\|†\)/  contained
 MyoSplainFound xxx match /+.\{-}</  contained contains=MyoSplainFoundReqMarker nextgroup=MyoSplainReq
-MyoSplainReq   xxx match / | \zs.\{-}\ze-/  contained nextgroup=MyoSplainFoundReqMarker
+MyoSplainReq   xxx match /|\zs.\{-}\ze-/  contained nextgroup=MyoSplainFoundReqMarker
 MyoSplainFoundReqMarker xxx match /+\|<\|-/  contained conceal'''
 
 target_highlight = '''MyoPath        xxx links to Directory

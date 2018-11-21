@@ -14,7 +14,7 @@ from ribosome.nvim.io.state import NS
 def format_location(file: OutputLine[FileLine], location: Location, path_formatter: PathFormatter) -> Do:
     fun = file.meta.fun.map(lambda a: f' {a}').get_or_strict('')
     path = yield path_formatter(location.path)
-    return List(PlainDisplayLine(f'{path}  {location.line}{fun}'))
+    return List(PlainDisplayLine(f'{path}  {location.line + 1}{fun}'))
 
 
 class python_report_event(Case[PythonEvent, NS[CommandRibosome, List[DisplayLine]]], alg=PythonEvent):

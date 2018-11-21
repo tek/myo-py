@@ -5,9 +5,12 @@ from networkx import DiGraph
 from amino import List, Just, Maybe, Path, Regex, Nothing, do, Either, Do, Try, ADT, Nil, Dat
 from amino.util.numeric import parse_int
 from amino.case import Case
+from amino.logging import module_log
 
 from myo.output.data.output import OutputLine, OutputEvent, Location
 from myo.output.parser.base import EdgeData, Parser
+
+log = module_log()
 
 
 class PythonLine(ADT['PythonLine']):

@@ -31,7 +31,6 @@ from myo.components.command.compute.parsed_output import ParsedOutput
 from myo.components.command.compute.parse_handlers import ParseHandlers
 from myo.output.lang.python.report import python_report
 from myo.output.lang.python.syntax import python_syntax
-from myo.components.command.data import CommandData
 
 from test.command import update_command_data, command_spec_test_config
 from test.output.python import output_events, file_path, trace_file, line, col, parsed_output
@@ -83,7 +82,7 @@ def cycle_spec() -> Do:
     cursor2 = yield NS.lift(current_cursor())
     yield run_prog(prev_event, Nil)
     cursor3 = yield NS.lift(current_cursor())
-    return k((cursor1, cursor2, cursor3)).must(tupled(3)((equal((1, 0)), equal((3, 0)), equal((1, 0)))))
+    return k((cursor1, cursor2, cursor3)).must(tupled(3)((equal((0, 0)), equal((2, 0)), equal((0, 0)))))
 
 
 @do(NS[MyoState, Expectation])
@@ -121,7 +120,7 @@ def path_formatter_spec() -> Do:
     parse_handlers = ParseHandlers.cons(path_formatter=Just(truncate_path), reporter=Just(python_report))
     yield run_prog(prog.result(render_parse_result), List(ParsedOutput(parse_handlers, Nil, output_events)))
     content = yield NS.lift(current_buffer_content())
-    return k(content.head).must(be_just('file.py  2 funcname'))
+    return k(content.head).must(be_just('file.py  3 funcname'))
 
 
 target_syntax = '''MyoPath        xxx match /^.*\ze\( .*$\)\@=/  contained containedin=MyoLocation
