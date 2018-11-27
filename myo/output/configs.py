@@ -5,6 +5,8 @@ from myo.output.lang.python.syntax import python_syntax
 from myo.output.lang.scala.report import scala_report
 from myo.output.lang.scala.syntax import scala_syntax
 from myo.output.lang.python.first_error import python_first_error
+from myo.output.lang.haskell.report import haskell_report
+from myo.output.lang.haskell.syntax import haskell_syntax
 
 from amino import List
 from amino.util.tpe import qualified_name
@@ -23,9 +25,16 @@ scala_config = LangConfig.cons(
     output_syntax=qualified_name(scala_syntax),
 )
 
+haskell_config = LangConfig.cons(
+    'haskell',
+    output_reporter=qualified_name(haskell_report),
+    output_syntax=qualified_name(haskell_syntax),
+)
+
 default_lang_configs = List(
     python_config,
     scala_config,
+    haskell_config,
 )
 
 global_config_defaults = LangConfig.cons(

@@ -94,7 +94,7 @@ class ScalaEvent(Dat['ScalaEvent']):
             info: List[OutputLine[InfoLine]]=Nil,
             code: Maybe[OutputLine[CodeLine]]=Nothing,
             col: Maybe[OutputLine[ColLine]]=Nothing,
-    ) -> 'ScalaOutputEvent':
+    ) -> 'ScalaEvent':
         return ScalaEvent(file, info, code, col)
 
     def __init__(
