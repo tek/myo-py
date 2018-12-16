@@ -2,7 +2,7 @@ from typing import Union
 
 from networkx import DiGraph
 
-from amino import List, Path, do, Either, Try, Do, Maybe, Regex, Nil, Nothing, ADT, Just, Dat
+from amino import List, Path, do, Either, Try, Do, Maybe, Regex, Nil, ADT, Just, Dat
 from amino.util.numeric import parse_int
 from amino.logging import module_log
 
@@ -58,7 +58,7 @@ class CodeLine(HaskellLine):
 
 _msg_type = '\[(?P<tag>\w+)\] '
 file_edge: EdgeData[FileLine] = EdgeData(
-    regex=Regex(f'^\s*(?P<path>[^:]+):(?P<line>\d+):((?P<col>\d+):)?'),
+    regex=Regex(f'^(?P<path>/[^:]+):(?P<line>\d+):((?P<col>\d+):)?'),
     cons_output_line=FileLine.cons,
 )
 info_edge = EdgeData.strict(
