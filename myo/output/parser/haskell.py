@@ -27,8 +27,8 @@ class FileLine(HaskellLine):
     ) -> Do:
         path_p = yield Try(Path, path)
         line_i = yield parse_int(line)
-        col_i = yield parse_int(0 if col is None else col)
-        return FileLine(path_p, line_i - 1, col_i)
+        col_i = yield parse_int(1 if col is None else col)
+        return FileLine(path_p, line_i - 1, col_i - 1)
 
     def __init__(self, path: Path, line: int, col: int) -> None:
         self.path = path
