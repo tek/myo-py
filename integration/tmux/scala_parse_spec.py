@@ -86,7 +86,7 @@ def test_highlights() -> Do:
 
 @do(NvimIO[Expectation])
 def report_spec() -> Do:
-    # yield test_highlights()
+    yield test_highlights()
     yield option_set('splitbelow', True)
     executed = yield parse_spec()
     content = yield current_buffer_contains(target)
@@ -130,7 +130,7 @@ MyoSplainParamMarkerBang xxx links to Error
 MyoSplainParamMarkerI xxx links to Directory
 MyoSplainParamType xxx links to Statement
 MyoSplainFound xxx links to Error
-MyoSplainReq   xxx links to Statement
+MyoSplainReq   xxx ctermfg=2 guifg=#719e07
 MyoSplainFoundReqMarker xxx cleared'''
 
 

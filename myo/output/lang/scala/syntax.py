@@ -2,7 +2,7 @@ from amino import List, Nil
 
 from ribosome.nvim.io.state import NS
 from ribosome.nvim.syntax.syntax import Syntax
-from ribosome.nvim.syntax.expr import SyntaxMatch, HiLink, SyntaxLiteral, SyntaxRegion
+from ribosome.nvim.syntax.expr import SyntaxMatch, HiLink, SyntaxLiteral, SyntaxRegion, Highlight
 
 from myo.components.command.compute.tpe import CommandRibosome
 from myo.output.lang.scala.report import col_marker, found_marker, separator_marker, foundreq_separator, req_marker
@@ -130,15 +130,16 @@ hl_splain_param_type = HiLink('MyoSplainParamType', 'Statement')
 hl_splain_candidate = HiLink('MyoSplainCandidate', 'Error')
 hl_splain_found_req = HiLink('MyoSplainFoundReq', 'Normal')
 hl_splain_found = HiLink('MyoSplainFound', 'Error')
-hl_splain_req = HiLink('MyoSplainReq', 'Statement')
+
+hi_req = Highlight.cons('MyoSplainReq', ctermfg=2, guifg='#719e07')
 
 syntax = Syntax(
     List(scala_include, location, path, line_number, error, code_line, col_marker_conceal, col, splain, splain_param,
          splain_param_marker, splain_param_marker_bang, splain_param_marker_i, splain_param_name, splain_param_type,
          splain_candidate, splain_foundreq, splain_found, splain_req, splain_req_marker_conceal),
-    Nil,
+    List(hi_req),
     List(hl_error, hl_path, hl_line_number, hl_col, hl_splain_param_marker_bang, hl_splain_param_marker_i,
-         hl_splain_param_name, hl_splain_param_type, hl_splain_candidate, hl_splain_found, hl_splain_req),
+         hl_splain_param_name, hl_splain_param_type, hl_splain_candidate, hl_splain_found),
 )
 
 

@@ -2,4 +2,5 @@ ribosome==13.0.1a2
 chiasma~=0.1.0.a28
 psutil==5.3.1
 networkx==2.0
+lark-parser==0.6.5
 kallikrein~=0.22.0a17

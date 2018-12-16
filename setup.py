@@ -17,6 +17,7 @@ setup(  # type: ignore
         'chiasma~=0.1.0.a28',
         'psutil==5.3.1',
         'networkx==2.0',
+        'lark-parser==0.6.5',
     ],
     tests_require=[
         'kallikrein~=0.22.a17',

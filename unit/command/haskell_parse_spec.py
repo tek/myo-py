@@ -1,12 +1,13 @@
-from kallikrein import k, Expectation
+from kallikrein import k, Expectation, pending
 from kallikrein.matchers.length import have_length
 from kallikrein.matchers.either import be_right
 from kallikrein.matchers.lines import have_lines
 
 from test.command import command_spec_test_config
 
-from amino import Lists, do, Do
+from amino import Lists, do, Do, List
 from amino.test.spec import SpecBase
+from amino.test import load_fixture
 
 from ribosome.nvim.io.state import NS
 from ribosome.test.unit import unit_test
@@ -19,6 +20,7 @@ from myo.config.plugin_state import MyoState
 from myo.components.command.compute.parsed_output import ParsedOutput
 from myo.components.command.compute.parse_handlers import ParseHandlers
 from myo.output.configs import haskell_config
+from myo.output.lang.haskell.report import format_info
 
 output = '''/path/to/file.hs:38:13: error:
     • No instance for (TypeClass Data)
@@ -32,12 +34,33 @@ output = '''/path/to/file.hs:38:13: error:
 /path/to/file.hs:43:3: error:
     Variable not in scope:
       doSomething :: TypeA -> Monad a0
+
+/path/to/file.hs:5:5: error:
+    • Couldn't match expected type ‘StateT
+                                      (ReaderT
+                                         (GHC.Conc.Sync.TVar Data))
+                                      a0’
+                  with actual type ‘t0 Data1
+                                    -> StateT (ReaderT e0) ()’
+    • Probable cause: ‘mapM_’ is applied to too few arguments
+      In a stmt of a 'do' block: mapM_ end
+      In the expression:
+        do a <- start
+           mapM_ end
+      In an equation for ‘execute’:
+          execute
+            = do a <- start
+                 mapM_ end
+  |
+5 |   mapM_ end
+  |   ^^^^^^^^^
+
 '''
-lines = Lists.lines(output)
+clean_lines = Lists.lines(output)
 
 
 @do(NS[MyoState, ParseReport])
-def cons_report() -> Do:
+def cons_report(lines: List[str]) -> Do:
     events = yield NS.e(parse_events(haskell_parser, lines))
     config = yield NS.e(ParseHandlers.from_config(haskell_config.parse))
     output = ParsedOutput(config, events, events)
@@ -46,32 +69,31 @@ def cons_report() -> Do:
 
 @do(NS[MyoState, Expectation])
 def error_spec() -> Do:
-    report = yield cons_report()
-    return k(report.lines).must(have_length(11))
+    report = yield cons_report(clean_lines)
+    return k(report.lines).must(have_length(10))
 
 
 @do(NS[MyoState, Expectation])
 def line_number_spec() -> Do:
-    report = yield cons_report()
-    return k(report_line_number(1)(report)).must(be_right(8))
+    report = yield cons_report(clean_lines)
+    return k(report_line_number(1)(report)).must(be_right(3))
 
 
 target_report = '''/path/to/file.hs  38
-  • No instance for (TypeClass Data)
-  arising from a use of ‘foobar’
-  • In a stmt of a 'do' block: foo <- bar baz
-  In the expression:
-  do { foo <- bar baz;
-  (a, b, c) <- foo bar;
-  .... }
+  !instance: foobar
+  TypeClass Data
 /path/to/file.hs  43
   Variable not in scope:
-  doSomething :: TypeA -> Monad a0'''
+  doSomething :: TypeA -> Monad a0
+/path/to/file.hs  5
+  type mismatch
+  t0 Data1 -> StateT (ReaderT e0) ()
+  StateT (ReaderT (GHC.Conc.Sync.TVar Data)) a0'''
 
 
 @do(NS[MyoState, Expectation])
-def format_spec() -> Do:
-    report = yield cons_report()
+def report_spec() -> Do:
+    report = yield cons_report(clean_lines)
     formatted = format_report(report)
     return k(formatted).must(have_lines(target_report))
 
@@ -90,7 +112,7 @@ class HaskellParseSpec(SpecBase):
         return unit_test(command_spec_test_config, line_number_spec)
 
     def report(self) -> Expectation:
-        return unit_test(command_spec_test_config, format_spec)
+        return unit_test(command_spec_test_config, report_spec)
 
 
 __all__ = ('HaskellParseSpec',)
