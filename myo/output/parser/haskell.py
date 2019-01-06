@@ -62,7 +62,7 @@ file_edge: EdgeData[FileLine] = EdgeData(
     cons_output_line=FileLine.cons,
 )
 info_edge = EdgeData.strict(
-    regex=Regex(f'^{garbage}(?P<ws>\s*)(?P<message>\s*.+)'),
+    regex=Regex(f'^{garbage}(?P<ws>\s*)(?P<message>\s*(?!Progress)[^]+)$'),
     cons_output_line=InfoLine.cons,
 )
 

@@ -33,6 +33,8 @@ output = '''
 Progress 0/2            /path/to/file.hs:43:3: error:
 Progress 0/2                Variable not in scope:
 Progress 0/2                  doSomething :: TypeA -> Monad a0
+Progress 0/2            
+Progress 0/2            Progress 1/2
 
 /path/to/file.hs:5:5: error:
     • Couldn't match expected type ‘StateT
