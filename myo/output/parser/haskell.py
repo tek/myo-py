@@ -56,13 +56,13 @@ class CodeLine(HaskellLine):
         self.tag = tag
 
 
-_msg_type = '\[(?P<tag>\w+)\] '
+garbage = r'(.*)?'
 file_edge: EdgeData[FileLine] = EdgeData(
-    regex=Regex(f'^(?P<path>/[^:]+):(?P<line>\d+):((?P<col>\d+):)?'),
+    regex=Regex(f'^{garbage}(?P<path>/[^:]+):(?P<line>\d+):((?P<col>\d+):)?'),
     cons_output_line=FileLine.cons,
 )
 info_edge = EdgeData.strict(
-    regex=Regex(f'^(?P<ws>\s*)(?P<message>\s*.+)'),
+    regex=Regex(f'^{garbage}(?P<ws>\s*)(?P<message>\s*.+)'),
     cons_output_line=InfoLine.cons,
 )
 

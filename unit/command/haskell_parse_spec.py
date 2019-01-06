@@ -1,4 +1,4 @@
-from kallikrein import k, Expectation, pending
+from kallikrein import k, Expectation
 from kallikrein.matchers.length import have_length
 from kallikrein.matchers.either import be_right
 from kallikrein.matchers.lines import have_lines
@@ -7,7 +7,6 @@ from test.command import command_spec_test_config
 
 from amino import Lists, do, Do, List
 from amino.test.spec import SpecBase
-from amino.test import load_fixture
 
 from ribosome.nvim.io.state import NS
 from ribosome.test.unit import unit_test
@@ -20,9 +19,9 @@ from myo.config.plugin_state import MyoState
 from myo.components.command.compute.parsed_output import ParsedOutput
 from myo.components.command.compute.parse_handlers import ParseHandlers
 from myo.output.configs import haskell_config
-from myo.output.lang.haskell.report import format_info
 
-output = '''/path/to/file.hs:38:13: error:
+output = '''
+/path/to/file.hs:38:13: error:
     • No instance for (TypeClass Data)
         arising from a use of ‘foobar’
     • In a stmt of a 'do' block: foo <- bar baz
@@ -31,9 +30,9 @@ output = '''/path/to/file.hs:38:13: error:
              (a, b, c) <- foo bar;
              .... }
 
-/path/to/file.hs:43:3: error:
-    Variable not in scope:
-      doSomething :: TypeA -> Monad a0
+Progress 0/2            /path/to/file.hs:43:3: error:
+Progress 0/2                Variable not in scope:
+Progress 0/2                  doSomething :: TypeA -> Monad a0
 
 /path/to/file.hs:5:5: error:
     • Couldn't match expected type ‘StateT
