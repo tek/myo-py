@@ -58,7 +58,7 @@ class CodeLine(HaskellLine):
 
 garbage = r'(.*)?'
 file_edge: EdgeData[FileLine] = EdgeData(
-    regex=Regex(f'^{garbage}(?P<path>/[^:]+):(?P<line>\d+):((?P<col>\d+):)?'),
+    regex=Regex(f'^{garbage}\s*(?P<path>/[^:]+):(?P<line>\d+):((?P<col>\d+):)?'),
     cons_output_line=FileLine.cons,
 )
 info_edge = EdgeData.strict(
