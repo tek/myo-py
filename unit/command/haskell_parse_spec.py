@@ -57,7 +57,7 @@ Progress 0/2            Progress 1/2
   |   ^^^^^^^^^
 
 
-/path/to/file.hs:19:3: error:
+  /path/to/file.hs:19:3: error:
     Variable not in scope: asdf :: Monad a
    |
 19 |   asdf

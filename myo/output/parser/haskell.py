@@ -39,7 +39,7 @@ class FileLine(HaskellLine):
 class InfoLine(HaskellLine):
 
     @staticmethod
-    def cons(message: str, ws: str='', tag: str='') -> 'InfoLine':
+    def cons(message: str, ws: str='', tag: str='', **kw: str) -> 'InfoLine':
         return InfoLine(message, len(ws), tag)
 
     def __init__(self, message: str, indent: int, tag: str) -> None:
@@ -57,12 +57,13 @@ class CodeLine(HaskellLine):
 
 
 garbage = r'(.*)?'
+path = '(?P<path>/[^:]+):(?P<line>\d+):((?P<col>\d+):)?'
 file_edge: EdgeData[FileLine] = EdgeData(
-    regex=Regex(f'^{garbage}\s*(?P<path>/[^:]+):(?P<line>\d+):((?P<col>\d+):)?'),
+    regex=Regex(f'^{garbage}\s*{path}'),
     cons_output_line=FileLine.cons,
 )
 info_edge = EdgeData.strict(
-    regex=Regex(f'^{garbage}(\s*(\d+)?\s*\|)?(?P<ws>\s*)(?P<message>\s*(?!Progress)[^]+)$'),
+    regex=Regex(f'^{garbage}(\s*(\d+)?\s*\|)?(?P<ws>\s*)(?P<message>\s*(?!{path})(?!Progress)[^]+)$'),
     cons_output_line=InfoLine.cons,
 )
 garbage_re = Regex(f'^{garbage}\s*\d*\s*\|$')
