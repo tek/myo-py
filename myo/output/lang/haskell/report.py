@@ -65,7 +65,7 @@ def tlift(tree: Tree, key: str) -> Either[str, Tree]:
     return tfilt(tree, key).head.to_either(f'no child `{key}`')
 
 
-@do(Either[str, List[Tree]])
+@do(Either[str, List[str]])
 def foundreq(tree: Tree) -> Do:
     req, found = yield qnames(tree).lift_all(0, 1).to_either('invalid name count')
     return List(
@@ -75,7 +75,7 @@ def foundreq(tree: Tree) -> Do:
     )
 
 
-@do(Either[str, List[Tree]])
+@do(Either[str, List[str]])
 def notypeclass(tree: Tree) -> Do:
     pt = yield tlift(tree, 'parenstype')
     names = tnames(pt)
@@ -87,14 +87,14 @@ def notypeclass(tree: Tree) -> Do:
     )
 
 
-@do(Either[str, List[Tree]])
+@do(Either[str, List[str]])
 def notinscope(tree: Tree) -> Do:
     name = yield first_token(tree, 'name').to_either('no name for notinscope')
     types = tree_tokens(tree, 'type').map(lambda a: a.strip())
     return List(f'Variable not in scope: {name} :: {types.join_tokens}')
 
 
-def generic(tree: Tree) -> Either[str, List[Tree]]:
+def generic(tree: Tree) -> Either[str, List[str]]:
     return Right(firsts(tfilt(tree, 'any')).flat_map(Lists.lines).map(lambda a: a.strip()))
 
 
