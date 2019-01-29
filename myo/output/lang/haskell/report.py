@@ -29,20 +29,32 @@ def tfilt(tree: Tree, key: str) -> List[Tree]:
     return Lists.wrap(tree.children).filter(lambda c: isinstance(c, Tree) and c.data == key)
 
 
-def first(trees: List[Tree]) -> List[Tree]:
-    return trees.flat_map(lambda a: Lists.wrap(a.children).head)
+def first(tree: Tree) -> Maybe[Tree]:
+    return Lists.wrap(tree.children).head
+
+
+def firsts(trees: List[Tree]) -> List[Tree]:
+    return trees.flat_map(first)
 
 
 def token_values(trees: List[Any]) -> List[str]:
     return trees.filter_type(Token).map(lambda a: a.value)
 
 
+def tree_tokens(tree: Tree, key: str) -> List[str]:
+    return token_values(tfilt(tree, key).flat_map(lambda a: Lists.wrap(a.children)))
+
+
 def tnames(tree: Tree) -> List[str]:
-    return token_values(first(tfilt(tree, 'name')))
+    return token_values(firsts(tfilt(tree, 'name')))
+
+
+def first_token(tree: Tree, key: str) -> Maybe[str]:
+    return token_values(firsts(tfilt(tree, key))).head
 
 
 def qnamedata(tree: Tree) -> Maybe[str]:
-    return token_values(first(tfilt(tree, 'qnamedata'))).head
+    return token_values(firsts(tfilt(tree, 'qnamedata'))).head
 
 
 def qnames(tree: Tree) -> List[str]:
@@ -75,30 +87,58 @@ def notypeclass(tree: Tree) -> Do:
     )
 
 
+@do(Either[str, List[Tree]])
+def notinscope(tree: Tree) -> Do:
+    name = yield first_token(tree, 'name').to_either('no name for notinscope')
+    types = tree_tokens(tree, 'type').map(lambda a: a.strip())
+    return List(f'Variable not in scope: {name} :: {types.join_tokens}')
+
+
 def generic(tree: Tree) -> Either[str, List[Tree]]:
-    return Right(first(tfilt(tree, 'any')).flat_map(Lists.lines))
+    return Right(firsts(tfilt(tree, 'any')).flat_map(Lists.lines).map(lambda a: a.strip()))
+
+
+def dotted(tree: Tree) -> Either[str, List[str]]:
+    tpe = tree.data
+    return (
+        foundreq(tree)
+        if tpe == 'foundreq' else
+        notypeclass(tree)
+        if tpe == 'notypeclass' else
+        notinscope(tree)
+        if tpe == 'notinscope' else
+        generic(tree)
+        if tpe == 'genericdot' else
+        Left('invalid dotted')
+    )
+
+
+def undotted(tree: Tree) -> Either[str, List[str]]:
+    tpe = tree.data
+    return (
+        notinscope(tree)
+        if tpe == 'notinscope' else
+        Left('invalid undotted')
+    )
+
+
+@do(Either[str, List[str]])
+def specific(tree: Tree) -> Do:
+    candidate = yield first(tree).to_either('empty specific')
+    yield (
+        Lists.wrap(candidate.children).lift(1).to_either('empty dotted').flat_map(dotted)
+        if candidate.data == 'dotted' else
+        first(candidate).to_either('empty undotted').flat_map(undotted)
+        if candidate.data == 'undotted' else
+        Left('invalid specific')
+    )
 
 
 @do(Either[str, List[str]])
 def from_grammar(lines: List[str]) -> Do:
     tree = yield Try(parser.parse, lines.join_lines)
     spec = yield tlift(tree, 'specific')
-    candidate = yield Lists.wrap(spec.children).head.to_either('empty specific')
-    dotted = yield (
-        Lists.wrap(candidate.children).lift(1).to_either('empty dotted')
-        if candidate.data == 'dotted' else
-        Left('candidate is not dotted')
-    )
-    tpe = dotted.data
-    yield (
-        foundreq(dotted)
-        if tpe == 'foundreq' else
-        notypeclass(dotted)
-        if tpe == 'notypeclass' else
-        generic(dotted)
-        if tpe == 'genericdot' else
-        Right(Nil)
-    )
+    yield specific(spec)
 
 
 def log_error(error: str) -> None:
