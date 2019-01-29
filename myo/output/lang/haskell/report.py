@@ -50,7 +50,7 @@ def qnames(tree: Tree) -> List[str]:
 
 
 def tlift(tree: Tree, key: str) -> Either[str, Tree]:
-    return tfilt(tree, key).head.to_either(f'no child `key`')
+    return tfilt(tree, key).head.to_either(f'no child `{key}`')
 
 
 @do(Either[str, List[Tree]])
@@ -95,8 +95,12 @@ def from_grammar(lines: List[str]) -> Do:
     )
 
 
+def log_error(error: str) -> None:
+    log.debug(f'haskell report failed: {error}')
+
+
 def format_info(lines: List[str]) -> List[str]:
-    return from_grammar(lines).get_or_strict(lines)
+    return from_grammar(lines).lmap(log_error).get_or_strict(lines)
 
 
 @do(NS[CommandRibosome, List[DisplayLine]])

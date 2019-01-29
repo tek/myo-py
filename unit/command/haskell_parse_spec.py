@@ -56,6 +56,12 @@ Progress 0/2            Progress 1/2
 5 |   mapM_ end
   |   ^^^^^^^^^
 
+
+/path/to/file.hs:19:3: error:
+    Variable not in scope: asdf :: Monad a
+   |
+19 |   asdf
+   |   ^^^^
 '''
 clean_lines = Lists.lines(output)
 
@@ -89,7 +95,11 @@ target_report = '''/path/to/file.hs  38
 /path/to/file.hs  5
   type mismatch
   t0 Data1 -> StateT (ReaderT e0) ()
-  StateT (ReaderT (GHC.Conc.Sync.TVar Data)) a0'''
+  StateT (ReaderT (GHC.Conc.Sync.TVar Data)) a0
+/path/to/file.hs  19
+  Variable not in scope: asdf :: Monad a
+  asdf
+  ^^^^'''
 
 
 @do(NS[MyoState, Expectation])

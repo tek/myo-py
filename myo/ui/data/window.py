@@ -1,5 +1,3 @@
-from uuid import uuid4
-
 from amino import Dat, Maybe, Just, Either, Nothing
 from amino.case import Case
 

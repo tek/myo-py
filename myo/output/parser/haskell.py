@@ -62,10 +62,10 @@ file_edge: EdgeData[FileLine] = EdgeData(
     cons_output_line=FileLine.cons,
 )
 info_edge = EdgeData.strict(
-    regex=Regex(f'^{garbage}(?P<ws>\s*)(?P<message>\s*(?!Progress)[^]+)$'),
+    regex=Regex(f'^{garbage}(\s*(\d+)?\s*\|)?(?P<ws>\s*)(?P<message>\s*(?!Progress)[^]+)$'),
     cons_output_line=InfoLine.cons,
 )
-
+garbage_re = Regex(f'^{garbage}\s*\d*\s*\|$')
 
 class HaskellEvent(Dat['HaskellEvent']):
 
@@ -93,10 +93,14 @@ def haskell_graph() -> DiGraph:
     return g
 
 
+def is_garbage_info(line: OutputLine[InfoLine]) -> bool:
+    return line.meta.message == '|'
+
+
 @do(Maybe[OutputEvent[HaskellLine, HaskellEvent]])
 def haskell_event(lines: List[OutputLine[HaskellLine]]) -> Do:
     file = yield lines.find(lambda a: isinstance(a.meta, FileLine))
-    info = lines.filter(lambda a: isinstance(a.meta, InfoLine))
+    info = lines.filter(lambda a: isinstance(a.meta, InfoLine)).filter_not(is_garbage_info)
     location = Location(file.meta.path, file.meta.line, file.meta.col)
     return OutputEvent.cons(HaskellEvent(file, info), lines, Just(location))
 
