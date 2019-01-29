@@ -58,15 +58,17 @@ class CodeLine(HaskellLine):
 
 garbage = r'(.*)?'
 path = '(?P<path>/[^:]+):(?P<line>\d+):((?P<col>\d+):)?'
+snippet_indent = r'\s*\d*\s*\|'
 file_edge: EdgeData[FileLine] = EdgeData(
     regex=Regex(f'^{garbage}\s*{path}'),
     cons_output_line=FileLine.cons,
 )
 info_edge = EdgeData.strict(
-    regex=Regex(f'^{garbage}(\s*(\d+)?\s*\|)?(?P<ws>\s*)(?P<message>\s*(?!{path})(?!Progress)[^]+)$'),
+    regex=Regex(f'^{garbage}(\s*\d*\s*\|)?(?P<ws>\s*)(?P<message>(?!{path})(?!Progress)[^\s][^]*)$'),
     cons_output_line=InfoLine.cons,
 )
-garbage_re = Regex(f'^{garbage}\s*\d*\s*\|$')
+garbage_re = Regex(f'^{garbage}{snippet_indent}$')
+
 
 class HaskellEvent(Dat['HaskellEvent']):
 

@@ -62,6 +62,30 @@ Progress 0/2            Progress 1/2
    |
 19 |   asdf
    |   ^^^^
+
+
+--  While building package myo-0.1.1.0 using:
+      /var/tek/lib/stack/setup-exe-cache/x86_64-linux-tinfo6/Cabal-simple_mPHDZzAJ_2.2.0.1_ghc-8.4.4 --builddir=.stack-work/dist/x86_64-linux-tinfo6/Cabal-2.2.0.1 build lib:myo exe:myo --ghc-options " -ddump-hi -ddump-to-file -fdiagnostics-color=always"
+    Process exited with code: ExitFailure 1
+    Logs have been written to: /home/tek/code/tek/haskell/myo/.stack-work/logs/myo-0.1.1.0.log
+
+    Preprocessing library for myo-0.1.1.0..
+    Building library for myo-0.1.1.0..
+    [33 of 35] Compiling Myo.Ui.Toggle    ( lib/Myo/Ui/Toggle.hs, .stack-work/dist/x86_64-linux-tinfo6/Cabal-2.2.0.1/build/Myo/Ui/Toggle.o )
+
+    /path/to/file.hs:31:3: error:
+        • Variable not in scope:
+            mapE
+              :: t1 -> t2
+       |
+    31 |   mapE x
+       |   ^^^^
+
+    /path/to/file.hs:35:3: error:
+        Variable not in scope: run :: a -> b
+       |
+    35 |   run $ y
+       |   ^^^
 '''
 clean_lines = Lists.lines(output)
 
@@ -99,7 +123,17 @@ target_report = '''/path/to/file.hs  38
 /path/to/file.hs  19
   Variable not in scope: asdf :: Monad a
   asdf
-  ^^^^'''
+  ^^^^
+/path/to/file.hs  31
+  Variable not in scope:
+  mapE
+  :: t1 -> t2
+  mapE x
+  ^^^^
+/path/to/file.hs  35
+  Variable not in scope: run :: a -> b
+  run $ y
+  ^^^'''
 
 
 @do(NS[MyoState, Expectation])

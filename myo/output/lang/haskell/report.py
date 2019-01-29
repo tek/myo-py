@@ -75,6 +75,10 @@ def notypeclass(tree: Tree) -> Do:
     )
 
 
+def generic(tree: Tree) -> Either[str, List[Tree]]:
+    return Right(first(tfilt(tree, 'any')).flat_map(Lists.lines))
+
+
 @do(Either[str, List[str]])
 def from_grammar(lines: List[str]) -> Do:
     tree = yield Try(parser.parse, lines.join_lines)
@@ -91,6 +95,8 @@ def from_grammar(lines: List[str]) -> Do:
         if tpe == 'foundreq' else
         notypeclass(dotted)
         if tpe == 'notypeclass' else
+        generic(dotted)
+        if tpe == 'genericdot' else
         Right(Nil)
     )
 
