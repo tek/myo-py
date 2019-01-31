@@ -62,7 +62,8 @@ noInstanceKw = SyntaxMatch.cons(
     nextgroup='MyoHsNoInstanceTrigger',
 )
 noInstanceTrigger = SyntaxMatch.cons('MyoHsNoInstanceTrigger', '.*', 'contained')
-noInstanceDesc = SyntaxMatch.cons('MyoHsNoInstanceDesc', '.*', 'contained', 'skipnl', nextgroup='MyoLocation')
+noInstanceDesc = SyntaxMatch.cons('MyoHsNoInstanceDesc', '.*', 'contained', 'skipnl', contains='@haskell',
+                                  nextgroup='MyoLocation')
 notInScope = SyntaxRegion.cons(
     'MyoHsNotInScope',
     notInScopeMarker,
