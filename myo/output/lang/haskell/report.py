@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Union
 
 from lark import Lark, Tree
 from lark.lexer import Token
@@ -17,6 +17,18 @@ from ribosome.nvim.io.state import NS
 
 log = module_log()
 parser = Lark(grammar)  # type: ignore
+
+
+def children(tree: Tree) -> List[Tree]:
+    return Lists.wrap(tree.children)
+
+
+def flatten(tree: Tree) -> List[Tree]:
+    return (
+        List(tree)
+        if isinstance(tree, Token) else
+        children(tree).flat_map(flatten)
+    )
 
 
 @do(NS[CommandRibosome, List[DisplayLine]])
@@ -39,6 +51,10 @@ def firsts(trees: List[Tree]) -> List[Tree]:
 
 def token_values(trees: List[Any]) -> List[str]:
     return trees.filter_type(Token).map(lambda a: a.value)
+
+
+def token_values_rec(tree: Tree) -> List[str]:
+    return token_values(flatten(tree))
 
 
 def tree_tokens(tree: Tree, key: str) -> List[str]:
@@ -65,6 +81,31 @@ def tlift(tree: Tree, key: str) -> Either[str, Tree]:
     return tfilt(tree, key).head.to_either(f'no child `{key}`')
 
 
+def format_type_tree(tree: Tree) -> str:
+    tpe = tree.data
+    sub = format_type_tree_children(tree)
+    return (
+        sub.join_dot
+        if tpe == 'parenstypenamequal' else
+        f'({sub.join_tokens})'
+        if tpe == 'parenstype' else
+        sub.join_tokens
+    )
+
+
+def format_type_tree_children(tree: Tree) -> List[str]:
+    return children(tree).map(format_type)
+
+
+
+def format_type(tree: Union[Tree, Token]) -> str:
+    return (
+        tree.value
+        if isinstance(tree, Token) else
+        format_type_tree(tree)
+    )
+
+
 @do(Either[str, List[str]])
 def foundreq(tree: Tree) -> Do:
     req, found = yield qnames(tree).lift_all(0, 1).to_either('invalid name count')
@@ -78,12 +119,11 @@ def foundreq(tree: Tree) -> Do:
 @do(Either[str, List[str]])
 def notypeclass(tree: Tree) -> Do:
     pt = yield tlift(tree, 'parenstype')
-    names = tnames(pt)
-    tc, tpe = yield names.lift_all(0, 1).to_either('too few names')
+    tpe = format_type_tree_children(pt).join_tokens
     trigger = yield qnames(tree).head.to_either('no trigger')
     return List(
         f'!instance: {trigger}',
-        f'{tc} {tpe}'
+        tpe,
     )
 
 
@@ -100,6 +140,7 @@ def generic(tree: Tree) -> Either[str, List[str]]:
 
 def dotted(tree: Tree) -> Either[str, List[str]]:
     tpe = tree.data
+    log.debug(f'formatting dotted error of type {tpe}')
     return (
         foundreq(tree)
         if tpe == 'foundreq' else

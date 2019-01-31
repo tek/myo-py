@@ -12,7 +12,9 @@ genericdot.1: any+
 dot: "•"
 qname: sql qnamedata sqr
 qnamedata: /[^’]+/
-parenstype: "(" name name ")"
+parenstype: "(" (parenstypename+) ")"
+parenstypename: parenstype | parenstypenamequal | name
+parenstypenamequal: name "." parenstypename
 name: WORD
 words: WORD+
 type: /.+/

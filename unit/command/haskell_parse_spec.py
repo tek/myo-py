@@ -30,6 +30,11 @@ output = '''
              (a, b, c) <- foo bar;
              .... }
 
+/path/to/file.hs:38:13: error:
+    • No instance for (TypeClass
+        Data.Type (Monad Data))
+        arising from a use of ‘blurb’
+
 Progress 0/2            /path/to/file.hs:43:3: error:
 Progress 0/2                Variable not in scope:
 Progress 0/2                  doSomething :: TypeA -> Monad a0
@@ -105,6 +110,9 @@ def line_number_spec() -> Do:
 target_report = '''/path/to/file.hs  38
   !instance: foobar
   TypeClass Data
+/path/to/file.hs  38
+  !instance: blurb
+  TypeClass Data.Type (Monad Data)
 /path/to/file.hs  43
   Variable not in scope: doSomething :: TypeA -> Monad a0
 /path/to/file.hs  5
