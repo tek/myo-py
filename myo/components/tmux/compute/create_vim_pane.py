@@ -7,7 +7,6 @@ from ribosome.nvim.io.state import NS
 from ribosome.compute.ribosome_api import Ribo
 
 from chiasma.io.state import TS
-from myo.components.tmux.data import TmuxData
 from chiasma.util.id import Ident
 from chiasma.commands.pane import pane, parse_pane_id
 from chiasma.data.pane import Pane
@@ -15,6 +14,7 @@ from chiasma.data.session import Session
 from chiasma.data.window import Window
 from chiasma.util.pid import discover_pane_by_pid
 
+from myo.components.tmux.data import TmuxData
 from myo.components.tmux.tpe import TmuxRibosome
 from myo.config.settings import vim_tmux_pane
 

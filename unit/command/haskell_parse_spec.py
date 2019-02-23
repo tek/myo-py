@@ -83,6 +83,10 @@ Progress 0/2            Progress 1/2
        |
     35 |   run $ y
        |   ^^^
+  /path/to/file.hs:35:3: error:
+    • Couldn't match type ‘[Char]’ with ‘Text’
+      Expected type: [Text]
+        Actual type: [String]
 '''
 clean_lines = Lists.lines(output)
 
@@ -98,7 +102,7 @@ def cons_report(lines: List[str]) -> Do:
 @do(NS[MyoState, Expectation])
 def error_spec() -> Do:
     report = yield cons_report(clean_lines)
-    return k(report.lines).must(have_length(10))
+    return k(report.lines).must(have_length(18))
 
 
 @do(NS[MyoState, Expectation])
@@ -124,7 +128,12 @@ target_report = '''/path/to/file.hs  38
 /path/to/file.hs  31
   Variable not in scope: mapE :: t1 -> t2 -> t3
 /path/to/file.hs  35
-  Variable not in scope: run :: a -> b'''
+  Variable not in scope: run :: a -> b
+/path/to/file.hs  35
+  type mismatch
+  [Char]
+  Text
+'''
 
 
 @do(NS[MyoState, Expectation])

@@ -106,14 +106,24 @@ def format_type(tree: Union[Tree, Token]) -> str:
     )
 
 
-@do(Either[str, List[str]])
-def foundreq(tree: Tree) -> Do:
-    req, found = yield qnames(tree).lift_all(0, 1).to_either('invalid name count')
+def foundreq(found: str, req: str) -> List[str]:
     return List(
         'type mismatch',
-        found.replace("\n", ' '),
-        req.replace("\n", ' '),
+        found.replace("\n", ' ').strip(),
+        req.replace("\n", ' ').strip(),
     )
+
+
+@do(Either[str, List[str]])
+def foundreq1(tree: Tree) -> Do:
+    req, found = yield qnames(tree).lift_all(0, 1).to_either('invalid name count')
+    return foundreq(found, req)
+
+
+@do(Either[str, List[str]])
+def foundreq2(tree: Tree) -> Do:
+    found, req = yield qnames(tree).lift_all(0, 1).to_either('invalid name count')
+    return foundreq(found, req)
 
 
 @do(Either[str, List[str]])
@@ -142,8 +152,10 @@ def dotted(tree: Tree) -> Either[str, List[str]]:
     tpe = tree.data
     log.debug(f'formatting dotted error of type {tpe}')
     return (
-        foundreq(tree)
-        if tpe == 'foundreq' else
+        foundreq1(tree)
+        if tpe == 'foundreq1' else
+        foundreq2(tree)
+        if tpe == 'foundreq2' else
         notypeclass(tree)
         if tpe == 'notypeclass' else
         notinscope(tree)
